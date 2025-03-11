@@ -1,0 +1,72 @@
+良质面试
+1. 监控问题，怎么分配
+   明确需要监控的对象和指标，选择对应的监控工具
+                zabbix:                 prometheus:
+   数据模型      主机--项目--监控项         标签-指标
+   监控方式      支持推拉数据               支持推送数据
+   可扩展性      Zabbix需要手动设置agent    支持水平扩展
+   社区支持      工具插件较少               工具插件较多，对业务监控比较友好。
+
+2. podmonitor和servicemonitor的区别
+   Pod Monitor：在 K8S 生态下，基于 Prometheus Operator 来抓取 Pod 上对应的监控数据。
+   Service Monitor：在 K8S 生态下，基于 Prometheus Operator 来抓取 Service 对应 Endpoints 上的监控数据。
+
+3. cicd-argcd
+   1. 代码管理使用gitlab
+   2. 自动构建使用maven
+   3. 自动测试Selenium，这个jenkins有插件
+   4. 镜像上传到harbor,代码推送到仓库
+   5. 自动部署，连接到对应的环境，进行更新 set  image
+   6. 验证是否正常，脚本完成测试服务端口是否正常，不正常就发邮件，回退
+   7. 监控Prometheus、Grafana
+
+   
+4. 自动触发打包，发布
+   jenkins安装gitlab插件，配置触发器，监听到gitlab提交，触发自动打包发布
+   gitlab填写jenkins的url和token，
+   多分支触发：pipeline里面增加判断
+
+5. docker和containerd的区别
+   k8s的cri在调用docker时，会先对接docker-shim，docker底层使用的也是containerd运行时
+   k8s的cri在调用dcontainerd时，没有中间商，直接适配
+
+6. MySQL的主从复制原理主要涉及以下几个步骤：
+   主库操作记录：主数据库将执行的增、删、改等操作记录到二进制日志(binlog)中
+   从库接收日志：从数据库通过I/O线程从主数据库接收这些二进制日志，并将其写入到中继日志(relay-log)中
+   从库应用日志：从数据库的SQL线程负责读取relay-log中的事件，并将其转换为具体的SQL语句在从库上执行，以实现与主库的数据一致性。
+
+7. redis的持久化，高可用和哨兵的区别
+   Redis提供了两种主要的持久化方式：
+   ①：半持久化RDB模式  (redis的默认模式)
+        RDB模式实现过程：redis使用子进程定期将内存中的数据写入硬盘中的临时文件，
+缺点：可能会丢失最后一次快照以后更改的所有数据。
+   ②：全持久化AOF模式
+        AOF模式实现过程：是将redis的所以写操作追加到AOF文件中，重启redis会自动根据AOF文件恢复数据。
+优点：不会丢失数据
+
+   redis高可用和哨兵的区别：
+   哨兵：Redis Sentinel是Redis自带的高可用性解决方案，用于监控和管理Redis主从复制架构中的节点。
+        哨兵通过周期性地检查Redis节点的健康状态来实现故障检测和自动故障转移。当主节点宕机时，哨兵会选举一个新的主节点，并通知其他节点进行切换。
+        哨兵还可以监控从节点，并在需要时将从节点升级为主节点。它还可以自动进行故障恢复，将下线的节点重新加入到集群中
+   高可用：Redis Cluster是Redis提供的分布式解决方案，用于在多个节点之间分配数据和实现高可用性。
+         Redis Cluster将数据分片存储在多个节点上，并使用一致性哈希算法来确定数据在节点之间的分布。
+         Redis Cluster支持自动分片和故障转移。当节点宕机或加入集群时，集群会自动进行重新分片和重新分配数据，以保证数据的可用性和一致性。
+
+
+8. iptables和ipvs的区别
+   IPVS是Linux内核中的一个模块，用于实现高级负载均衡和服务发现功能。在Kubernetes中，可以使用IPVS作为替代iptables实现负载均衡。
+IPVS在传输层（TCP/UDP层）上进行负载均衡。它通过使用IPVS表来维护服务和后端Pod之间的映射关系，并通过调度算法将请求转发到适当的Pod。
+IPVS具有高性能和可伸缩性，因为它在内核中以模块的形式运行，并使用哈希表来管理负载均衡规则。它可以处理大量的并发请求，并支持多种负载均衡算法
+    
+
+9.   java程序GC时间过长问题
+     现象：java程序占用大量的CPU，导致系统负载升高
+     问题：java程序默认的内存不足，导致程序自动触发垃圾回收占用大部分CPU，从而导致系统负载升高。出现问题
+     分析：增加程序启动参数， -XX:+PrintGCDetails -XX:+PrintGCDateStamps ，打印GC日志，然后在gceasy.io网站分析gc日志。
+     解决：修改垃圾回收的机制，使用G1的方式。修改新生代的内存大小。 
+
+10. tomcat线程死机 。    java的监控程序 jconsole  
+    现象：tomcat端口无法访问，tomcat不写日志。
+    问题：tomcat默认最大连接数(线程数)200个，超过之后便会出现假死现象
+    解决：修改默认的连接数到400，然后修改服务器的TCP连接的timeout时间
+   

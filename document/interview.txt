@@ -1,0 +1,201 @@
+面试
+1. 自我介绍
+当前工作负责的工作，平时学习了什么。
+自己的能力：解决问题的能力，文档能力，学习能力，跨部门的协调能力，自动化能力。
+技能：k8s能力，监控能力，脚本能力，自动化的能力。
+介绍的同时思维要清晰，逻辑要清楚，最好是根据你简历上写的经历来介绍，介绍最近2家公司的工作
+公司这个岗位需要做什么，我是能胜任。很希望加入贵公司。
+最近在学什么，go,nginx-ingress,istio
+
+
+开始自我介绍：
+我叫吴翔，我是一名运维开发工程师。学的专业是计算机科学，17年毕业，拥有6年的运维开发工作经验。
+独立搭建过公司的CI/CD流程，大大提升了研发和测试的效率和程序研发周期。
+负责维护过公司的部署代码，打包代码，进行优化升级，bug处理，操作文档和故障文档整理
+维护k8s集群，业务代码更新。
+负责监控体系的搭建。
+对比亚迪的兴趣，工作内容，自己完全可以胜任这份工作。希望可以加入
+
+
+然后工作经历，
+1. 太古可口可乐：岗位是运维工程师，主要负责生产和测试环境的服务器管理，脚本编写，监控，应用发布，cicd流程搭建。
+项目：zabbix监控迁移，生产环境应用迁移到k8s。
+2. 武汉青藤云: 运维开发工程师，运维部团队，负责华为云生产环境的k8s集群管理，应用发布，负责对一线人员应用部署问题支撑，解决客户的问题，编写运维手册，问题处理和学习分享，负责大客户的需求处理。
+项目：对部署脚本的优化，实现一键部署。
+3. 软通动力：华为云解决方案团队，深入学习华为云的容器服务cce,cci等，解决客户的问题，验证新版本的功能，编写文档，协助客户上线华为云的容器服务，深入学习k8s. 了解一些云原生的感觉，普罗米修斯，ndp,autoscalo,istio，helm,open-kruise
+自我总结：
+自己之前写了一个简单的监控服务，代码放在了github上。
+近期在学习go，打算看k8s的源码。
+
+
+结尾：您觉得我可以胜任这个工作吗，对贵公司这个岗位很感兴趣，希望可以加入你们。
+
+
+当前的工作内容：协助客户上线华为云的容器服务，编写华为云的api脚本实现客户需求，如修改节点标签。
+解决客户在使用华为云时碰到的问题。验证插件功能，测试使用Prometheus和ndp。
+现阶段学习go和operator,和k8s源码
+
+
+对k8s和python比较感兴趣，自己也在学习。平常喜欢跑跑步，打打羽毛球。
+
+
+2. 工作经历
+
+发布过程：
+cicd-argcd
+   1. 代码管理使用gitlab
+   2. 自动构建使用maven
+   3. 自动测试Selenium，这个jenkins有插件
+   4. 镜像上传到harbor,代码推送到仓库
+   5. 自动部署，连接到对应的环境，进行更新 set  image
+   6. 验证是否正常，脚本完成测试服务端口是否正常，不正常就发邮件，回退
+   7. 监控Prometheus、Grafana
+结尾：您觉得我可以胜任这个工作吗，对贵公司这个岗位很感兴趣，希望可以加入你们。
+
+3. 问题
+普罗米修斯的监控：node节点的资源，cpu，io，网络，负载，内存.
+               pod的cpu和内存占用，pod当前状态，apiserver的请求延迟（自带的metrics）,组件状态。
+               业务：业务指标，订单量，日活，业务接口，用户访问量
+
+
+
+在修改前要先进行备份：       这个属于运维守则
+
+
+
+技术：
+linux的安全设置：
+    管理系统账号权限，安全补丁  
+    禁止系统被ping
+    修改ssh登录端口
+    删除不必要的用户
+    禁用root用户登录，禁用账号密码登录，使用秘钥登录
+    隐藏linux版本的信息
+    linux内核优化，主要是对TCP的参数优化。
+    linux系统最小化原则。安装服务，命令，用户，权限，授权
+
+
+limit参数优化：   磁盘IO    CPU   内存   网络带宽
+    内核参数优化(优化TCP/IP，time_wait，syn长度，缓存)
+    vmstat，top：检测是否CPU瓶颈     
+    free，vmstat：检测是否为内存瓶颈
+    iostat：检测是否是磁盘I/O瓶颈 ，iostat -d -x -k 1 5  %util<90健康
+    ifstat，iftop：检测是否为网络瓶颈
+
+
+nginx     重点
+1.nginx的反向代理pass_proxy  ,7层负载均衡upstream
+2.虚拟主机server，location的顺序（=，/,~/,~*/,）,
+3.优化的参数：worker_connections，worker_processes，buffers相关，timeout相关，epoll异步模型，gzip压缩。内核参数的TCP调优。
+4. proxy_connect_timeout     nginx连接到后端的超时时间。
+5. proxy_read_timeout          nginx连接成功后，后端服务的响应时间。
+
+
+mysql
+1.主从原理：根据binlog日志同步
+从库会生成两个线程,一个I/O线程,一个SQL线程;
+I/O线程会去请求主库的binlog,并将得到的binlog写到本地的relay-log(中继日志)文件中;
+主库会生成一个log dump线程,用来给从库I/O线程传binlog;
+SQL线程,会读取relay log文件中的日志,并解析成sql语句逐一执行;
+  性能优化：创建索引，慢查询优化，高可用，主从复制，读写分离，分库分表。
+     ①：配置文件的优化 
+     ②：SQL语句的优化
+     ③：表结构的优化 
+     ④：索引优化
+     ⑤：系统资源优化
+  读写分离：① mysql proxy ② mycat ④ 程序代码实现  
+  数据备份问题：
+          100M以下使用mysqldump备份，会锁表。 
+          100M以上使用xtrabackup备份 
+          xtrabackup增量备份（周天进行全量备份，1-6增量备份）
+
+ansible：
+1. 使用模块：ping，shell，command，copy，yum，cron，user，service，playbook
+2. 性能优化：因为ansible使用的是ssh通信，即优化ssh即可，①关闭秘钥检测 ②：关闭DNS的反向解析 ③：关闭facts缓存 
+
+keepalived：
+原理：VIP+脚本+心跳
+VIP对外提供服务，心跳检查master端是否存活，master宕机之后执行脚本，切换VIP绑定到备端
+
+
+docker
+1. dockerfile优化：
+run命令写成一条。
+编写.dockerignore文件
+优先使用copy，区别：add可以引用url，自动解压
+初始镜像使用alpine镜像版本，不使用latest标签。
+不变的东西写在前面，经常修改的东西写在下面。
+2. docker核心技术：联合文件系统，cgroup(资源限制管理)，namespace(隔离)
+
+etcd
+1. etcd的集群和备份，恢复
+    k8s+etcd集群：keepalive+kubeadm搭建集群，lead采用选举方式。
+    备份：脚本连master的etcd备份至远端，保存一个月。
+    恢复：需要停掉server-api和所有的etcd服务，然后进行恢复。
+
+prometheus
+prometheus：默认使用pull抓取exporter暴露的http接口指标数据，存储时间序列数据
+pushgetway：使用push的方式拉取指标数据，暂存然后pull到prometheus.  + 脚本推送
+AlertManager：告警组件。+钉钉告警
+存储：本地数据库使用的是tsdb时序数据库，同时定义了存储接口支持远端存储。
+服务发现：
+       基于文件的服务发现，自动的周期性读取文件中的内容。
+通过与k8s的api交互，自带对node，pod，service，ingress，endpoints等的服务发现
+重写标签relabel：action的值，① replace：按regex匹配标签的value替换标签。
+      ② keep：按regex匹配标签的value保留标签，其他的丢弃
+      ③ drop：按regex匹配标签的value丢弃标签，其他的保留
+      ④ labelmap：按regex匹配标签的value保留标签。
+
+
+
+python：
+数字型：	整型(int)，浮点型(float)，布尔型(bool)
+非数字型： 字符串(str)，列表(list)，元组(tuple)，字典(dict)，集合(set(自动排序和去重))
+
+set：  set.add() ，set.remove()，set(自动排序和去重))
+list:  list.append(), list.pop(), len(list)，max，min, sort
+tuple: 列表一样，元组不能修改里面的数据
+dictionary: 字典不存在索引。
+			dict[“key”]--取值, dict.pop("key")--删除，
+			dict['id']='wu'：键不存在，会添加键值对；键存在，会修改键值对的值
+			dict.keys(), dict.values(), dict.items()
+			for i,j in dict.items()----可以把key和values分开遍历
+			dict=sorted(dictv.items(),key=lambda item:item[1])-----按字典value排序，输出字典。
+string:  string.find(), count, find, join, replace---相关方法 
+
+python的冒泡排序算法
+      for i in range(len(nums)-1):    
+        for j in range(len(nums)-i-1):  
+            if nums[j] > nums[j+1]:
+                nums[j], nums[j+1] = nums[j+1], nums[j]
+       return nums
+
+
+redis：
+哨兵模式：哨兵的作用 1.检测监控redis实例的运行状态   2. 自动主备切换
+
+
+
+生产环境的保障服务不宕机
+nginx+keepalived
+mysql集群
+redis集群
+MQ集群
+服务双机的负载+高可用。
+
+
+面试监控：
+1. 硬件监控     	        ICMP协议
+2. 系统监控		cpu  内存  磁盘  inode  
+3. 服务监控		nginx  php java自带的status模块	 
+4. 网络监控		smokeping
+5. 安全监控		防火墙
+6. web监控		web页面延迟，js响应
+7. 日志监控		elk
+8. 业务监控		业务指标，订单量，日活，业务接口，用户访问量
+9. 流量分析		ip，pv，uv
+10. 可视化		做业务的大屏展示  grafana
+11. 自动化监控	        zabbix的api
+
+
+

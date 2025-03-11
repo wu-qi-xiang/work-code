@@ -1,0 +1,240 @@
+k8s管理的工具：Kuboard，rancher，kubesphere，k8slens  ，包管理工具：helm     发布工具：argoCD
+K8s优化：
+1. 设置request，limit（优先级高的pod设置1:1，其他1.5:1），LimitRange（设置pod的限制上限），ResourceQuota(ns的资源限制)
+2. 根据业务的重要性设置优先级。调度优先级设置proirityclass绑定pod，设置qos优先级。
+3. 设置存活指针，就绪指针，启动探针--用于启动慢的镜像，退出前钩---用于优雅退出业务，用在更新应用的时候。
+4. 设置pod亲和性和反亲和性，相同的pod副本设置反亲和性，按需设置节点亲和性。
+5，设置hpa，云服务设置hpa+ca
+
+dockerfile的优化：
+1. 减少镜像层，尽量将命令放在一个RUN里面
+2. 复制文件，优先使用COPY, ADD会自动解压。
+3. 指定镜像标签，不用使用lastest
+4. dockerfile中将修改层放在最下面，静态层放在上面
+
+
+
+生疏的地方：
+1. DNS解析 
+   coredns的svc地址是pod的dns地址。
+   通过corefile的配置文件，安装coredns的各种插件，按照顺序去一次解析dns。也可以添加自定的解析。
+2. 有状态应用的部署
+   pod的域名唯一，pod名字按索引增加，更新时按从大到小的更新，可以指定索引部分更新，重启pod名称不变。
+3. 高可用的k8s
+4. helm的使用
+5. istio的使用
+6. operator
+7. 日志和监控
+   job和自定义的监控使用pushgetway的方式获取健康指标然后普罗米修斯pull
+   中间件都对应使用exporter，进行指标获取，需要修改一些配置信息。nginx，jvm
+   自动发现监控node，pod，endpoint等k8s指标。
+   多集群监控，增加k8s的连接认证，然后增加一个job。
+8. iptables的原理学习
+9. 网络插件学习
+10. go学习
+11. CRD简单模版学习
+
+
+
+
+
+
+pod的生命周期:
+1. 当容器出现问题时，pod不断重启容器，直到重启间隔到5分钟，则认为该pod死亡。
+2. init容器，pod的初始化镜像，readiness就绪指针 ，启动后钩子 ====> 容器的启动顺序
+3. 确保容器删除时，正确退出。----使用停止前钩子。
+4. 容器重启之后，查看前一个容器的日志，kubectl logs --previous
+5. pod的日志收集，helm安装elk
+
+
+pod:
+1. pod的存活探针livenessprobe。 三种类型探针：http get, tcp, cmd  ，保证探针的轻量
+2. namespace, pod, container的资源限制。request请求资源，limit限制资源，超过limit的话pod会重启。
+3. pod的安全策略，主要是权限和访问控制，网络策略。
+4. pod的就绪探针readinessProbe，当pod准备好之后才会被endpoint调用。三种类型探针：http get, exec, tcp socket.
+
+
+
+service:
+1. 外部服务引入内   。  1. 外部服务是ip使用service的Headless Service,不使用selector标签选择器，然后手动创建endpoint指定外部ip地址。
+		     2. 外部服务是域名使用service的ExternalName，然后通过DNS访问服务。 
+		        podname.servicename.default.svc.cluster.local或者external-service，前提是DNS要ok ---  这个需要在pod里面。
+
+假设名称空间 bar 中有一个 Service 名为 foo：
+名称空间 bar 中的 Pod 可以通过 nslookup foo 查找到该 Service
+名称空间 quux 中的 Pod 可以通过 nslookup foo.bar 查找到该 Service
+
+2. 内部服务暴露给外部访问：使用service的nodeport, loadbalancer(自动负载，坏的pod会过滤掉), ingress模式
+   ingress的工作流程，web---ingress controller---ingress---service---endpoint---pod 
+						   
+存储卷：
+emptyDir: 用于存储临时数据的简单空目录，pod删除数据也会丢失。
+gitRepo: 通过检出Git仓库的内容来初始化的卷。pod删除数据也会丢失。
+hostPath: 用于将node主机节点的文件系统挂载到pod中。持久性存储，pod删除数据还在。对应node节点的持久化，pod更换节点之后，数据不在。
+nfs：挂载到pod中的NFS共享卷
+config, secret, downwardAPI: 存储密码，秘钥等k8s部分集群资源信息，通过pod调用，向pod公开。
+PersistentVolume(PV): 持久卷，需要挂载连接底层的存储卷，和集群节点一样，不属于任何的命令空间。
+persistentVolumeClaim(PVC):  持久卷声明，一种使用预置或者动态配置的持久存储类型。通过绑定PV而进行持久化存储。
+PV后端用的远程存储---通过ADcontrole将存储attach到node节点---然后mount到node的指定目录---然后volume到容器的指定目录。
+In-tress：k8s自带的存储插件，需要安装driver启动，实现nfs,ceph的sc创建。
+Out-of-tress: 云厂商通过CSI接口实现的存储插件，对接evs，obs等存储。
+
+CSI插件：实现挂载各类运营商提供的特定存储卷。aws azure  google
+
+
+
+
+使用: PVC和PV只能一对一绑定，删除PVC之后PV不能绑定其他的，也需要删除。  Ratain(删除PVC，PV不动)   Recycle(删除PVC，PV也删除)  Delete(删除PVC，PV及底层数据也删除)
+正常手动创建pv不使用StorageClass，使用nfs等存储。
+
+
+持久卷的静态分配：
+	手动创建pv和pvc，根据大小会自动绑定。
+持久卷的动态分配：
+存储类型: StorageClass, PVC绑定StorageClass，然后自动去创建此类型的PV。和集群节点一样，不属于任何的命令空间
+pod===>PVC===>SC(storage Class)(管理员创建)===>持久卷置备程序(需要手动配置)===》PV(系统自动创建然后绑定到PVC)===》底层存储
+
+
+
+Config:secret:
+config: 非敏感数据，secret: 敏感数据，密码，秘钥。secret采用Base64编码存储。secret存储在内存，数据无法被攻击。
+key:value格式，可以映射单个条目，文件，目录。
+pod的2种调用config|secret的方式：1.通过valuefrom去调用环境变量config的kay(secret基本不用)，  2.通过volumes去挂载config(这个config更新之后pod会重新挂载更新,挂载单个文件不会被更新)
+pod会默认挂载一个默认的secret.
+
+
+Deployment:
+Deployment(发布，回滚)---> ReplicaSet(控制pod)---> Pods
+kubectl set image deployment --->  更新镜像进行发布
+kubectl rollout undo deployment ---> 回滚到上个版本   rollout  status, pause, resume ---> 观察升级过程, 暂停, 恢复
+正式环境发布需要设置，就绪指针，存活指针，成功运行时间，更新升级的timeout.
+
+
+statefulset:
+Statefulset会先创建一个版本模版，然后去创建pvc和pod.    可以进行灰度发布。
+重建pod的名称不变，每个pod对应一个索引，扩容时索引依此增加，缩容时会先删掉最大的索引。
+statefulset的servicename不变，一般是给集群内部其他的pod访问，直接访问headless service。  servicename.default.svc.cluster.local(不同namespace)或者servicename(同namespace)
+
+
+
+kubernetes机理：
+master节点组件：etcd（3个集群保证高可用）, api service， 调度器(scheduler), 控制器(controller-manager),  组件通过API service进行通信。
+node节点组件：kubelet, kube-proxy, 容器	
+附加组件：kubernetes的DNS服务器, 仪表板, ingress-controller, heapster, 容器网络接口.
+调度器：调度算法--->(通过一系列的资源检查name,mem,cpu,port,污点)查找可用节点--->查找最佳节点
+控制器：包含replication控制器, deployment控制器, statefulset控制器, node控制器, service控制器, endpoint控制器, namespace控制器, pv控制器。
+kubelet：与API交互，执行node上更改的具体操作。
+kube-proxy：客户端通过api连接到指定的pod.  客户端--->api service ---> kube-proxy ---> pod
+请求流程：kubectl(客户端)---> http post ---> api service(插件认证客户端的用户, 根据认证用户权限授权客户端, 通过准入控制器验证修改资源请求) ---> 更新/存储到etcd
+deployment发布pod流程：kubectl ---> http post ---> api service ---> etcd ---> deployment控制器生成rs ---> rs创建pod资源模版 ---> 调度器查找最优node ---> 对应node的kubectl创建pod
+
+
+pod网络及通信:
+k8s系统中，每个pod的ip是唯一的，pod创建时会同时创建一个虚拟网桥和一个虚拟接口对，虚拟接口对的一端在node节点绑定到虚拟网桥，另一端移到容器内部重命名eth0并使用虚拟网桥分配的Ip，
+然后即可通过网桥通信。不同node的pod，网桥连接一起即可。
+traceroute分析：pod--->本机node的cni---->目的node的cni--->目的pod             
+service网络：外部请求--->kube-proxy--->通过iptables将目的地址是service的包，解析成目的地址是后端pod的包--->pod
+
+
+
+API service的认证：
+ServiceAccount：创建namespace时，会自动创建一个ServiceAccount，pod会自动挂载默认的sa，提供给api service进行认证。
+权限：role(描述具体的操作权限)(namespace内权限)|| clusterrole(集群权限)--->rolebinding|| clusterrolebinding--->ServiceAccount--->pod
+
+
+集群安全：
+安全上下文(secyrityContext): pod中配置安全上下文(secyrityContext), 使用非root用户运行容器，特权模式运行pod, 为容器单独添加||禁用内核功能, 
+准入控制器({PodSecurityPolicy): 限制pod的权限, 功能比secyrityContext强大。通过clusterrolebinding绑定到不同用户。
+网络隔离(NetworkPolicy): 需要网络插件支持网络隔离, 隔离pod之间的访问策略。
+flannel：分配pod的ip地址，在pod之间建立一个overlay network的覆盖网络，实现pod之间的网络，不支持网络隔离。
+calico: 通过实现vRouter负责路由转发，使pod之间通信。效率高。可实现网络隔离
+
+
+
+集群计算资源管理：
+request: 容器的请求资源。 最小值
+limit: 容器的限制资源。超过limit的pod会被OOMkilled了。然后自动重启。	最大值
+LimitRange: LimitRange准入控制器，设置同一个namespace的pod默认request和limit，设置最大，最小值限额。
+ResourceQuota: namespace可用资源总量限制，使用ResourceQuota时，必须设置pod的request和limit.
+pod的Qos等级: BestEffort(优先级最低)(都不设置request,limit), Burstable(设置request或者limit), Guaranteed(优先级最高)(设置request == limit) 
+			  1. 当内存不足时，会先kill掉Qos低的pod。相同Qos等级的pod，优先kill usemem/request 占比高的pod。
+资源监控：metrics-server，命令kubectl top ，grafana.
+
+自动伸缩HPA: metrics-server管理。
+
+
+高级调度:
+污点: key=value:effect, effect包含 1. NoSchedule: 不容忍该污点，pod不会被调度到此node
+								   2. PreferNOSchedule: 不容忍该污点，但是当没有node可以调度时，pod依然可以被调度到此node
+								   3. NoExecute: 增加该污点之后，该节点上运行的pod没有容忍该污点，将会从这个node去除.  新调度，不容忍该污点，pod不会被调度到此node
+容忍点: 
+注意: 1. 空的key 如果再配合Exists 就能匹配所有的key与value ，也是是能容忍所有node的所有Taints。
+      2. 空的effect 匹配所有的effect。
+
+亲缘性:
+node的: node节点亲缘性根据node的label，权重去选择node。
+pod的: pod亲缘性，根据pod的label去选着node。  
+pod的： pod非亲缘性，根据pod的label，去避开对应的node
+
+
+
+应用扩展:
+自定义API对象: 需要提交CRD对象，然后才可以创建自定义的API对象
+kubernetes的服务目录，ServiceBinding --> ServiceInstance (对应服务)---> ClusterServiceClass (资源的服务)---> ClusterServiceBroker (资源)
+组成: 服务目录的API服务器，存储的etcd，控制器管理器。
+operator: 自定义CRD对象和控制器，管理自己的service
+
+
+
+
+集群联邦: 管理多个k8s集群。
+
+
+
+
+docker的最小镜像alpine版本
+
+
+
+
+k8s面试:
+
+1. k8s创建一个 Pod的详细流程如下:
+客户端提交创建请求，可以通过 api-server提供的restful接口
+api-server处理用户请求，将 pod 信息存储至etcd中
+kube-scheduler通过api-server提供的接口监控到未绑定的pod，尝试为pod分配node节点，通过算法优选出做匹配的node节点，并将结果存储至etcd中。
+随后目标节点的kubelet进程通过api-server提供的接口监测到kube-scheduler产生的pod绑定事件，然后从etcd获取pod清单，下载镜像并启动容器。
+
+2. k8s的架构体系:
+Master：
+etcd  保存了整个集群的状态，持久化存储集群的配置；
+apiserver  作为k8s集群的核心，负责整个集群功能模块的交互和通信，所有请求接受和发送的唯一入口，并提供认证、授权、访问控制、API注册和发现等机制；
+controller manager r 作为 k8s 集群的管理控制中心，负责集群内资源对象的管理 ，比如故障检测、自动扩展、滚动更新等；
+scheduler  负责pod资源的调度，按照预定的调度策略将Pod调度到相应的机器上；
+Node：
+kubelet  负责pod的管理，连接master，同时也负责Volume（CVI）和网络（CNI）的管理，和Master节点的apiserver进行通行；
+Container runtime负责镜像管理以及Pod和容器的真正运行（CRI）；
+kube-proxy负责为Service提供cluster内部的服务发现和负载均衡；将service的请求转发到后端具体的Pod实例上
+
+3. k8s 中服务级别，怎样设置服务的级别才是最高的
+pod的Qos等级: BestEffort(优先级最低)(不设置request,limit), Burstable(设置request != limit), Guaranteed(优先级最高)(设置request == limit) 
+			  1. 当内存不足时，会先kill掉Qos低的pod。相同Qos等级的pod，优先kill usemem/request 占比高的pod。
+
+4. kubelet 监控 Node 节点资源使用是通过什么组件来实现的？
+开源软件 cAdvisor 是用于监控容器运行状态的利器之一，在 Kubernetes 系统中，cAdvisor 已被默认集成到 kubelet 组件内，
+当 kubelet 服务启动时，它会自动启动 cAdvisor 服务，然后 cAdvisor 会实时采集所在节点的性能指标及在节点上运行的容器的性能指标。
+kubelet 的启动参数 --cadvisor-port 可自定义 cAdvisor 对外提供服务的端口号，默认是 4194。
+
+5. 描述一下pod的生命周期有哪些状态？
+Pending：表示pod已经被同意创建，正在等待kube-scheduler选择合适的节点创建，一般是在准备镜像；
+Running：表示pod中所有的容器已经被创建，并且至少有一个容器正在运行或者是正在启动或者是正在重启；
+Succeeded：表示所有容器已经成功终止，并且不会再启动；
+Failed：表示pod中所有容器都是非0（不正常）状态退出；
+Unknown：表示无法读取Pod状态，通常是kube-controller-manager无法与Pod通信。
+
+6.  ReplicaSet和ReplicationController的区别
+不同点：标签选择器的功能不同。ReplicaSet可以使用标签选择器进行单选和复合选择；而ReplicationController只支持单选操作。
+
+7. pod分配到不同的node
+使用pod的非亲和性
+
