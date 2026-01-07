@@ -1,0 +1,30 @@
+---
+  - hosts: localhost
+    name: tail live output demo
+    gather_facts: false
+    strategy: parallel
+    vars_files: 
+      - var_file.yml
+
+    tasks:
+      - name: Run an async task
+        shell: 'for i in $(seq 1 10); do echo "this is $i in loop 1" >> /tmp/test.log && sleep 1;  done'
+        vars:
+          live_output: "/tmp/test.log"
+        vars:
+          ansible_parallel: "task1"
+
+      - name: Run an async task
+        shell: 'for i in $(seq 1 10); do echo "this is $i in loop 2" >> /tmp/test.log && sleep 1;  done'
+        vars:
+          ansible_parallel: "task2"
+
+      - name: Run an async task
+        shell: 'for i in $(seq 1 3); do echo "this is $i in loop 2" >> /tmp/test.log && sleep 1;  done'
+        
+
+      - name: wait child job, perhaps need about five minutes
+        wait_parallel:
+          parallel_names: ["task1","task2"]
+
+

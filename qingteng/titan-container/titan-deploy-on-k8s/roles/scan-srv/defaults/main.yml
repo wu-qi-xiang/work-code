@@ -1,0 +1,10 @@
+---
+# defaults file for scansrv
+scansrv_pullPolicy: IfNotPresent
+scansrv_uid: 2020
+scansrv_gid: 2020
+scansrv_port: 6150
+
+scansrv_limit_memory: 1524Mi
+scansrv_limit_cpu: 8
+scansrv_req_memory: 1Gi

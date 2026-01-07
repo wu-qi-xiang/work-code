@@ -1,0 +1,92 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: titan-clusterlink-srv
+  namespace: "{{namespace}}"
+  labels:
+    app: titan-clusterlink-srv
+spec:
+  replicas: {{clusterlinksrv_replicas}}
+  selector:
+    matchLabels:
+      app: titan-clusterlink-srv
+  strategy:
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 1
+    type: RollingUpdate
+  progressDeadlineSeconds: 60
+  minReadySeconds: 30
+  revisionHistoryLimit: 3
+  template:
+    metadata:
+      name: titan-clusterlink-srv
+      labels:
+        app: titan-clusterlink-srv
+    spec:
+      nodeSelector:
+        "{{clusterlinksrv_nodelabel}}": "true"
+      serviceAccountName: "{{service_account}}"
+      containers:
+        - image: "{{clusterlinksrv_image}}"
+          imagePullPolicy: "{{ clusterlinksrv_pullPolicy }}"
+          name: titan-clusterlink-srv
+          resources:
+            limits:
+              cpu: "{{ clusterlinksrv_limit_cpu }}"
+              memory: "{{ clusterlinksrv_limit_memory }}"
+            requests:
+              cpu: "{{cpu_req}}"
+              memory: "{{clusterlinksrv_xmx}}Mi"
+          readinessProbe:
+            httpGet:
+              path: /api/ping
+              port: {{clusterlinksrv_port}}
+            initialDelaySeconds: 20
+            periodSeconds: 10
+            timeoutSeconds: 3
+            failureThreshold: 6
+          livenessProbe:
+            exec:
+              command:
+                - "/bin/bash"
+                - "-c"
+                - result=`curl -k -sS http://127.0.0.1:{{clusterlinksrv_port}}/api/checkall 2>&1`; if [[ $result =~ 'abnormal_service":[]' ]]; then echo ok; else echo $result && exit 1; fi
+            initialDelaySeconds: 45
+            periodSeconds: 30
+            timeoutSeconds: 15
+            failureThreshold: 3
+          ports:
+            - containerPort: {{clusterlinksrv_port}}
+              protocol: TCP
+          command: ['/bin/sh', '-c', 'dockerize -secretdir /var/secrets/ -yaml-env /titan-env/titan-env.yml -template /titan-java-config/jaas_zk_client.conf:/data/app/titan-config/jaas_zk_client.conf -mergeToJson /titan-java-config/java.properties:/data/app/titan-config/java.json; chown -R titan:titan /data/app/titan-config; /data/app/titan-cluster-link-srv/init.d/cluster-link-srv start']
+          volumeMounts:
+            - name: var-secrets
+              mountPath: /var/secrets/
+            - name: titan-env
+              mountPath: /titan-env
+            - name: titan-java-config
+              mountPath: /titan-java-config
+            - mountPath: /data/titan-logs/java/cluster-link-srv
+              subPath: cluster-link-srv
+              name: titan-logs
+            - mountPath: /data/app/titan-cluster-link-srv/tomcat
+              subPath: tomcat
+              name: tmp
+            - mountPath: /tmp
+              name: tmp
+          securityContext:
+            readOnlyRootFilesystem: true
+            allowPrivilegeEscalation: false
+      volumes:
+        - name: var-secrets
+          secret:
+            secretName: titan-all-secrets
+        - name: titan-env
+          configMap:
+            name: titan-env
+        - name: titan-java-config
+          configMap:
+            name: titan-java-config
+        - emptyDir: {}
+          name: tmp

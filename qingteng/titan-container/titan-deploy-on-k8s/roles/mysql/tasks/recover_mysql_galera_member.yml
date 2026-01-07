@@ -1,0 +1,22 @@
+# bootstrap启动后，分别启动剩余2台
+
+- name: retsrat other mysql
+  shell: kubectl -n {{ namespace }} exec {{ mysql_pod }} -- sh -c "docker-entrypoint.sh --innodb-force-recovery=1" &
+  async: 600
+  poll: 0
+
+- name: wait mysql_pod ok
+  kubernetes.core.k8s_exec:
+    validate_certs: no
+    namespace: "{{ namespace }}"
+    pod: "{{ mysql_pod }}"
+    command: sh -c '(ss -tnlp | grep 3306) && mysql -uroot -p$(cat $MYSQL_ROOT_PASSWORD) -e "SELECT 123456"'
+  vars:
+    log_retry: true
+  register: mysql_status
+  until: '":3306" in mysql_status["stdout"] and "123456" in mysql_status["stdout"]'
+  retries: 60
+  delay: 10
+
+- name: please wait 15 seconds 
+  shell: sleep 15

@@ -1,0 +1,24 @@
+- name: Create registry file
+  file:
+    path: "{{ item }}"
+    owner: root
+    group: root
+    mode: 0755
+    state: directory
+  with_items:
+      - "/data/registry"
+      - "/etc/rancher/k3s"
+
+
+- name: Copy registrs file 
+  copy:
+    src: "{{ ansible_tmp }}/registries.yaml"
+    dest: /etc/rancher/k3s/
+    owner: root
+    group: root
+    mode: 600
+
+- name: Copy CA to hosts
+  copy:
+    src: "{{ ansible_tmp }}/certs"
+    dest: "/data/registry/"

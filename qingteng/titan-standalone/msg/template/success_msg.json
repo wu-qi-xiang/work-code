@@ -1,0 +1,49 @@
+{
+    "msg_type": "interactive",
+    "card": {
+        "config": {
+            "wide_screen_mode": true
+          },
+        "header": {
+            "template": "blue",
+            "title": {
+              "content": "📪 ${version}titan-base构建 成功！",
+              "tag": "plain_text"
+            }
+        },
+        "i18n_elements": {
+          "zh_cn": [
+            {
+              "fields": [
+                {
+                  "is_short": true,
+                  "text": {
+                    "content": "**👤 构建人：**\n${GITLAB_USER_NAME}",
+                    "tag": "lark_md"
+                  }
+                },
+                {
+                  "is_short": true,
+                  "text": {
+                    "content": "**📅 提交时间：**\n${CI_PIPELINE_CREATED_AT}",
+                    "tag": "lark_md"
+                  }
+                }
+              ],
+              "tag": "div"
+            },
+            {
+              "tag": "hr"
+            },
+            {
+              "tag": "markdown",
+              "content": "**🗳el7下载地址：**\n${DownloadUrl}/titan-base-${buildVariant}-el7-${version}-${BUILD_TIME}-withpatch.tar.gz"
+            },
+            {
+              "tag": "markdown",
+              "content": "**🗳el6下载地址：**\n${DownloadUrl}/titan-base-${buildVariant}-el6-${version}-${BUILD_TIME}-withpatch.tar.gz"
+            }
+          ]
+        }
+    }
+}

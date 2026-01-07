@@ -1,0 +1,94 @@
+---
+- set_fact:
+    glusterfs_nodes: "{{ label_nodes[glusterfs_nodelabel] }}"
+
+- name: Print glusterfs nodes nodename and ip
+  debug:
+    msg: "glusterfs_nodes: {{ glusterfs_nodes }} "
+
+- fail:
+    msg: "glusterfs node number not correct"
+  when: glusterfs_nodes | length != glusterfs_replicas
+
+- name: create glusterfs headless service
+  kubernetes.core.k8s:
+    definition: "{{ lookup('template', 'glusterfs_hs.yml') | from_yaml }}"
+
+# tasks file for glusterfs
+- name: start glusterfs server at labeled node
+  kubernetes.core.k8s:
+    state: "present"
+    definition: "{{ lookup('template', 'gluster_statefulset.yml') | from_yaml | titan_combine(common_patch) }}"
+
+- name: wait glusterfs StatefulSet OK 
+  kubernetes.core.k8s_info:
+    kind: StatefulSet
+    name: "titan-glusterfs"
+    namespace: "{{ namespace }}"
+    wait: yes
+    wait_sleep: 10
+    wait_timeout: 300
+  register: gluster_setobj
+
+- name: get glusterfs server pods
+  kubernetes.core.k8s_info:
+    kind: Pod
+    label_selectors:
+      - "app = titan-glusterfs"
+    namespace: "{{ namespace }}"
+    wait: yes
+    wait_sleep: 10
+    wait_timeout: 60
+  register: glusterfs_podobj
+
+- name: set glusterfs_pods
+  set_fact:
+    glusterfs_pods: "{{ glusterfs_podobj | json_query('resources[*].{name:metadata.name, nodename:spec.nodeName}') }}"
+
+- name: Print glusterfs pod info
+  debug:
+    msg: "glusterfs_pods: {{ glusterfs_pods }} "
+
+- name: set glusterfs_pod
+  set_fact:
+    glusterfs_pod: "{{ glusterfs_pods[0] }}"
+
+- name: try to get the volume info
+  kubernetes.core.k8s_exec:
+    validate_certs: no
+    namespace: "{{ namespace }}"
+    pod: "{{ glusterfs_pod.name }}"
+    command: bash -c 'gluster volume info titan-glusterfs | grep "Started" || echo not_exist'
+  register: volume_info
+
+- block:
+
+    - name: gluster peer to join cluster
+      kubernetes.core.k8s_exec:
+        validate_certs: no
+        namespace: "{{ namespace }}"
+        pod: "{{ glusterfs_pod.name }}"
+        command: "gluster peer probe {{ item.name }}.glusterfs-hs"
+      loop: "{{ glusterfs_pods[1:] }}"
+
+    - name: sleep to wait glusterfs-server peer status ok 
+      shell: sleep 5
+      
+    - set_fact:
+        create_glusterfs_volume: "gluster volume create titan-glusterfs replica {{ glusterfs_replicas }} {% for item in glusterfs_pods %} {{ item.name}}.glusterfs-hs:{{ glusterfs_path }} {% endfor %}force"
+
+    - name: create volume titan-glusterfs
+      kubernetes.core.k8s_exec:
+        validate_certs: no
+        namespace: "{{ namespace }}"
+        pod: "{{ glusterfs_pod.name }}"
+        command: "{{ create_glusterfs_volume }}"
+
+    - name: start gluster volume titan-glusterfs
+      kubernetes.core.k8s_exec:
+        validate_certs: no
+        namespace: "{{ namespace }}"
+        pod: "{{ glusterfs_pod.name }}"
+        command: gluster volume start titan-glusterfs
+
+  when: '"Started" not in volume_info.stdout'

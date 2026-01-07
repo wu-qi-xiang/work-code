@@ -1,0 +1,39 @@
+# 用于部署 local-path-provisioner 和 CSI-Driver
+# 当对接客户存储时，不需要此文件，这里面的权限可能会危险的是persistentvolumes，"clusterroles", "clusterrolebindings"
+# 其他的都是读，不涉及修改。
+# 因此判断提交是 提供了 titan-dfs 的 storageClass 和 local 的storageClass时，不apply此文件
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: titan-deploy-cluster
+rules:
+  - apiGroups: ["storage.k8s.io"]
+    resources: ["csinodes"]
+    verbs: ["get", "list", "watch"]
+  - apiGroups: [ "" ]
+    resources: [ "persistentvolumes" ]
+    verbs: [ "*" ]
+  - apiGroups: [ "storage.k8s.io" ]
+    resources: [ "storageclasses", "csidrivers" ]
+    verbs: [ "get", "list", "watch", "patch", "create" ]
+  - apiGroups: ["storage.k8s.io"]
+    resources: ["csinodes"]
+    verbs: ["get", "list", "watch"]
+  - apiGroups: ["rbac.authorization.k8s.io"]
+    resources: ["clusterroles", "clusterrolebindings"]
+    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: titan-deploy-cluster
+subjects:
+  - kind: ServiceAccount
+    name: titan-deploy
+    namespace: qtsa
+roleRef:
+  kind: ClusterRole
+  name: titan-deploy-cluster
+  apiGroup: rbac.authorization.k8s.io

@@ -1,0 +1,14 @@
+# 创建fluentbit-server服务
+apiVersion: v1
+kind: Service
+metadata:
+  name: fluentbit-server
+  namespace: {{ namespace }}
+  labels:
+    app: titan-fluentbit-server
+spec:
+  ports:
+  - port: {{fluentbit_server_port}}
+    name: server
+  selector:
+    app: titan-fluentbit-server

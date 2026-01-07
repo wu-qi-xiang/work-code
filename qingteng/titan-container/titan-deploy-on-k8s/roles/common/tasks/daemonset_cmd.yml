@@ -1,0 +1,7 @@
+---
+- name: execute cmd in alpine daemonset
+  kubernetes.core.k8s_exec:
+    validate_certs: no
+    namespace: "{{ namespace }}"
+    pod: "{{ podname }}"
+    command: sh -c "{{ cmd_in_daemon }}"

@@ -1,0 +1,67 @@
+---
+# 获取密码, 升级时，获取明文密码时调用
+- name: Get titan-secrets
+  kubernetes.core.k8s_info:
+    kind: Secret
+    name: titan-all-secrets
+    namespace: "{{ namespace }}"
+  register: titan_secrets_result
+  no_log: True
+
+- set_fact:
+    titan_secret_data: "{{ titan_secrets_result['resources'][0]['data'] }}"
+  no_log: True
+            
+- set_fact:
+    pbeconfig: "{{ titan_secret_data['pbeconfig'] | b64decode }}"
+  no_log: True
+
+- set_fact:
+    zk_passwd: "{{ titan_secret_data['zk_passwd'] | b64decode | decrypt_string(pbeconfig) }}"
+    kafka_passwd: "{{ titan_secret_data['kafka_passwd'] | b64decode | decrypt_string(pbeconfig) }}"
+    mysql_passwd: "{{ titan_secret_data['mysql_passwd'] | b64decode | decrypt_string(pbeconfig) }}"
+    mongo_passwd: "{{ titan_secret_data['mongo_passwd'] | b64decode | decrypt_string(pbeconfig) }}"
+    rabbitmq_passwd: "{{ titan_secret_data['rabbitmq_passwd'] | b64decode | decrypt_string(pbeconfig) }}"
+    redisjava_passwd: "{{ titan_secret_data['redisjava_passwd'] | b64decode | decrypt_string(pbeconfig) }}"
+    redisphp_passwd: "{{ titan_secret_data['redisphp_passwd'] | b64decode | decrypt_string(pbeconfig) }}"
+    msmongo_passwd: "{{ titan_secret_data['msmongo_passwd'] | b64decode | decrypt_string(pbeconfig) }}"
+    rediserl_passwd: "{{ titan_secret_data['rediserl_passwd'] | b64decode | decrypt_string(pbeconfig) }}"
+  no_log: True
+
+# - set_fact:
+    # msmongo_passwd: "{{ titan_secret_data['msmongo_passwd'] | b64decode | decrypt_string(pbeconfig) }}"
+  # no_log: True
+  # when: ms_srv_enable == "true" or ms_srv_enable == true
+# 
+# - set_fact:
+    # debug_msg: "{{ debug_msg | default({}) | combine({item.name: item.passwd} ) }}"
+  # with_items:
+    # - { name: "zookeeper",passwd: "{{zk_passwd}}" }
+    # - { name: "kafka",passwd: "{{kafka_passwd}}" }
+    # - { name: "mysql",passwd: "{{ mysql_passwd }}"}
+    # - { name: "mongo",passwd: "{{ mongo_passwd }}"}
+    # - { name: "mongo-ms-srv",passwd: "{{ msmongo_passwd }}"}
+    # - { name: "rabbitmq",passwd: "{{ rabbitmq_passwd }}"}
+    # - { name: "redisjava",passwd: "{{ redisjava_passwd }}"}
+    # - { name: "redisphp",passwd: "{{ redisphp_passwd }}"}
+    # - { name: "rediserl",passwd: "{{ rediserl_passwd }}"}
+  # no_log: True    
+# 
+# - debug:
+    # msg:
+    #  - "{{ debug_msg | list}}"
+  # vars:
+    # screen_only: true
+- debug:
+    msg:
+     - "zookeeper: {{ zk_passwd }}"
+     - "kafka: {{ kafka_passwd }}"
+     - "mysql: {{ mysql_passwd }}"
+     - "mongo: {{ mongo_passwd }}"
+     - "mongo-ms-srv: {{ msmongo_passwd }}"
+     - "rabbitmq: {{ rabbitmq_passwd }}"
+     - "redisjava: {{ redisjava_passwd }}"
+     - "redisphp: {{ redisphp_passwd }}"
+     - "rediserl: {{ rediserl_passwd }}"
+  vars:
+    screen_only: true

@@ -1,0 +1,81 @@
+#!/bin/bash
+#
+# qingteng-consumer   qingteng bigdata consumer
+#
+# Author:       jiang.wu <jiang.wu@qingteng.cn>
+#
+# chkconfig:	- 95 95
+#
+# description:  qingteng bigdata consumer
+#               
+# processname:  qt_consumer
+#
+# source function library
+. /etc/rc.d/init.d/functions
+
+PY_BIN=/usr/local/qingteng/python2.7.9/bin/python2.7
+EXEC=/usr/local/qingteng/bigdata/qt_consumer/master.pyc
+CONFIG=/usr/local/qingteng/bigdata/qt_consumer/conf
+LOG=/data/titan-logs/bigdata/qingteng-consumer.log
+PIDFILE=/data/titan-logs/bigdata/qingteng-consumer.pid
+RETVAL=0
+
+
+getpid(){
+    pgrep -f qt_consumer
+}
+
+start() {
+	echo -n $"Starting qingteng-consumer: "
+	daemon --user bigdata --pidfile=${PIDFILE} "$PY_BIN $EXEC -c $CONFIG &>$LOG &"
+	RETVAL=$?
+	echo
+        sleep 3
+        ppid=`getpid`
+        [ "$ppid" != "" ] && echo $ppid >$PIDFILE
+	[ $RETVAL -eq 0 ] && touch /var/lock/subsys/qingteng-consumer
+}
+
+stop() {
+	echo -n $"Stopping qingteng-consumer: "
+        echo "stopall" > /dev/tcp/127.0.0.1/8990
+	RETVAL=$?
+	[ $RETVAL -eq 0 ] && rm -f /var/lock/subsys/qingteng-consumer && success || failure
+        echo
+        sleep 10
+	pgrep -f qt_consumer |xargs  kill -9 &>/dev/null
+}
+
+rh_status() {
+    status -p $PIDFILE qt_consumer
+}
+
+
+restart() {
+	stop
+	start
+}
+
+case "$1" in
+  start)
+	start
+	;;
+  stop) 
+	stop
+	;;
+  restart|force-reload|reload)
+	restart
+	;;
+  condrestart)
+	[ -f /var/lock/subsys/qingteng-consumer ] && restart
+	;;
+  status)
+	rh_status
+	RETVAL=$?
+	;;
+  *)
+	echo $"Usage: $0 {start|stop|status|restart|reload|force-reload|condrestart}"
+	exit 1
+esac
+
+exit $RETVAL

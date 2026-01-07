@@ -1,0 +1,31 @@
+- name: Remove csi-glusterfs-controller Deployment
+  kubernetes.core.k8s:
+    state: absent
+    api_version: apps/v1
+    kind: Deployment
+    namespace: "{{ namespace }}"
+    name: "csi-glusterfs-controller"
+
+- name: Remove csi-glusterfs-node DaemonSet
+  kubernetes.core.k8s:
+    state: absent
+    api_version: apps/v1
+    kind: DaemonSet
+    namespace: "{{ namespace }}"
+    name: "csi-glusterfs-node"
+
+# 卸载时残留这个可以接受，以便不需要delete权限
+# - name: Remove csi glusterfs driver
+#   kubernetes.core.k8s:
+#     state: absent
+#     api_version: storage.k8s.io/v1
+#     kind: CSIDriver
+#     name: "glusterfs.csi.qingteng.cn"
+
+- name: Template rbac file
+  ansible.builtin.template:
+    src: templates/rbac-csi-glusterfs-controller-tpl.yml
+    dest: /tmp/rbac-csi-glusterfs-controller-tpl.yml
+
+- name: delete csi-glusterfs rbac 
+  shell: "kubectl delete -f /tmp/rbac-csi-glusterfs-controller-tpl.yml"

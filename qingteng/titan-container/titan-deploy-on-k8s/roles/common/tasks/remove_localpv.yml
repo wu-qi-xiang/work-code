@@ -1,0 +1,22 @@
+#需要 pv_name，pv_for这两个参数
+#获取pv信息，并注册host和path到pv_info变量
+- include_tasks: localpv_info.yml
+
+- name: Print podname
+  debug:
+    msg: "podname: {{ alpine_pod_dict[pv_info['host']] }}"
+
+# remove hostpath dir
+- include_tasks: daemonset_cmd.yml
+  vars:
+    podname: "{{ alpine_pod_dict[pv_info['host']] }}"
+    cmd_in_daemon: "rm -rf {{ pv_info['path'] }}"
+  when: (pv_info is mapping)
+
+- name: Remove pv
+  kubernetes.core.k8s:
+    state: absent
+    api_version: v1
+    kind: PersistentVolume
+    namespace: "{{ namespace }}"
+    name: "{{pv_name}}"

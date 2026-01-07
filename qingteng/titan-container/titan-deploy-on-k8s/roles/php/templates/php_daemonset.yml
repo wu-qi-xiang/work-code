@@ -1,0 +1,144 @@
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: "titan-web"
+  namespace: "{{namespace}}"
+  labels:
+    app: titan-web
+spec:
+  selector:
+    matchLabels:
+      app: titan-web
+  strategy:
+    type: Recreate
+  progressDeadlineSeconds: 60
+  minReadySeconds: 10
+  revisionHistoryLimit: 3
+  template:
+    metadata:
+      name: titan-web
+      labels:
+        app: titan-web
+    spec:
+      affinity:
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            - labelSelector:
+                matchExpressions:
+                  - key: "app"
+                    operator: In
+                    values: 
+                    - titan-web
+              topologyKey: "kubernetes.io/hostname"
+      nodeSelector:
+        "{{php_nodelabel}}": "true"
+      hostNetwork: true
+      dnsPolicy: ClusterFirstWithHostNet
+      serviceAccountName: "{{service_account}}"
+      containers:
+        - image: "{{php_image}}"
+          name: titan-web
+          lifecycle:
+            postStart:
+              exec:
+                command: ["/bin/bash", "-c", "rm -rf /data/app/www/agent-update && ln -f -s {{agent_dfs_dir}} /data/app/www/agent-update; chown 101:101 /data/app/www/agent-update"]
+          resources:
+            limits:
+              memory: "{{ php_limit_memory }}"
+            requests:
+              cpu: "{{cpu_req}}"
+              memory: "1024Mi"
+          readinessProbe:
+            httpGet:
+              path: /testrun/ayok
+              port: 8000
+            initialDelaySeconds: 10
+            periodSeconds: 8
+            timeoutSeconds: 5
+            failureThreshold: 30
+          livenessProbe:
+            exec:
+              command:
+                - "/bin/bash"
+                - "-c"
+                - result=`curl -k -sS http://127.0.0.1:8000/testrun/ayok 2>&1`; if [[ $result =~ 'ok' ]]; then echo ok; else echo $result && exit 1; fi;
+            initialDelaySeconds: 120
+            periodSeconds: 30
+            timeoutSeconds: 15
+            failureThreshold: 3
+          command: ['sh','-c','cp -f /data/app/conf-inner/nginx.location.conf /data/app/conf/nginx.location.conf && dockerize -secretdir /var/secrets/ -yaml-env /titan-env/titan-env.yml -template /titan-php-config/nginx.servers.conf.tmpl:/data/app/conf/nginx.servers.conf -mergeToJson /titan-php-config/build.properties:/data/app/www/titan-web/conf/build.json; /usr/local/php/bin/php /data/app/www/titan-web/script/build_appini.php; dockerize -secretdir /var/secrets/ -yaml-env /titan-env/titan-env.yml -mergeToIni /titan-php-config/application.properties:/data/app/www/titan-web/conf/product/application.ini && /docker-run.sh start']
+          env:
+            - name: NODENAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: spec.nodeName
+          volumeMounts:
+            - name: var-secrets
+              mountPath: /var/secrets/
+            - name: cert-secrets
+              mountPath: /data/app/conf/cert
+            - name: titan-env
+              mountPath: /titan-env
+            - name: titan-php-config
+              mountPath: /titan-php-config
+            - mountPath: /data/app/conf/proxy/nginx.proxy.conf
+              subPath: nginx.proxy.conf
+              name: titan-php-config
+            - mountPath: /data/app/www/rpm
+              subPath: rpm
+              name: tmp
+            - mountPath: /data/app/www/newshellaudit
+              subPath: newshellaudit
+              name: tmp
+            - mountPath: /var/log/nginx
+              subPath: php/nginx
+              name: titan-logs
+            - mountPath: /data/titan-logs/nginx
+              subPath: php/nginx
+              name: titan-logs
+            - mountPath: /data/titan-logs/php
+              subPath: php/php
+              name: titan-logs
+            - mountPath: /data/titan-logs/php-fpm
+              subPath: php/php-fpm
+              name: titan-logs
+            - mountPath: /data/titan-logs/supervisor
+              subPath: php/supervisor
+              name: titan-logs
+            - mountPath: /data/titan-dfs
+              name: dfs-volume
+          securityContext:
+            allowPrivilegeEscalation: false
+        - name: titan-agent
+          image: "{{ agent_image }}"
+          imagePullPolicy: IfNotPresent
+          lifecycle:
+            preStop:
+              exec:
+                # 退出前删除文件锁
+                command: ["/bin/sh", "-c", "rm -f {{agent_dfs_dir}}/agent-update.lock"]
+          # 只需要一个Pod复制agent安装包就行了，不需要多个
+          command: ["sh","-c", "cp -rf /rpm /tmp/ && cp -rf /newshellaudit /tmp/ && chown -R 101:101 /tmp/rpm /tmp/newshellaudit; mkdir -p {{agent_dfs_dir}}; test -f {{agent_dfs_dir}}/agent-update.lock || (touch {{agent_dfs_dir}}/agent-update.lock && cp -ru /agent-update /data/titan-dfs/titan-web/ && chown -R 101:101 {{agent_dfs_dir}} ); tail -f /dev/null"]
+          volumeMounts:
+            - mountPath: /tmp
+              name: tmp
+            - mountPath: /data/titan-dfs
+              name: dfs-volume
+      volumes:
+        - name: var-secrets
+          secret:
+            secretName: titan-all-secrets
+        - name: cert-secrets
+          secret:
+            secretName: titan-cert-secrets
+        - name: titan-env
+          configMap:
+            name: titan-env
+        - name: titan-php-config
+          configMap:
+            name: titan-php-config
+        - emptyDir: {}
+          name: tmp
+        - name: dfs-volume
+          persistentVolumeClaim:
+            claimName: titan-dfs

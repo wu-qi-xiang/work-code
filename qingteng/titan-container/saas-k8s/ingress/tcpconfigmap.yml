@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: tcp-services
+  namespace: qtsa
+data:
+  "9093": "qtsa/kafka-0:9093"
+  "9094": "qtsa/kafka-1:9094"
+  "9095": "qtsa/kafka-2:9095"
+  "27017": "qtsa/mongos-hs:27017"
+  "3306": "qtsa/mysql-svc:3306"
+  "6000": "qtsa/titan-gateway:6000"
+  "6100": "qtsa/titan-wisteria:6100"
+  "6170": "qtsa/titan-job-srv:6170"

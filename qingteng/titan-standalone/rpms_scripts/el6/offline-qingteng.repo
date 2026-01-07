@@ -1,0 +1,4 @@
+[offline-qingteng]
+name=CentOS-$releasever - qingteng
+baseurl=https://mirror.qingteng.cn/repository/yum-standalone/qingteng-el6/
+gpgcheck=0

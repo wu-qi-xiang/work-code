@@ -1,0 +1,11 @@
+---
+# defaults file for php
+php_pullPolicy: IfNotPresent
+agent_pullPolicy: IfNotPresent
+php_uid: 2020
+php_gid: 2020
+
+php_limit_memory: 8Gi
+
+phplog_storage_capacity: 30Gi
+agent_dfs_dir: "/data/titan-dfs/titan-web/agent-update"

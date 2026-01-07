@@ -1,0 +1,13 @@
+- name: get titan-ms-srv
+  kubernetes.core.k8s_info:
+    kind: Deployment
+    name: "titan-ms-srv"
+    namespace: "{{ namespace }}"
+  register: tmp_setobj
+
+- set_fact:
+    tmp_ok: "{{tmp_setobj | deployment_check }}"
+
+- set_fact:
+    ok_app_roles: "{{ok_app_roles | union(['ms-srv']) }}" 
+  when: tmp_ok

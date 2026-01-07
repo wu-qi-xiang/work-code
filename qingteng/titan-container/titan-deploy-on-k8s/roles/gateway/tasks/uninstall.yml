@@ -1,0 +1,15 @@
+- name: Remove gateway Deployment
+  kubernetes.core.k8s:
+    state: absent
+    api_version: apps/v1
+    kind: Deployment
+    namespace: "{{ namespace }}"
+    name: "titan-gateway"
+
+- name: Remove gateway Service
+  kubernetes.core.k8s:
+    state: absent
+    api_version: v1
+    kind: Service
+    namespace: "{{ namespace }}"
+    name: "titan-gateway"

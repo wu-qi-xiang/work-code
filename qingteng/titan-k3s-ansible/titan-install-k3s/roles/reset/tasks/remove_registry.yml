@@ -1,0 +1,13 @@
+---
+- name: Check docker container
+  shell: >
+      docker ps -a --format '{{ '{{' }} .Names {{ '}}' }}' | grep "registry"
+  ignore_errors: true
+  register: p
+  delegate_to: "{{ groups['master'][0] }}"
+
+- name: Clean up registery docker container
+  shell: >
+      docker rm -f {{ p.stdout }}
+  when: p.rc == 0
+  delegate_to: "{{ groups['master'][0] }}"

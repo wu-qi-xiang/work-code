@@ -1,0 +1,24 @@
+# 给节点打标签的权限，默认需要，如果titan-env里设置了 not_label_nodes: Y 则不再需要此权限，且titan-deploy-0里不再自动打标签，
+# 默认已额外手工打过标签
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: titan-deploy-nodes
+rules:
+  - apiGroups: [ "" ]
+    resources: [ "nodes" ]
+    verbs: [ "get", "list", "watch", "patch", "update" ]
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: titan-deploy-nodes
+subjects:
+  - kind: ServiceAccount
+    name: titan-deploy
+    namespace: qtsa
+roleRef:
+  kind: ClusterRole
+  name: titan-deploy-nodes
+  apiGroup: rbac.authorization.k8s.io

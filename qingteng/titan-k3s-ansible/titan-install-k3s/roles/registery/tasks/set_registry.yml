@@ -1,0 +1,52 @@
+---
+#- name: start registry server
+#  docker_container:
+#    name: registry
+#    image: registry:2.7.1
+#    state: started
+#    volumes:
+#     - "/data/registry/data:/var/lib/registry"
+#     - "/data/registry/certs:/certs"
+#     - "/data/registry/auth:/auth"
+#    env:
+#      REGISTRY_AUTH: "htpasswd"
+#      REGISTRY_AUTH_HTPASSWD_REALM: "Registry Realm"
+#      REGISTRY_AUTH_HTPASSWD_PATH: "/auth/htpasswd"
+#      REGISTRY_HTTP_TLS_CERTIFICATE: "/certs/registry.pem"
+#      REGISTRY_HTTP_TLS_KEY: "/certs/registry.key"
+#    ports:
+#     - "{{REGISTRY_PORT}}:5000"
+#
+#- name: Log into private registry and force re-authorization
+#  docker_login:
+#    registry: "https://{{ REGISTRY_URL }}:{{ REGISTRY_PORT }}"
+#    username: "{{ REGISTRY_USER }}"
+#    password: "{{ REGISTRY_PASSWD }}"
+#    reauthorize: 
+
+- name: check regisrty server
+  shell: >
+         docker ps -a --format '{{ '{{' }} .Names {{ '}}' }}' | grep "registry"
+  ignore_errors: true
+  register: p
+
+- name: start registry server
+  command: >
+           docker run -d --restart=always --name registry
+           -v /data/registry/data:/var/lib/registry
+           -v /data/registry/certs:/certs
+           -v /data/registry/auth:/auth
+           -e 'REGISTRY_AUTH=htpasswd'
+           -e 'REGISTRY_AUTH_HTPASSWD_REALM=Registry Realm'
+           -e REGISTRY_AUTH_HTPASSWD_PATH=/auth/htpasswd
+           -e REGISTRY_HTTP_TLS_CERTIFICATE=/certs/registry.pem
+           -e REGISTRY_HTTP_TLS_KEY=/certs/registry.key
+           -p {{ REGISTRY_PORT }}:5000 registry:2.7.1
+  when: p.rc == 1
+- name: Log into private registry and force re-authorization
+  command: > 
+           docker login 
+           -u {{ REGISTRY_USER }} 
+           -p {{ REGISTRY_PASSWD }}
+           {{ REGISTRY_URL }}:{{ REGISTRY_PORT }}
+  when: p.rc == 1

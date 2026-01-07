@@ -1,0 +1,8 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: rabbitmq-config
+  namespace: {{ namespace }}
+data:
+  rabbitmq.conf: |
+      loopback_users.guest = false

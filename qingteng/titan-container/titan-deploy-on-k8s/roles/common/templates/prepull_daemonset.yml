@@ -1,0 +1,52 @@
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: pre-pull-images
+  namespace: {{ namespace }}
+  labels:
+    app: pre-pull-images
+spec:
+  selector:
+    matchLabels:
+      app: pre-pull-images
+  template:
+    metadata:
+      labels:
+        app: pre-pull-images
+    spec:
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+{% for nodelabel in prepull_nodelabels %}
+              - matchExpressions:
+                - key: "{{nodelabel}}"
+                  operator: In
+                  values: 
+                    - "true"
+{% endfor %}
+      serviceAccountName: "{{service_account}}"
+      initContainers:
+{% for image_name in prepull_images %}        
+        - name: "{{ image_name.split('/') | last | regex_replace(':.*','') }}"
+          image: "{{image_name}}"
+          resources:
+            limits:
+              cpu: 100m
+              memory: 100Mi
+            requests:
+              cpu: 100m
+              memory: 100Mi
+          command: ["echo", "done"]
+{% endfor %}          
+      containers:
+        - name: donothing
+          image: "{{ alpine_image }}"
+          resources:
+            limits:
+              cpu: 50m
+              memory: 50Mi
+            requests:
+              cpu: 50m
+              memory: 50Mi
+          command: ["tail", "-f", "/dev/null"]

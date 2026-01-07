@@ -1,0 +1,7 @@
+#!/bin/bash
+
+source $(dirname $0)/utils.sh
+check_env get_plain
+
+cd /data/;
+ansible-playbook utils.yml --tags get_plain 2>&1 | sed -n '/"zookeeper:/,/"rediserl:/p'

@@ -1,0 +1,115 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: rabbitmq
+  namespace: "{{ namespace }}"
+spec:
+  serviceName: rabbitmq
+  replicas: 1
+  selector:
+    matchLabels:
+      app: rabbitmq
+  template:
+    metadata:
+      labels:
+        app: rabbitmq
+    spec:
+      nodeSelector:
+        "{{rabbitmq_nodelabel}}": "true"
+      serviceAccountName: "{{service_account}}"
+      terminationGracePeriodSeconds: 10
+      containers:
+        - name: k8s-rabbitmq
+          imagePullPolicy: "{{ rabbitmq_pullPolicy }}"
+          image: "{{ rabbitmq_image }}"
+          resources:
+            limits:
+              cpu: "{{ rabbit_limit_cpu }}"
+              memory: "{{ rabbit_limit_memory }}"
+            requests:
+              cpu: "{{cpu_req}}"
+              memory: "2048Mi"
+          ports:
+            - name: http
+              protocol: TCP
+              containerPort: 15672
+            - name: amqp
+              protocol: TCP
+              containerPort: 5672
+          env:
+            - name: RABBITMQ_ERLANG_COOKIE
+              value: "{{ erlang_cookie | default(32|randomString, true) }}"
+            - name: RABBITMQ_DEFAULT_USER
+              value: "guest"
+            - name: RABBITMQ_DEFAULT_PASS_FILE
+              value: "/var/secrets/rabbitmq_passwd"
+            - name: RABBITMQ_VM_MEMORY_HIGH_WATERMARK
+              value: "2048MiB"
+          readinessProbe:
+            exec:
+              command: ["rabbitmq-diagnostics", "status"]
+            initialDelaySeconds: 45
+            periodSeconds: 20
+            timeoutSeconds: 15
+            failureThreshold: 6
+          livenessProbe:
+            exec:
+              command: ["rabbitmq-diagnostics", "status"]
+            initialDelaySeconds: 45
+            periodSeconds: 30
+            timeoutSeconds: 15
+            failureThreshold: 6
+          volumeMounts:
+            - name: tmp-secrets
+              mountPath: /var/secrets/
+            - name: rabbitmqdir
+              mountPath: /var/lib/rabbitmq
+            - name: config
+              mountPath: /etc/rabbitmq
+          securityContext:
+            allowPrivilegeEscalation: false
+      initContainers:
+        - name: titan-init
+          image: "{{ init_image }}"
+          imagePullPolicy: IfNotPresent
+          command: ['/bin/sh', '-c', 'dockerize -secretdir /var/secrets/ -encSecret /var/secrets/rabbitmq_passwd:/tmp/secrets/rabbitmq_passwd; cp /etc/rabbitmq/files/* /etc/rabbitmq/']
+          volumeMounts:
+            - name: var-secrets
+              mountPath: /var/secrets
+            - name: tmp-secrets
+              mountPath: /tmp/secrets
+            - name: config-volume
+              mountPath: /etc/rabbitmq/files
+            - name: config
+              mountPath: /etc/rabbitmq
+      securityContext:
+        runAsUser: {{rabbit_uid}}
+        fsGroup: {{rabbit_gid}}
+        readOnlyRootFilesystem: true
+      volumes:
+        - name: var-secrets
+          secret:
+            secretName: titan-all-secrets
+        - name: tmp-secrets
+          emptyDir: {}
+        - name: config-volume
+          configMap:
+            name: rabbitmq-config
+            items:
+            - key: rabbitmq.conf
+              path: rabbitmq.conf
+        - name: config
+          emptyDir: {}
+  volumeClaimTemplates:
+    - metadata:
+        name: rabbitmqdir
+        labels:
+          qtsa_perm: "{{rabbit_uid}}-{{rabbit_gid}}"
+          qtsa_path_prefix: "rabbitmq"
+          qtsa_delete_data: "Y"
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        storageClassName: "{{storageName}}"
+        resources:
+          requests:
+            storage: "{{ rabbitmq_storage_capacity }}"

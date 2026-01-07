@@ -1,0 +1,76 @@
+# For more information on configuration, see:
+#   * Official English Documentation: http://nginx.org/en/docs/
+#   * Official Russian Documentation: http://nginx.org/ru/docs/
+
+user              nginx;
+worker_processes  auto;
+worker_cpu_affinity auto;
+
+error_log  /var/log/nginx/error.log;
+#error_log  /var/log/nginx/error.log  notice;
+#error_log  /var/log/nginx/error.log  info;
+
+pid        /var/run/nginx.pid;
+worker_rlimit_nofile 65535;
+
+events {
+    use epoll;
+    worker_connections  65535;
+}
+
+
+http {
+    client_max_body_size       3m;
+    include       /etc/nginx/mime.types;
+    default_type  application/octet-stream;
+
+    log_format  main  '$remote_addr - $remote_user [$time_local] "$request" '
+                      '$status $body_bytes_sent "$http_referer" '
+                      '"$http_user_agent" "$http_x_forwarded_for"';
+
+    server_tokens off;
+
+    access_log  /var/log/nginx/access.log  main;
+
+    sendfile        on;
+    #tcp_nopush     on;
+
+    #keepalive_timeout  0;
+    keepalive_timeout  65;
+    add_header X-Frame-Options SAMEORIGIN;
+
+    fastcgi_connect_timeout 300;
+    fastcgi_send_timeout 300;
+    fastcgi_read_timeout 300;
+    fastcgi_buffer_size 1024k;
+    fastcgi_buffers 32 1024k;
+    fastcgi_busy_buffers_size 2048k;
+    fastcgi_temp_file_write_size 2048k;
+    fastcgi_ignore_client_abort on;
+
+    gzip  on;
+    gzip_disable "MSIE [1-6]."; # 禁用IE6的gzip压缩
+    gzip_min_length 1k; # 最小压缩长度
+    gzip_proxied any; #对所有的请求启用压缩
+    gzip_buffers 4 16k; # 以原始数据大小4倍，以16k为单位申请内存
+    gzip_comp_level 3; # 1-9，1压缩比最小处理速度最快，9相反
+    gzip_types text/plain application/x-javascript application/javascript text/css application/xml text/javascript image/jpeg image/gif image/png; # 对html/css/xml/js等提供压缩
+    gzip_vary on; # 根据http头判断是否需要压缩
+
+    ssl off;
+    ssl_certificate  /data/app/conf/cert/server.pem;
+    ssl_certificate_key  /data/app/conf/cert/server.key;
+    ssl_session_cache  shared:SSL:10m;
+    ssl_session_timeout  10m;
+    ssl_protocols TLSv1.1 TLSv1.2; 
+    #ssl_ciphers  ALL:!ADH:!EXPORT56:RC4+RSA:+HIGH:+MEDIUM:+LOW:+SSLv2:+EXP;
+    ssl_ciphers  AES128+EECDH:AES128+EDH:!aNULL;
+    ssl_prefer_server_ciphers  on;
+
+    # Load config files from the /etc/nginx/conf.d directory
+    # The default server is in conf.d/default.conf
+    #include /etc/nginx/conf.d/*.conf;
+    include /data/app/conf/nginx.servers.conf;
+    include /data/app/conf/proxy/*.conf;
+    include /data/app/conf/cluster/*.conf; 
+}

@@ -1,0 +1,35 @@
+- name: Remove redisjava StatefulSet
+  kubernetes.core.k8s:
+    state: absent
+    api_version: apps/v1
+    kind: StatefulSet
+    namespace: "{{ namespace }}"
+    name: "redisjava"
+
+- name: Remove redisjava Service
+  kubernetes.core.k8s:
+    state: absent
+    api_version: v1
+    kind: Service
+    namespace: "{{ namespace }}"
+    name: "redisjava-hs"
+
+# - name: Remove redisjava Service
+#   kubernetes.core.k8s:
+#     state: absent
+#     api_version: v1
+#     kind: Service
+#     namespace: "{{ namespace }}"
+#     name: "redisjava"
+
+- name: Remove redisjava pvc
+  kubernetes.core.k8s:
+    state: absent
+    api_version: v1
+    kind: PersistentVolumeClaim
+    namespace: "{{ namespace }}"
+    name: "datadir-redisjava-{{index}}"
+  loop: "{{ range(redis_java_master_num + redis_java_master_num * redis_java_slave_num) | list }}"
+  loop_control:
+    loop_var: index
+

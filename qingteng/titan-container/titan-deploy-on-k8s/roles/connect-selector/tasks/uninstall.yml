@@ -1,0 +1,16 @@
+- name: Remove connectselector Deployment
+  kubernetes.core.k8s:
+    state: absent
+    api_version: apps/v1
+    kind: Deployment
+    namespace: "{{ namespace }}"
+    name: "titan-connect-selector"
+
+
+- name: Remove connectselector Service
+  kubernetes.core.k8s:
+    state: absent
+    api_version: v1
+    kind: Service
+    namespace: "{{ namespace }}"
+    name: "titan-connect-selector"

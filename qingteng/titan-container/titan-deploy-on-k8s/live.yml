@@ -1,0 +1,27 @@
+---
+- hosts: localhost
+  name: command with live output demo
+  gather_facts: False
+  vars_files: 
+    - var_file.yml
+
+  tasks:
+    - name: Run an async task
+      live_command:
+        argv:
+          - "sh"
+          - "-c"
+          - for i in $(seq 1 5); do echo "this is $i in loop 1" && sleep 1;  done
+      vars:
+        ansible_connection: local_live
+
+    - name: Run remote live output cmd
+      delegate_to: php
+      live_command:
+        argv:
+          - "sh"
+          - "-c"
+          - for i in $(seq 1 5); do echo "this is $i in loop 1" && sleep 1;  done
+      vars:
+        ansible_connection: ssh_live
+        

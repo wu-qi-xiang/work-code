@@ -1,0 +1,11 @@
+---
+# defaults file for usersrv
+usersrv_pullPolicy: IfNotPresent
+usersrv_uid: 2020
+usersrv_gid: 2020
+usersrv_port: 6120
+
+usersrv_limit_memory: 1524Mi
+usersrv_limit_cpu: 8
+# Xmx设置，单位为M
+usersrv_xmx: 512

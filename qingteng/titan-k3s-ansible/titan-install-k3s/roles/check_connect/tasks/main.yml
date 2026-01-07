@@ -1,0 +1,5 @@
+---
+# ping命令检查连通性，任何失败都会中断所有play
+- name: check connect all host
+  ping:
+  any_errors_fatal: true

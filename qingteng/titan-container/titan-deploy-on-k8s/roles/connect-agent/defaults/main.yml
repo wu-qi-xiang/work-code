@@ -1,0 +1,10 @@
+---
+# defaults file for connectagent
+connectagent_pullPolicy: IfNotPresent
+connectagent_uid: 2020
+connectagent_gid: 2020
+connectagent_port: 6220
+
+connectagent_limit_memory: 4596Mi
+connectagent_limit_cpu: 8
+connectagent_req_memory: 1536Mi

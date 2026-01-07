@@ -1,0 +1,97 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: titan-anti-virus-srv
+  namespace: "{{namespace}}"
+  labels:
+    app: titan-anti-virus
+spec:
+  replicas: {{antivirussrv_replicas}}
+  selector:
+    matchLabels:
+      app: titan-anti-virus-srv
+  strategy:
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 1
+    type: RollingUpdate
+  progressDeadlineSeconds: 120
+  minReadySeconds: 30
+  revisionHistoryLimit: 3
+  template:
+    metadata:
+      name: titan-anti-virus-srv
+      labels:
+        app: titan-anti-virus-srv
+    spec:
+      nodeSelector:
+        "{{antivirussrv_nodelabel}}": "true"
+      serviceAccountName: "{{service_account}}"
+      containers:
+        - image: "{{antivirussrv_image}}"
+          imagePullPolicy: "{{ antivirussrv_pullPolicy }}"
+          name: titan-anti-virus-srv
+          resources:
+            limits:
+              cpu: "{{ antivirussrv_limit_cpu }}"
+              memory: "{{ antivirussrv_limit_memory }}"
+            requests:
+              cpu: "{{cpu_req}}"
+              memory: 512Mi
+          readinessProbe:
+            httpGet:
+              path: /api/checkall
+              port: {{antivirussrv_port}}
+            initialDelaySeconds: 20
+            periodSeconds: 10
+            timeoutSeconds: 3
+            failureThreshold: 6
+          livenessProbe:
+            exec:
+              command:
+                - "/bin/bash"
+                - "-c"
+                - result=`curl -k -sS http://127.0.0.1:{{antivirussrv_port}}/api/checkall 2>&1`; if [[ $result =~ 'abnormal_service":[]' ]]; then echo ok; else echo $result && exit 1; fi
+            initialDelaySeconds: 60
+            periodSeconds: 30
+            timeoutSeconds: 15
+            failureThreshold: 3
+          ports:
+            - containerPort: {{antivirussrv_port}}
+              protocol: TCP
+          command: ['/bin/sh', '-c', 'dockerize -secretdir /var/secrets/ -yaml-env /titan-env/titan-env.yml -template /titan-java-config/jaas_zk_client.conf:/data/app/titan-config/jaas_zk_client.conf -mergeToJson /titan-java-config/java.properties:/data/app/titan-config/java.json; chown -R titan:titan /data/app/titan-config; /data/app/titan-anti-virus-srv/init.d/anti-virus-srv start']
+          volumeMounts:
+            - name: var-secrets
+              mountPath: /var/secrets/
+            - name: titan-env
+              mountPath: /titan-env
+            - name: titan-java-config
+              mountPath: /titan-java-config
+            - mountPath: /data/titan-logs/java/anti-virus-srv
+              subPath: anti-virus-srv
+              name: titan-logs
+            - name: tmp
+              mountPath: /data/app/titan-anti-virus-srv/tomcat
+              subPath: tomcat
+            - name: tmp
+              mountPath: /tmp
+            - mountPath: /data/titan-dfs
+              name: dfs-volume
+          securityContext:
+            readOnlyRootFilesystem: false
+            allowPrivilegeEscalation: false
+      volumes:
+        - name: var-secrets
+          secret:
+            secretName: titan-all-secrets
+        - name: titan-env
+          configMap:
+            name: titan-env
+        - name: titan-java-config
+          configMap:
+            name: titan-java-config
+        - emptyDir: {}
+          name: tmp
+        - name: dfs-volume
+          persistentVolumeClaim:
+            claimName: titan-dfs

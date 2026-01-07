@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<head version="2.5">
+    <host hostip="localhost" port="8008"></host>
+    <debug start="false"/>
+    <fileSystem xfs="false"/>
+    <filter start="false">
+        <exclude expression="^agentlog/*"></exclude>
+        <exclude expression="^alarm/*"></exclude>
+        <exclude expression="^nodelog/*"></exclude>
+        <exclude expression="^plc_monitor/*"></exclude>
+        <exclude expression="^sasl/*"></exclude>
+        <exclude expression="^debug_logs/warning_msg/*"></exclude>
+        <exclude expression="^debug_logs/info_msg/*"></exclude>
+    </filter>
+    <inotify>
+        <delete start="true"/>
+        <createFolder start="true"/>
+        <createFile start="true"/>
+        <closeWrite start="true"/>
+        <moveFrom start="true"/>
+        <moveTo start="true"/>
+        <attrib start="true"/>
+        <modify start="true"/>
+    </inotify>
+
+    <sersync>
+        <localpath watch="/data/servers/titan_root/servicer_3_1/private/log/debug_logs/error_msg">
+            <remote ip="10.10.110.184" name="10.10.83.183_servicer_3_1_error"/>
+        </localpath>
+        <rsync>
+            <commonParams params="-artuz"/>
+            <auth start="true" users="root" passwordfile="/etc/rsync.pass"/>
+            <userDefinedPort start="false" port="874"/><!-- port=874 -->
+            <timeout start="false" time="100"/><!-- timeout=100 -->
+            <ssh start="false"/>
+        </rsync>
+        <failLog path="/tmp/rsync_fail_servicer_3_1_error.sh" timeToExecute="60"/><!--default every 60mins execute once-->
+        <crontab start="true" schedule="60"><!--600mins-->
+            <crontabfilter start="false">
+                <exclude expression="*.php"></exclude>
+                <exclude expression="info/*"></exclude>
+            </crontabfilter>
+        </crontab>
+        <plugin start="false" name="command"/>
+    </sersync>
+</head>

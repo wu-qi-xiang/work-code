@@ -1,0 +1,54 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: local-path-provisioner
+  namespace: "{{ namespace }}"
+spec:
+  replicas: {{localpv_replicas}}
+  selector:
+    matchLabels:
+      app: local-path-provisioner
+  template:
+    metadata:
+      labels:
+        app: local-path-provisioner
+    spec:
+      nodeSelector:
+        "{{ localpv_provisioner_nodelabel }}": "true"
+      affinity:
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            - topologyKey: "kubernetes.io/hostname"
+              labelSelector:
+                matchLabels:
+                  app: local-path-provisioner
+      serviceAccountName: local-path-provisioner-service-account
+      containers:
+        - name: local-path-provisioner
+          image: "{{ localpv_image }}"
+          imagePullPolicy: IfNotPresent
+          resources:
+            limits:
+              cpu: "{{ localpv_limit_cpu }}"
+              memory: "{{ localpv_limit_memory }}"
+            requests:
+              cpu: "{{cpu_req}}"
+              memory: "{{localpv_req_memory}}"
+          command:
+            - local-path-provisioner
+            - --debug
+            - start
+            - --config
+            - /etc/config/config.json
+          volumeMounts:
+            - name: config-volume
+              mountPath: /etc/config/
+          env:
+            - name: POD_NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+      volumes:
+        - name: config-volume
+          configMap:
+            name: local-path-config

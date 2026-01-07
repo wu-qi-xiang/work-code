@@ -1,0 +1,47 @@
+---
+
+- name: Delete k3s if already present
+  file:
+    path: /usr/local/bin/k3s
+    state: absent
+
+- name: Copy k3s binary x64
+  copy:
+    src: k3s
+    dest: /usr/local/bin/k3s
+    owner: root
+    group: root
+    mode: 0755
+  when: ansible_facts.architecture == "x86_64"
+
+- name: Copy k3s binary arm64
+  copy:
+    src: k3s-arm64
+    dest: /usr/local/bin/k3s
+    owner: root
+    group: root
+    mode: 0755
+  when:
+    - ( ansible_facts.architecture is search("arm") and
+        ansible_facts.userspace_bits == "64" ) or
+      ansible_facts.architecture is search("aarch64")
+
+- name: Copy k3s binary armhf
+  copy:
+    src: k3s-armhf
+    dest: /usr/local/bin/k3s
+    owner: root
+    group: root
+    mode: 0755
+  when:
+    - ansible_facts.architecture is search("arm")
+    - ansible_facts.userspace_bits == "32"
+
+
+- debug: var=groups['master'][0]
+
+- name: add registry hosts
+  lineinfile:
+    dest: /etc/hosts
+    line: "{{ groups['master'][0]}} {{ REGISTRY_URL }}"
+  when: REGISTRY_URL == "registry.qingteng.cn"

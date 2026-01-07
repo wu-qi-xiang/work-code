@@ -1,0 +1,4 @@
+- name: execute update_agent_config
+  shell: kubectl -n {{namespace}} exec -i {{web_pod}} -c titan-web -- /docker-run.sh update_agent_config {{ upgrade_flag | default("") }} 2>&1 > /tmp/update_agent_config.log
+  vars:
+    live_output: "/tmp/update_agent_config.log"

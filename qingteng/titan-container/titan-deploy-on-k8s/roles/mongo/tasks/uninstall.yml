@@ -1,0 +1,68 @@
+
+- name: get mongo shard info
+  shell: kubectl -n {{namespace}} get statefulset | grep mongoshard | awk '{print $1}'
+  register: shard_info
+
+# 获取目前的分片序列
+- name: set shard info 
+  set_fact:
+    shard_seqs: "{{shard_info['stdout'].splitlines() | map('replace','mongoshard','') | list | sort(reverse=true) }}"
+
+- include_tasks: remove_shard.yml
+  vars:
+    removeShard_cmd: "N"
+  loop: "{{ shard_seqs }}"
+  loop_control:
+    loop_var: remove_shard_seq
+
+- name: Remove mongod StatefulSet
+  kubernetes.core.k8s:
+    state: absent
+    api_version: apps/v1
+    kind: StatefulSet
+    namespace: "{{ namespace }}"
+    name: "mongod"
+
+- name: Remove mongos StatefulSet
+  kubernetes.core.k8s:
+    state: absent
+    api_version: apps/v1
+    kind: StatefulSet
+    namespace: "{{ namespace }}"
+    name: "mongos"
+
+- name: Remove mongos-hs Service
+  kubernetes.core.k8s:
+    state: absent
+    api_version: v1
+    kind: Service
+    namespace: "{{ namespace }}"
+    name: "mongos-hs"
+
+- name: Remove mongocs StatefulSet
+  kubernetes.core.k8s:
+    state: absent
+    api_version: apps/v1
+    kind: StatefulSet
+    namespace: "{{ namespace }}"
+    name: "mongocs"
+
+- name: Remove mongocs Service
+  kubernetes.core.k8s:
+    state: absent
+    api_version: v1
+    kind: Service
+    namespace: "{{ namespace }}"
+    name: "mongocs-hs"
+
+- name: Remove mongocs pvc
+  kubernetes.core.k8s:
+    state: absent
+    api_version: v1
+    kind: PersistentVolumeClaim
+    namespace: "{{ namespace }}"
+    name: "mongocsdir-mongocs-{{index}}"
+  loop: "{{ range(mongocs_replicas) | list }}"
+  loop_control:
+    loop_var: index
+

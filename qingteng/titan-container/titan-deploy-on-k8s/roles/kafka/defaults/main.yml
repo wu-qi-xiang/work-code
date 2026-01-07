@@ -1,0 +1,31 @@
+---
+# defaults file for kafka
+kafka_replicas: 3
+zk_replicas: 3
+kafka_storage_capacity: "300Gi"
+kafka_log_storage_capacity: "5Gi"
+kafka_hostpath: "/data/titan-container/kafka"
+kafka_pullPolicy: IfNotPresent
+kafka_uid: 1000
+kafka_gid: 1000
+# topic默认的副本数量
+replica_factor: 3
+
+kafka_limit_memory: 3072Mi
+kafka_limit_cpu: 8
+# Xmx设置，单位为M
+kafka_xmx: 2048
+
+kafka_topic_event_srv:
+   - {name: bigdata_event,retention: 604800000,partition_num: "{{(eventsrv_replicas|int) * 3}}" }
+   - {name: bigdata_event_statistical,retention: 604800000,partition_num: "{{(eventsrv_replicas|int) * 3}}" }
+   - {name: MICRO-SEGMENTATION-EVENT,retention: 7200000,partition_num: "6" }
+   - {name: MICRO-SEGMENTATION-EVENT_statistical,retention: 604800000,partition_num: "{{(eventsrv_replicas|int) * 3}}" }
+   - {name: EVENT_STATISTICAL_DETAIL,retention: 604800000,partition_num: "{{(eventsrv_replicas|int) * 3}}" }
+   - {name: EVENT_STATISTICAL_DETAIL_KEY,retention: 604800000,partition_num: "{{(eventsrv_replicas|int) * 3}}" }
+   - {name: tc_radar_event,retention: 604800000,partition_num: "{{(eventsrv_replicas|int) * 3}}" }
+kafka_topic_ms_srv:
+   - {name: ms_access_relation,retention: 100800000,partition_num: 12 }
+
+kafka_topic_thp:
+   - {name: QTEVENT,retention: 86400000,retention_bytes: 500000000000}

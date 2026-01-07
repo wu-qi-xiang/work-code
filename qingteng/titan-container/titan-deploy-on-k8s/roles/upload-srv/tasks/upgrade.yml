@@ -1,0 +1,29 @@
+---
+- name: update titan-upload-srv image
+  shell: "kubectl -n {{ namespace }} set image deployment titan-upload-srv titan-upload-srv={{uploadsrv_image}}"
+
+#uploadsrv_cdc_image
+- name: update uploadsrv-cdc image
+  shell: "kubectl -n {{ namespace }} set image deployment titan-upload-srv cdc={{uploadsrv_cdc_image}}"
+
+#uploadsrv_ave_image
+- name: uploadsrv-ave image
+  shell: "kubectl -n {{ namespace }} set image deployment titan-upload-srv ave={{uploadsrv_ave_image}}"
+# - name: get upload-srv deployment 
+#   kubernetes.core.k8s_info:
+#     kind: Deployment
+#     name: "titan-upload-srv"
+#   register: upload_srv_obj
+
+# - set_fact:
+#     uploadsrv_info: "{{ upload_srv_obj['resources'] | get_deploy_info }}"
+
+# # 获取老的nodelabel，避免升级后调度到了其他节点上
+# - set_fact:
+#     uploadsrv_nodelabel: "{{ uploadsrv_info['nodelabel'] }}"
+#     uploadsrv_replicas: "{{ uploadsrv_info['replicas'] }}"
+
+# - name: create uploadsrv Deployment
+#   kubernetes.core.k8s:
+#     definition: "{{ lookup('template', 'uploadsrv_deployment.yml' ) | from_yaml | titan_combine(common_patch,titanlogs_patch) }}"
+#     apply: yes

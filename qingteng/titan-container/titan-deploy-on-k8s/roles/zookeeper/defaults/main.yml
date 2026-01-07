@@ -1,0 +1,11 @@
+---
+# defaults file for zookeeper
+zk_replicas: 3
+zk_storage_capacity: "3Gi"
+zk_hostpath: "/data/titan-container/zookeeper"
+zk_pullPolicy: IfNotPresent
+zk_uid: 1000
+zk_gid: 1000
+
+zk_limit_cpu: 4
+zk_limit_memory: 1124Mi

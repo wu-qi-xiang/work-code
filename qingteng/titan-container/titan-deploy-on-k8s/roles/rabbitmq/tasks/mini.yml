@@ -1,0 +1,37 @@
+---
+# tasks file for rabbitmq
+- set_fact:
+    work_nodes: "{{ label_nodes[rabbitmq_nodelabel] }}"
+
+- name: Print result
+  debug:
+    msg: "{{ work_nodes }}"
+
+- fail:
+    msg: "have no available node for rabbitmq"
+  when: work_nodes|length < 1
+
+
+- name: create rabbitmq headless service
+  kubernetes.core.k8s:
+    definition: "{{ lookup('template', 'rabbitmq_hs.yml') | from_yaml }}"
+
+- name: create rabbitmq configmap
+  kubernetes.core.k8s:
+    definition: "{{ lookup('template', 'rabbitmq_configmap_single.yml') | from_yaml }}"
+
+- name: create rabbitmq StatefulSet
+  kubernetes.core.k8s:
+    definition: "{{ lookup('template', 'rabbitmq_statefulset_single.yml') | from_yaml | titan_combine(common_patch) }}"
+    apply: yes
+
+# 等待rabbitmq已Ready
+- name: get rabbitmq statefulset 
+  kubernetes.core.k8s_info:
+    kind: StatefulSet
+    name: "rabbitmq"
+    namespace: "{{ namespace }}"
+    wait: yes
+    wait_sleep: 10
+    wait_timeout: 120
+  register: rabbitmq_setobj

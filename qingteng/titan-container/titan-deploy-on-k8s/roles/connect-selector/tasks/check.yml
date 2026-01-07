@@ -1,0 +1,13 @@
+- name: get titan-connect-selector 
+  kubernetes.core.k8s_info:
+    kind: Deployment
+    name: "titan-connect-selector"
+    namespace: "{{ namespace }}"
+  register: tmp_setobj
+
+- set_fact:
+    tmp_ok: "{{tmp_setobj | deployment_check }}"
+
+- set_fact:
+    ok_app_roles: "{{ok_app_roles | union(['connect-selector']) }}" 
+  when: tmp_ok

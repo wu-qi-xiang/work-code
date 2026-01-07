@@ -1,0 +1,24 @@
+#!/bin/bash
+
+source $(dirname $0)/utils.sh
+
+web_pod=`kubectl get po -n $NS | grep titan-web.*Running | head -n 1 | awk '{print $1}'`
+
+info_log "=================== 注册前台账号 ==================="
+randompwd=`head /dev/urandom | tr -dc A-Za-z0-9@%_ | head -c 13`
+read -ep "Input username (default: admin@sec.com): " username
+read -ep "Input password (default: $randompwd): " password
+echo ${username:="admin@sec.com"}  ${password:="$randompwd"}
+
+kubectl -n $NS exec -ti $web_pod -c titan-web -- /usr/local/php/bin/php /data/app/www/titan-web/update/cli/v3-tool-front-register.php $username $password
+
+info_log "=================== 注册后台账号 ==================="
+randompwd=`head /dev/urandom | tr -dc A-Za-z0-9@%_ | head -c 13`
+read -ep "Input username (default: admin@sec.com): " username
+read -ep "Input password (default: $randompwd): " password
+echo ${username:="admin@sec.com"}  ${password:="$randompwd"}
+kubectl -n $NS exec -ti $web_pod -c titan-web -- /usr/local/php/bin/php /data/app/www/titan-web/user-backend/cli/back-register.php $username $password
+
+patrol_pod=`kubectl get po -n $NS | grep titan-patrol.*Running | head -n 1 | awk '{print $1}'`
+info_log "=================== 注册go-patrol账号 ==================="
+kubectl -n $NS exec -ti $patrol_pod -c titan-patrol -- /data/app/titan-go-patrol/go-patrol register -c /data/app/titan-go-patrol/config/settings.yml

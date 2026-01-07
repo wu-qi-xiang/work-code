@@ -1,0 +1,91 @@
+---
+# tasks file for mongoshard， 需要传入新的shard编号： new_shard_seq
+# 功能：根据当前shard信息，获取到 新shard的编号以及 新shard的节点分布
+# 获取当前mongoshard节点
+- set_fact:
+    mongoshard_nodes: "{{ label_nodes[mongoshard_nodelabel] }}"
+
+#  例如 分片里副本数量是3,则服务器数量不能小于3
+- fail:
+    msg: "have no available node for mongoshard"
+  when: mongoshard_nodes|length < mongoshard_replicas
+
+# 例如如果现在 是要安装 shard2, 表示是第三个分片，那么服务器数量不能小于等于2 
+- fail:
+    msg: "have no available node for mongoshard"
+  when: mongoshard_nodes|length <= (new_shard_seq | int) 
+
+- name: get mongoshard pods 
+  kubernetes.core.k8s_info:
+    kind: Pod
+    label_selectors:
+      - "shardsvr = true"
+    namespace: "{{ namespace }}"
+  register: shard_podobj
+
+- name: Print shard_pods nodeName and ip
+  debug:
+    msg: "shard_pods: {{ shard_podobj | json_query('resources[*].{name:metadata.name, nodeName:spec.nodeName}') }} "
+
+- name: set shard_pods
+  set_fact:
+    shard_pods: "{{ shard_podobj | json_query('resources[*].{name:metadata.name, nodeName:spec.nodeName}') }}"
+
+# shardseqs 是当前shard的编号集合 如 [0,1]
+- name: set shardseqs
+  set_fact:
+    "shardseqs": "{{ shard_pods | map(attribute='name') | map('regex_replace','mongoshard(\\d)-.*','\\1') | list | unique }}"
+
+# 检查new_shard_seq是否正确，是否是下一个
+- set_fact:
+    shard_seq_check: |-
+      {% if shardseqs|length == 0 %}
+        {% if new_shard_seq > 0 %}
+          shard0 not install,can't install shard{{new_shard_seq}}
+        {% endif %}
+      {% else %}
+        {% if shardseqs|max|int >= new_shard_seq %}
+          shard{{new_shard_seq}} already installed
+        {% elif shardseqs|max|int < new_shard_seq-1 %}
+          shard{{new_shard_seq-1}} not installed, can't install shard{{new_shard_seq}}
+        {% endif %}
+      {% endif %}
+- fail:
+    msg: "{{ shard_seq_check|trim }}"
+  when: shard_seq_check|trim != ''
+
+# 循环每一个shard，获取每个分片中角色分布，哪个是primary，哪些是secondary
+- name: get rs nodes
+  kubernetes.core.k8s_exec:
+    validate_certs: no
+    namespace: "{{ namespace }}"
+    pod: "mongoshard{{item}}-0"
+    command: mongo --port 27019 -u qingteng -p "{{mongo_passwd}}" --quiet --eval "rs.status().members.map(function(member){return {'name':member.name,'stateStr':member.stateStr} })"
+  register: rsinfo_dict
+  loop: "{{ shardseqs }}"
+
+# 所有的mongo分片角色分布
+- name: set rs_nodes
+  set_fact:
+    "rs_roles": "{{ rsinfo_dict['results'] |map(attribute='stdout') | map('from_json') | list }}"
+
+# 获取新的shard节点分布
+- name: set new_shard_info
+  set_fact:
+    "new_shard_info": "{{ mongoshard_nodes | get_rsnodes(shard_pods,rs_roles) }}"
+#  打平组成1个list， 第一个是primary节点
+- name: set new_shard_info
+  set_fact:
+    new_shard_nodes: "{{ [new_shard_info['pri_node'], new_shard_info['sec_nodes']] | flatten }}"
+
+- include_tasks: mongors.yml
+  vars:
+    shardseq: "{{ new_shard_seq }}"
+
+# 新的分片加入集群
+- name: add to cluster
+  kubernetes.core.k8s_exec:
+    validate_certs: no
+    namespace: "{{ namespace }}"
+    pod: "mongos-0"
+    command: mongo --port 27017 -u qingteng -p "{{mongo_passwd}}" --authenticationDatabase admin --eval 'sh.addShard("shard{{new_shard_seq}}/{% for i in range(mongoshard_replicas) %}mongoshard{{new_shard_seq}}-{{i}}.mongoshard{{new_shard_seq}}-hs.{{namespace}}.svc.cluster.local:27019{% if not loop.last %},{% endif %}{% endfor %}")'

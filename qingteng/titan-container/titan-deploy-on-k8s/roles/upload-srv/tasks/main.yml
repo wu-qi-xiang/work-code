@@ -1,0 +1,40 @@
+---
+# tasks file for upload-srv
+- set_fact:
+    work_nodes: "{{ label_nodes[uploadsrv_nodelabel] }}"
+
+- name: Print result
+  debug:
+    msg: "{{ work_nodes }}"
+
+- fail:
+    msg: "have no available node for uploadsrv"
+  when: work_nodes|length <= 0
+
+- name: Remove uploadsrv Deployment
+  kubernetes.core.k8s:
+    state: absent
+    api_version: apps/v1
+    kind: Deployment
+    namespace: "{{ namespace }}"
+    name: "titan-upload-srv"
+
+# 判断是否arm64
+- name: get architecture
+  shell: uname -m
+  register: architecture_info
+
+- set_fact:
+    arm64: true 
+  when: "'stdout' in architecture_info and ('aarch' in architecture_info['stdout'] or 'arm' in architecture_info['stdout']) "
+
+- name: create uploadsrv Deployment
+  kubernetes.core.k8s:
+    definition: "{{ lookup('template', 'uploadsrv_deployment.yml' ) | from_yaml | titan_combine(common_patch,titanlogs_patch) }}"
+    apply: yes
+
+- name: create uploadsrv Service
+  kubernetes.core.k8s:
+    definition: "{{ lookup('template', 'uploadsrv_service.yml' ) | from_yaml }}"
+    apply: yes
+

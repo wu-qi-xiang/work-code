@@ -1,0 +1,20 @@
+- name: get csi-glusterfs-controller 
+  kubernetes.core.k8s_info:
+    kind: Deployment
+    name: "csi-glusterfs-controller"
+    namespace: "{{ namespace }}"
+  register: csi_controller_setobj
+
+- name: get csi-glusterfs-node 
+  kubernetes.core.k8s_info:
+    kind: DaemonSet
+    name: "csi-glusterfs-node"
+    namespace: "{{ namespace }}"
+  register: csi_node_setobj
+
+- set_fact:
+    tmp_ok: "{{(csi_controller_setobj | deployment_check) and (csi_node_setobj | daemonset_check)}}"
+
+- set_fact:
+    ok_base_roles: "{{ok_base_roles | union(['csi-glusterfs']) }}" 
+  when: tmp_ok

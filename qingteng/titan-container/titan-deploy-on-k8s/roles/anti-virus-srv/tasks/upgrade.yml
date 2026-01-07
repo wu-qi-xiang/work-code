@@ -1,0 +1,3 @@
+---
+- name: update titan-anti-virus-srv image
+  shell: "kubectl -n {{ namespace }} set image deployment titan-anti-virus-srv titan-anti-virus-srv={{antivirussrv_image}}"

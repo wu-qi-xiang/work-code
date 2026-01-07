@@ -1,0 +1,23 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: redisjava-configmap
+  namespace: [% namespace %]
+data:
+  redis.conf: |+
+    tcp-backlog 511
+    bind 0.0.0.0
+    timeout 0
+    tcp-keepalive 0
+    loglevel notice
+    slowlog-log-slower-than 10000
+    slowlog-max-len 128
+    appendonly no
+    protected-mode no
+    save ""
+    appendfsync no
+    dbfilename dump.rdb
+    dir /data/redis/
+    masterauth {{ readSecret "/var/secrets/redisjava_passwd" }}
+    requirepass {{ readSecret "/var/secrets/redisjava_passwd" }}
+    ignore-warnings ARM64-COW-BUG

@@ -1,0 +1,87 @@
+---
+# tasks file for redisjava
+- set_fact:
+    work_nodes: "{{ label_nodes[redisjava_nodelabel] }}"
+
+- name: Print result
+  debug:
+    msg: "{{ work_nodes }}"
+
+- fail:
+    msg: "have no available node for redisjava cluster"
+  when: work_nodes|length < ( [redis_java_master_num,redis_java_slave_num+1] | max )
+
+- set_fact:
+    cluster_info: "{{ (work_nodes,redis_java_master_num,redis_java_slave_num) | combine_redis }}"
+
+# 改为手工预先创建pvc来保证调度到指定节点
+- name: create localpvc for redisphp
+  include_role:
+    name: common
+    tasks_from: local_pvc.yml
+  vars:
+    selectedNode: "{{ item['host'] }}"
+    qtsa_perm: "{{redis_uid}}-{{redis_gid}}"
+    qtsa_delete_data: "Y"
+    pvc_name: "datadir-redisjava-{{ item['inst'] }}"
+    app: "redisjava"
+    pvc_storage_capacity: "{{ redisjava_storage_capacity }}"
+    pv_path: "redisjava.{{ item['inst'] }}"
+
+  loop: "{{ cluster_info['host_instances'] }}"
+
+- name: create redisjava configmap
+  kubernetes.core.k8s:
+    definition: "{{ lookup('template', 'redisjava_configmap.yml', variable_start_string='[%', variable_end_string='%]') | from_yaml }}"
+
+- name: create redisjava headless service
+  kubernetes.core.k8s:
+    definition: "{{ lookup('template', 'redisjava_hs.yml') | from_yaml }}"
+
+- name: create redisjava StatefulSet
+  kubernetes.core.k8s:
+    definition: "{{ lookup('template', 'redisjava_statefulset.yml') | from_yaml | titan_combine(common_patch) }}"
+    apply: yes
+
+- set_fact:
+    master_slaves: "{{ cluster_info['master_slave_dict'] }}"
+
+- name: get redisjava statefulset 
+  kubernetes.core.k8s_info:
+    kind: StatefulSet
+    name: "redisjava"
+    namespace: "{{ namespace }}"
+    wait: yes
+    wait_sleep: 10
+    wait_timeout: 300
+  register: redisjava_setobj
+  
+- name: get redisjava pods util ok
+  include_role:
+    name: common
+    tasks_from: k8s_pods.yml
+  vars:
+    # 返回值为 {{app_name}}_pods,即redisjava_pods
+    app_name: "redisjava"
+    podnum: "{{ redis_java_master_num + redis_java_master_num * redis_java_slave_num }}"
+
+- set_fact:
+    # pod_ip_dict 是 podname:ip 组成的dict
+    pod_ip_dict: "{{ redisjava_pods | items2dict(key_name='name',value_name='ip')  }}"
+
+- set_fact:
+    master_command: "redis-cli --cluster create {% for master,slaves in master_slaves.items() %}{{ pod_ip_dict['redisjava-'+(master|string)] + ':6379' }}{{ ' ' if not loop.last else '' }}{% endfor %} --cluster-yes -a {{redisjava_passwd}}"
+
+- name: create redis cluster masters
+  kubernetes.core.k8s_exec:
+    validate_certs: no
+    namespace: "{{ namespace }}"
+    pod: "redisjava-0"
+    command: "{{ master_command }}"
+
+- include_tasks: add_slave.yml
+  vars:
+    master: "{{ item.key }}"
+    slaves: "{{ item.value }}"
+    pod_ip_map: "{{ pod_ip_dict }}"
+  loop: "{{ master_slaves | dict2items }}"

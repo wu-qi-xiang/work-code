@@ -1,0 +1,99 @@
+# ！！！警告：类似于存储这部分的Patch逻辑，请不要扩大用于其他地方，否则后续做任何改动都要考虑兼容，会给我们带来非常沉重的历史包袱 
+
+# 存储分为3种。
+# 1、数据库等使用的存储，默认local path provisioner提供
+# 2、titan-dfs 分布式文件系统  
+# 3、titan-logs 日志存储。一般是因为deployment用到，但是deployment没有volumeClaimTemplates 
+# 见 https://github.com/kubernetes/kubernetes/issues/93019。 
+# 本来使用的方案是通用临时卷，但是1.19以后才有通用临时卷，但默认关闭。1.21才beta默认开启
+
+# 一、首先是 titan-dfs 
+- name: Get titan_dfs
+  kubernetes.core.k8s_info:
+    kind: PersistentVolumeClaim
+    name: titan-dfs
+    namespace: "{{ namespace }}"
+  register: titan_dfs_result
+
+#  titan-dfs不存在, 检查是否提供了 titan_dfs_storageclass
+- block:
+    - name: create titan-dfs volume
+      kubernetes.core.k8s:
+        definition: "{{ lookup('template', '/data/patch/titan-dfs-pvc.yml') | from_yaml }}"
+    
+    #  如果创建了 titan-dfs,  glusterfs 和 csi-glusterfs 就无需安装了，这里不使用symmetric_difference
+    #  是因为symmetric_difference并不是删除的语义，会导致安装某个特定的角色时，也会将glusterfs等加进去
+    - set_fact:
+        install_roles: "{{install_roles | difference(['glusterfs','csi-glusterfs']) }}"
+        base_roles: "{{base_roles | difference(['glusterfs','csi-glusterfs']) }}"
+
+  when: (not titan_dfs_result | resource_exist) and (titan_dfs_storageclass is defined and titan_dfs_storageclass != "")
+
+# titan-dfs 存在，检查是否满足要求(mini_mode不检查)
+- block:
+    - fail:
+        msg: "titan_dfs volume accessModes must be ReadWriteMany"
+      when: "'ReadWriteMany' not in titan_dfs_result['resources'][0]['spec']['accessModes']"
+
+    #  如果提供了 titan-dfs,  glusterfs 和 csi-glusterfs 就无需安装了
+    - set_fact:
+        install_roles: "{{install_roles | difference(['glusterfs','csi-glusterfs']) }}"
+        base_roles: "{{base_roles | difference(['glusterfs','csi-glusterfs']) }}"
+
+  when: (mini_mode is not defined or not mini_mode) and (titan_dfs_result | resource_exist)
+
+# 二、 titan-logs 的逻辑
+# 默认是 fluentbit-client daemonset 搜集， 搜集到 fluentbit-server. 都是 hostPath
+- set_fact:
+    logsall_patch: "{{ lookup('template', '/data/patch/titan-logs-all-patch.yml') | from_yaml }}"
+    titanlogs_patch: "{{ lookup('template', '/data/patch/titan-logs-patch.yml') | from_yaml }}"
+    titan_logsall_exist: false
+
+- name: Get titan-logs-all
+  kubernetes.core.k8s_info:
+    kind: PersistentVolumeClaim
+    name: titan-logs-all
+    namespace: "{{ namespace }}"
+  register: titan_logsall_result
+
+#  如果已经提供了 titan-logs-all pvc
+- block:
+    - fail:
+        msg: "titan_logsall volume accessModes must be ReadWriteMany"
+      when: "'ReadWriteMany' not in titan_logsall_result['resources'][0]['spec']['accessModes']"
+
+    - set_fact:
+        titan_logsall_exist: true
+
+  when: (titan_logsall_result | resource_exist) 
+
+# 如果提供了 logsall_storageclass, 则创建 fluentbit-server 使用 titan-logs-all pvc， 然后fluentbit-client为 sidecar方式
+- block:
+    - name: create titan-logs-all volume
+      kubernetes.core.k8s:
+        definition: "{{ lookup('template', '/data/patch/titan-logsall-pvc.yml') | from_yaml }}"
+    
+    - set_fact:
+        titan_logsall_exist: true
+    
+  when: (not titan_logsall_exist) and (logsall_storageclass is defined and logsall_storageclass != "")
+
+#  如果日志存储对接了客户提供的，则业务容器使用sidecar搜集日志
+- block:
+    - name: create fluentbit-sidecar-config
+      kubernetes.core.k8s:
+        definition: "{{ lookup('template', '/data/patch/fluentbit-sidecar-configmap.yml') | from_yaml }}"
+    
+    - set_fact:
+        logsall_patch: "{{ lookup('template', '/data/patch/titan-logs-all-pvc-patch.yml') | from_yaml }}"
+        titanlogs_patch: "{{ lookup('template', '/data/patch/titan-logs-sidecar-patch.yml') | from_yaml }}"
+        # 设置不需要安装fluentbit-client
+        fluentbit_client_notinstall: "Y"
+  when: titan_logsall_exist
+
+
+# 三、如果数据库等持久化存储也使用了客户提供的存储而不是默认自带的local，则不再安装 local-path-provisioner
+- set_fact:
+    install_roles: "{{install_roles | difference(['localpv']) }}"
+    base_roles: "{{base_roles | difference(['localpv']) }}"
+  when: storageName != "qt-local-path"

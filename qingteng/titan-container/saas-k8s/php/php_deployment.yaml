@@ -1,0 +1,140 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: "titan-web-{{hostname}}"
+  namespace: "{{namespace}}"
+  labels:
+    app: titan-web
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: titan-web
+  strategy:
+    type: Recreate
+  progressDeadlineSeconds: 60
+  minReadySeconds: 10
+  revisionHistoryLimit: 3
+  template:
+    metadata:
+      name: titan-web
+      labels:
+        app: titan-web
+    spec:
+      affinity:
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            - labelSelector:
+                matchExpressions:
+                  - key: "app"
+                    operator: In
+                    values: 
+                    - titan-web
+              topologyKey: "kubernetes.io/hostname"
+      nodeSelector:
+        "{{php_nodelabel}}": "true"
+        "kubernetes.io/hostname": "{{ hostname }}"
+      hostNetwork: true
+      dnsPolicy: ClusterFirstWithHostNet
+      serviceAccountName: "{{service_account}}"
+      containers:
+        - image: "{{php_image}}"
+          name: titan-web
+          # 镜像启动后复制agent-update安装包到/data/app/www/agent-update/
+          # lifecycle:
+          #   postStart:
+          #     exec:
+          #       command: ["/bin/sh", "-c", "/bin/cp -rn /data/app/www/agent-update-inner/* /data/app/www/agent-update/"]
+          resources:
+            limits:
+              memory: "{{ php_limit_memory }}"
+            requests:
+              cpu: "{{cpu_req}}"
+              memory: "1024Mi"
+          readinessProbe:
+            httpGet:
+              path: /testrun/check
+              port: 8000
+            initialDelaySeconds: 10
+            periodSeconds: 8
+            timeoutSeconds: 5
+            failureThreshold: 30
+          livenessProbe:
+            httpGet:
+              path: /testrun/check
+              port: 8000
+            periodSeconds: 30
+            timeoutSeconds: 5
+            failureThreshold: 3
+          args: ["start"]
+          ports:
+            - containerPort: 80
+              protocol: TCP
+            - containerPort: 81
+              protocol: TCP
+            - containerPort: 8000
+              protocol: TCP
+            - containerPort: 8001
+              protocol: TCP
+            - containerPort: 8002
+              protocol: TCP
+            - containerPort: 8443
+              protocol: TCP
+          command: ["sh","-c","cp /data/app/www/titan-web/conf/product/application.ini.tmpl /data/app/www/titan-web/conf/product/application.ini && cp /data/app/www/titan-web/conf/build.json.tmpl /data/app/www/titan-web/conf/build.json && /docker-run.sh start"]
+          volumeMounts:
+            - mountPath: /data/app/www/titan-web/conf/product/application.ini.tmpl
+              subPath: application.ini
+              name: application-ini-volume
+            - mountPath: /data/app/www/titan-web/conf/informs/service.ini
+              subPath: service.ini
+              name: service-ini-volume
+            - mountPath: /data/app/www/titan-web/conf/build.json.tmpl
+              subPath: build.json
+              name: application-ini-volume
+            - mountPath: /data/app/www/titan-web/conf/product/keys
+              subPath: conf-product/keys
+              name: php-data-volume
+            - mountPath: /data/app/conf
+              subPath: conf-nginx
+              name: php-data-volume
+            - mountPath: /data/app/www/agent-update
+              subPath: agent-update
+              name: php-data-volume
+            - mountPath: /data/app/www/titan-web/license
+              subPath: license
+              name: php-data-volume
+            - mountPath: /data/app/www/titan-web/rules
+              subPath: rules
+              name: php-data-volume
+            - mountPath: /data/titan-logs/php
+              subPath: php
+              name: php-logs-volume
+            - mountPath: /data/titan-logs/php-fpm
+              subPath: php-fpm
+              name: php-logs-volume
+            - mountPath: /var/log/nginx
+              subPath: nginx
+              name: php-logs-volume
+            - mountPath: /data/titan-logs/nginx
+              subPath: nginx
+              name: php-logs-volume
+            - mountPath: /data/titan-logs/supervisor
+              subPath: supervisor
+              name: php-logs-volume
+      volumes:
+        - name: application-ini-volume
+          configMap:
+            name: application-ini
+        - name: service-ini-volume
+          configMap:
+            name: service-ini
+        # php日志按照{{ hostname }}隔离
+        - name: php-logs-volume
+          hostPath:
+            path: "/data/titan-dfs/titan-logs/php-{{ hostname }}"
+            type: DirectoryOrCreate
+        # php-data-volume是公共的
+        - name: php-data-volume
+          hostPath:
+            path: "/data/titan-dfs/titan-data/titan-web"
+            type: DirectoryOrCreate

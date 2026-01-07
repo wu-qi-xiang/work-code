@@ -1,0 +1,57 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: titan-fluentbit-server
+  namespace: "{{ namespace }}"
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: titan-fluentbit-server
+  template:
+    metadata:
+      labels:
+        app: titan-fluentbit-server
+    spec:
+      nodeSelector:
+        "{{fluentbit_server_nodelabel}}": "true"
+      serviceAccountName: "{{service_account}}"
+      containers:
+        - name: titan-fluentbit-server
+          imagePullPolicy: "{{ fluentbit_pullPolicy }}"
+          image: "{{ fluentbit_image }}"
+          ports:
+            - containerPort: {{fluentbit_server_port}}
+              name: server
+          resources:
+            limits:
+              memory: {{fluentbit_server_limit_memory}}
+            requests:
+              cpu: "{{cpu_req}}"
+              memory: {{fluentbit_server_req_memory}}
+          readinessProbe:
+            tcpSocket:
+              port: {{fluentbit_server_port}}
+            initialDelaySeconds: 5
+            timeoutSeconds: 5
+            periodSeconds: 20
+            failureThreshold: 5
+          livenessProbe:
+            tcpSocket:
+              port: {{fluentbit_server_port}}
+            initialDelaySeconds: 5
+            timeoutSeconds: 5
+            periodSeconds: 20
+            failureThreshold: 5
+          volumeMounts:
+            - name: fluent-bit-server-config
+              mountPath: /fluent-bit/etc/
+            - name: titan-logs-all
+              mountPath: /data/titan-logs-all
+          securityContext:
+            readOnlyRootFilesystem: true
+            allowPrivilegeEscalation: false
+      volumes:
+        - name: fluent-bit-server-config
+          configMap:
+            name: titan-fluentbit-server-config

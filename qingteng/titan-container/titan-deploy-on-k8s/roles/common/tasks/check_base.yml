@@ -1,0 +1,14 @@
+---
+# 检查基础服务运行情况
+- name: check {{item}}
+  include_role:
+    name: "{{item}}"
+    tasks_from: check.yml
+  loop: "{{base_roles}}"
+
+- set_fact:
+    abnormal_base_roles: "{{ base_roles | difference(ok_base_roles) }}"
+
+- fail:
+    msg: some base service exception:{{ abnormal_base_roles }}, you can execute ansible-playbook main.yml -v -e install_role={{ abnormal_base_roles | join(',') }}
+  when: "abnormal_base_roles | length > 0"

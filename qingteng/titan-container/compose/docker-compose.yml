@@ -1,0 +1,831 @@
+version: '3.7'
+
+services:
+
+  rediserl:
+    image: ${rediserl_image}
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "200M"
+        max-file: "3"
+    container_name: rediserl
+    hostname: rediserl
+    networks:
+      titan_net:
+        ipv4_address: 10.172.16.10
+    restart: unless-stopped
+    secrets:
+      - pbeconfig
+      - rediserl_password
+    volumes:
+      - /data/titan-container/redis/data:/data
+      - ${config_dir}/6379.conf:/etc/redis/6379.conf.tmpl
+      - /data/titan-logs/redis:/redislog
+      - ${script_dir}/dockerize:/dockerize
+    entrypoint: /dockerize
+    command:  -template /etc/redis/6379.conf.tmpl:/etc/redis/6379.conf /usr/local/bin/docker-entrypoint.sh redis-server /etc/redis/6379.conf
+
+  redisphp:
+    image: ${redisphp_image}
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "200M"
+        max-file: "3"
+    container_name: redisphp
+    hostname: redisphp
+    networks:
+      titan_net:
+        ipv4_address: 10.172.16.11
+    restart: unless-stopped
+    secrets:
+      - pbeconfig
+      - redisphp_password
+    volumes:
+      - /data/titan-container/redis/data:/data
+      - ${config_dir}/6380.conf:/etc/redis/6380.conf.tmpl
+      - /data/titan-logs/redis:/redislog
+      - ${script_dir}/dockerize:/dockerize
+    entrypoint: /dockerize
+    command:  -template /etc/redis/6380.conf.tmpl:/etc/redis/6380.conf /usr/local/bin/docker-entrypoint.sh redis-server /etc/redis/6380.conf
+
+  redisjava:
+    image: ${redisjava_image}
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "200M"
+        max-file: "3"
+    container_name: redisjava
+    hostname: redisjava
+    networks:
+      titan_net:
+        ipv4_address: 10.172.16.12
+    restart: unless-stopped
+    secrets:
+      - pbeconfig
+      - redisjava_password
+    volumes:
+      - /data/titan-container/redis/data:/data
+      - ${config_dir}/6381.conf:/etc/redis/6381.conf.tmpl
+      - /data/titan-logs/redis:/redislog
+      - ${script_dir}/dockerize:/dockerize
+    entrypoint: /dockerize
+    command:  -template /etc/redis/6381.conf.tmpl:/etc/redis/6381.conf /usr/local/bin/docker-entrypoint.sh redis-server /etc/redis/6381.conf
+
+  zookeeper:
+    image: ${zookeeper_image}
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "200M"
+        max-file: "3"
+    container_name: zookeeper
+    hostname: zookeeper
+    networks:
+      titan_net:
+        ipv4_address: 10.172.16.13
+    restart: unless-stopped
+    env_file:
+      - /data/titan-container/config/env/zookeeper.env
+    environment:
+      ZK_PASSWORD_FILE: /run/secrets/zk_password_plain
+    secrets:
+      - pbeconfig
+      - zk_password
+    volumes:
+      - /data/titan-container/zk-data:/data/zk-data
+      - /data/titan-logs/zookeeper:/data/titan-logs/zookeeper
+      - ${script_dir}/dockerize:/dockerize
+    entrypoint: bash 
+    command: -c '/dockerize -encSecret /run/secrets/zk_password && start-zk.sh'
+
+  # kafka version: 2.3.1
+  # scala version: 2.12
+  kafka:
+    image: ${kafka_image}
+    depends_on:
+      - zookeeper
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "200M"
+        max-file: "3"
+    container_name: kafka
+    hostname: kafka
+    networks:
+      titan_net:
+        ipv4_address: 10.172.16.14
+    restart: unless-stopped
+    env_file:
+      - /data/titan-container/config/env/kafka.env
+    environment:
+      KAFKA_QTPASSWD_FILE: /run/secrets/kafka_password_plain
+      ZK_PASSWORD_FILE: /run/secrets/zk_password_plain
+    secrets:
+      - pbeconfig
+      - kafka_password
+      - zk_password
+    volumes:
+      - /data/titan-container/kafka-data:/data/kafka-data
+      - /data/titan-logs/kafka/:/data/titan-logs/kafka
+      - ${script_dir}/dockerize:/dockerize
+    entrypoint: /dockerize
+    command: -wait tcp://zookeeper:2181 -timeout 45s -encSecret /run/secrets/zk_password -encSecret /run/secrets/kafka_password start-kafka.sh --override zookeeper.connect=zookeeper:2181 --override log.retention.hours=72
+  
+  rabbitmq:
+    image: ${rabbitmq_image}
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "200M"
+        max-file: "3"
+    container_name: rabbitmq
+    hostname: rabbitmq
+    networks:
+      titan_net:
+        ipv4_address: 10.172.16.15
+    restart: unless-stopped
+    env_file:
+      - /data/titan-container/config/env/rabbitmq.env
+    environment:
+      RABBITMQ_DEFAULT_USER: guest
+      RABBITMQ_DEFAULT_PASS_FILE: /run/secrets/rabbitmq_password_plain
+    secrets:
+      - pbeconfig
+      - rabbitmq_password
+    volumes:
+      - /data/titan-container/rabbitmq:/var/lib/rabbitmq
+      - ${script_dir}/dockerize:/dockerize
+    entrypoint: sh
+    command: -c '/dockerize -encSecret /run/secrets/rabbitmq_password && docker-entrypoint.sh rabbitmq-server'
+  
+  mysql:
+    image: ${mysql_image}
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "200M"
+        max-file: "3"
+    container_name: mysql
+    hostname: mysql
+    networks:
+      titan_net:
+        ipv4_address: 10.172.16.16
+    restart: unless-stopped
+    healthcheck:
+      test: ['CMD', 'bash','-c','netstat -tnlp | grep :3306']
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    environment:
+      MYSQL_ROOT_PASSWORD_FILE: /tmp/mysql_password_plain
+    secrets:
+      - pbeconfig
+      - mysql_password
+    volumes:
+      - ${config_dir}/mysql/my.cnf:/etc/my.cnf
+      - ${config_dir}/mysql/init.sql:/etc/init.sql
+      - /data/titan-container/mysql/:/data/mysql
+      - /data/titan-logs/mysql/:/data/titan-logs/mysql
+      - ${script_dir}/dockerize:/dockerize
+    entrypoint: /dockerize
+    command: -encSecret /run/secrets/mysql_password:/tmp/mysql_password_plain -template /etc/init.sql:/tmp/init.sql -delAfter /tmp/mysql_password_plain -delAfter /tmp/init.sql /docker-entrypoint.sh mysqld 
+
+  mongo:
+    image: ${mongo_image}
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "200M"
+        max-file: "3"
+    container_name: mongo
+    hostname: mongo
+    networks:
+      titan_net:
+        ipv4_address: 10.172.16.17
+    restart: unless-stopped
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: qingteng
+      MONGO_INITDB_ROOT_PASSWORD_FILE: /run/secrets/mongo_password_plain
+    secrets:
+      - pbeconfig
+      - mongo_password
+    volumes:
+      - /data/titan-container/mongodb/:/data/mongodb
+      - ${config_dir}/mongod.conf:/etc/mongo/mongod.conf
+      - /data/titan-logs/mongodb:/data/titan-logs/mongodb/
+      - ${script_dir}/dockerize:/dockerize
+    entrypoint: bash 
+    command: -c "sh -c '/dockerize -encSecret /run/secrets/mongo_password -delAfter /run/secrets/mongo_password_plain &'; sleep 1; /usr/local/bin/docker-entrypoint.sh mongod --config /etc/mongo/mongod.conf"
+
+  titan-web:
+    image: ${php_image}
+    container_name: titan-web
+    hostname: titan-web
+    depends_on:
+      - titan-gateway
+    networks:
+      titan_net:
+        ipv4_address: 10.172.16.18
+    ports:
+      - "80:80"
+      - "81:81"
+      - "8001:8001"
+      - "8002:8002"
+      - "8443:8443"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -k -sS http://127.0.0.1:8000/testrun/check | grep -F 'abnormal_service\":[]' || exit 1"]
+      interval: 1m30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    restart: unless-stopped
+    env_file:
+      - /data/titan-container/titan.env
+    secrets:
+      - pbeconfig
+      - rediserl_password
+      - redisphp_password
+      - kafka_password
+      - mysql_password
+      - rabbitmq_password
+    volumes:
+        - ${config_dir}/nginx:/data/app/conf
+        - ${config_dir}/php/application.properties:/data/app/www/titan-web/conf/product/application.properties
+        - ${config_dir}/php/build.properties:/data/app/www/titan-web/conf/build.properties
+        - /data/titan-container/agent-pkg/newshellaudit:/data/app/www/newshellaudit
+        - /data/titan-container/agent-pkg/rpm:/data/app/www/rpm
+        - /data/titan-container/agent-pkg/agent-update:/data/app/www/agent-update
+        - /data/titan-container/titan-web/rules:/data/app/www/titan-web/rules
+        - /data/titan-container/titan-web/license:/data/app/www/titan-web/license
+        - /data/titan-container/titan-web/keys:/data/app/www/titan-web/conf/product/keys
+        - /data/titan-logs/php:/data/titan-logs/php
+        - /data/titan-logs/supervisor:/data/titan-logs/supervisor
+        - /data/titan-logs/php-fpm:/data/titan-logs/php-fpm
+        - /data/titan-logs/nginx:/data/titan-logs/nginx
+        - /data/titan-logs/nginx:/var/log/nginx
+        - ${script_dir}/dockerize:/dockerize
+    entrypoint: bash
+    command: -c '/dockerize -template /data/app/conf/nginx.servers.conf.tmpl:/data/app/conf/nginx.servers.conf -mergeToJson /data/app/www/titan-web/conf/build.properties:/data/app/www/titan-web/conf/build.json; /usr/local/php/bin/php /data/app/www/titan-web/script/build_appini.php; /dockerize -mergeToIni /data/app/www/titan-web/conf/product/application.properties:/data/app/www/titan-web/conf/product/application.ini -wait tcp://mysql:3306 -wait tcp://rabbitmq:5672 -wait tcp://redisphp:6380 -wait tcp://rediserl:6379 -timeout 120s; /docker-run.sh start'
+    cap_add:
+      - SYS_PTRACE
+  
+  titan-connect-agent:
+    image: ${connectagent_image}
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "200M"
+        max-file: "3"
+    container_name: titan-connect-agent
+    hostname: titan-connect-agent
+    network_mode: host
+    extra_hosts:
+      - "rediserl:10.172.16.10"
+      - "zookeeper:10.172.16.13"
+      - "kafka:10.172.16.14"
+      - "rabbitmq:10.172.16.15"
+      - "mysql:10.172.16.16"
+      - "titan-web:10.172.16.18"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -k -sS http://127.0.0.1:6220/api/checkall | grep -F 'abnormal_service\":[]' || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    restart: unless-stopped
+    env_file:
+      - /data/titan-container/config/env/connect-agent.env
+      - /data/titan-container/titan.env
+    secrets:
+      - pbeconfig
+      - rediserl_password
+      - redisjava_password
+      - redisphp_password
+      - zk_password
+      - kafka_password
+      - mongo_password
+      - mysql_password
+      - rabbitmq_password
+      - thrift_token
+      - login_rsa_private_key
+      - login_rsa_public_key
+    volumes:
+      - ${config_dir}/java/jaas_zk_client.conf:/data/app/titan-config-tmpl/jaas_zk_client.conf
+      - ${config_dir}/java/java.properties:/data/app/titan-config/java.properties
+      - /data/titan-logs/java/connect-agent:/data/titan-logs/java/connect-agent
+      - ${script_dir}/dockerize:/dockerize
+    # devices:
+    #   - /dev/mem:/dev/mem
+    entrypoint: /dockerize
+    command: -template /data/app/titan-config-tmpl/jaas_zk_client.conf:/data/app/titan-config/jaas_zk_client.conf -mergeToJson /data/app/titan-config/java.properties:/data/app/titan-config/java.json -wait tcp://zookeeper:2181 -wait tcp://kafka:9092 -wait tcp://rabbitmq:5672 -wait tcp://mysql:3306  -wait tcp://rediserl:6379 -timeout 120s sh -c 'chmod +s /data/app/titan-connect-agent/sysinfo && /data/app/titan-connect-agent/init.d/connect-agent start'
+        
+  titan-connect-dh:
+    image: ${connectdh_image}
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "200M"
+        max-file: "3"
+    container_name: titan-connect-dh
+    hostname: titan-connect-dh
+    networks:
+      titan_net:
+        ipv4_address: 10.172.16.19
+    healthcheck:
+      test: ["CMD-SHELL", "curl -k -sS http://127.0.0.1:6210/api/checkall | grep -F 'abnormal_service\":[]' || exit 1"]
+      interval: 1m30s
+      timeout: 10s
+      retries: 3
+      start_period: 150s
+    restart: unless-stopped
+    env_file:
+      - /data/titan-container/config/env/connect-dh.env
+      - /data/titan-container/titan.env
+    secrets:
+      - pbeconfig
+      - rediserl_password
+      - redisjava_password
+      - redisphp_password
+      - zk_password
+      - kafka_password
+      - mongo_password
+      - mysql_password
+      - rabbitmq_password
+      - thrift_token
+      - login_rsa_private_key
+      - login_rsa_public_key
+    volumes:
+      - ${config_dir}/java/jaas_zk_client.conf:/data/app/titan-config-tmpl/jaas_zk_client.conf
+      - ${config_dir}/java/java.properties:/data/app/titan-config/java.properties
+      - /data/titan-logs/java/connect-dh:/data/titan-logs/java/connect-dh
+      - ${script_dir}/dockerize:/dockerize
+    entrypoint: /dockerize
+    command: -template /data/app/titan-config-tmpl/jaas_zk_client.conf:/data/app/titan-config/jaas_zk_client.conf -mergeToJson /data/app/titan-config/java.properties:/data/app/titan-config/java.json -wait tcp://zookeeper:2181 -wait tcp://kafka:9092 -wait tcp://rabbitmq:5672 -wait tcp://mysql:3306  -wait tcp://rediserl:6379 -timeout 180s /data/app/titan-connect-dh/init.d/connect-dh start
+  
+  titan-connect-selector:
+    image: ${connectselector_image}
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "200M"
+        max-file: "3"
+    container_name: titan-connect-selector
+    hostname: titan-connect-selector
+    networks:
+      titan_net:
+        ipv4_address: 10.172.16.20
+    ports:
+      - "6677:6677"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -k -sS http://127.0.0.1:6677/api/checkall | grep -F 'abnormal_service\":[]' || exit 1"]
+      interval: 1m30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    restart: unless-stopped
+    env_file:
+      - /data/titan-container/config/env/connect-selector.env
+      - /data/titan-container/titan.env
+    secrets:
+      - pbeconfig
+      - rediserl_password
+      - redisjava_password
+      - redisphp_password
+      - zk_password
+      - kafka_password
+      - mongo_password
+      - mysql_password
+      - rabbitmq_password
+      - thrift_token
+      - login_rsa_private_key
+      - login_rsa_public_key
+    volumes:
+      - ${config_dir}/java/jaas_zk_client.conf:/data/app/titan-config-tmpl/jaas_zk_client.conf
+      - ${config_dir}/java/java.properties:/data/app/titan-config/java.properties
+      - /data/titan-logs/java/connect-selector:/data/titan-logs/java/connect-selector
+      - ${script_dir}/dockerize:/dockerize
+    entrypoint: /dockerize
+    command: -template /data/app/titan-config-tmpl/jaas_zk_client.conf:/data/app/titan-config/jaas_zk_client.conf -mergeToJson /data/app/titan-config/java.properties:/data/app/titan-config/java.json -wait tcp://zookeeper:2181 -timeout 60s /data/app/titan-connect-selector/init.d/connect-selector start
+  
+  titan-connect-sh:
+    image: ${connectsh_image}
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "200M"
+        max-file: "3"
+    container_name: titan-connect-sh
+    hostname: titan-connect-sh
+    networks:
+      titan_net:
+        ipv4_address: 10.172.16.29
+    ports:
+        - "7788:7788"
+    healthcheck:
+      test: ["CMD-SHELL", "timeout 1 bash -c 'cat < /dev/null > /dev/tcp/127.0.0.1/7788'"]
+      interval: 1m30s
+      timeout: 10s
+      retries: 3
+      start_period: 120s
+    restart: unless-stopped
+    env_file:
+      - /data/titan-container/config/env/connect-sh.env
+      - /data/titan-container/titan.env
+    secrets:
+      - pbeconfig
+      - rediserl_password
+      - redisjava_password
+      - redisphp_password
+      - zk_password
+      - kafka_password
+      - mongo_password
+      - mysql_password
+      - rabbitmq_password
+      - thrift_token
+      - login_rsa_private_key
+      - login_rsa_public_key
+    volumes:
+      - ${config_dir}/java/jaas_zk_client.conf:/data/app/titan-config-tmpl/jaas_zk_client.conf
+      - ${config_dir}/java/java.properties:/data/app/titan-config/java.properties
+      - ${config_dir}/java/sh.properties:/data/app/titan-config/sh.properties
+      - /data/titan-logs/java/connect-sh:/data/titan-logs/java/connect-sh
+      - ${script_dir}/dockerize:/dockerize
+    entrypoint: /dockerize
+    command: -template /data/app/titan-config-tmpl/jaas_zk_client.conf:/data/app/titan-config/jaas_zk_client.conf -mergeToJson /data/app/titan-config/java.properties:/data/app/titan-config/java.json -mergeToJson /data/app/titan-config/sh.properties:/data/app/titan-config/sh.json -wait tcp://zookeeper:2181 -wait tcp://kafka:9092 -timeout 120s /data/app/titan-connect-sh/init.d/connect-sh start
+
+  titan-wisteria:
+    image: ${wisteria_image}
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "200M"
+        max-file: "3"
+    container_name: titan-wisteria
+    hostname: titan-wisteria
+    networks:
+      titan_net:
+        ipv4_address: 10.172.16.21
+    # ports:
+    #   - "6100:6100"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -k -sS http://127.0.0.1:6100/v1/assets/selfcheck/checkall | grep -F 'abnormal_service\":[]' || exit 1"]
+      interval: 1m30s
+      timeout: 10s
+      retries: 3
+      start_period: 240s
+    restart: unless-stopped
+    env_file:
+      - /data/titan-container/config/env/wisteria.env
+      - /data/titan-container/titan.env
+    secrets:
+      - pbeconfig
+      - rediserl_password
+      - redisjava_password
+      - redisphp_password
+      - zk_password
+      - kafka_password
+      - mongo_password
+      - mysql_password
+      - rabbitmq_password
+      - thrift_token
+      - login_rsa_private_key
+      - login_rsa_public_key
+    volumes:
+      - ${config_dir}/java/jaas_zk_client.conf:/data/app/titan-config-tmpl/jaas_zk_client.conf
+      - ${config_dir}/java/java.properties:/data/app/titan-config/java.properties
+      - /data/titan-logs/java/wisteria:/data/titan-logs/java/wisteria
+      - /data/titan-container/java/wisteria/files:/data/app/titan-wisteria/files
+      - /data/titan-container/java/wisteria/excellog:/data/app/titan-wisteria/excellog
+      - ${script_dir}/dockerize:/dockerize
+    entrypoint: /dockerize
+    command: -template /data/app/titan-config-tmpl/jaas_zk_client.conf:/data/app/titan-config/jaas_zk_client.conf -mergeToJson /data/app/titan-config/java.properties:/data/app/titan-config/java.json -wait tcp://zookeeper:2181 -wait tcp://kafka:9092 -wait tcp://mongo:27017 -wait tcp://mysql:3306 -wait tcp://rabbitmq:5672  -wait tcp://redisjava:6381 -timeout 240s /data/app/titan-wisteria/init.d/wisteria start
+
+  titan-gateway:
+    image: ${gateway_image}
+    container_name: titan-gateway
+    hostname: titan-gateway
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "200M"
+        max-file: "3"
+    networks:
+      titan_net:
+        ipv4_address: 10.172.16.22
+    # ports:
+    #   - "6000:6000"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -k -sS http://127.0.0.1:6000/v1/api/front/checkall | grep -F 'abnormal_service\":[]' || exit 1"]
+      interval: 1m30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    restart: unless-stopped
+    env_file:
+      - /data/titan-container/config/env/gateway.env
+      - /data/titan-container/titan.env
+    secrets:
+      - pbeconfig
+      - rediserl_password
+      - redisjava_password
+      - redisphp_password
+      - zk_password
+      - kafka_password
+      - mongo_password
+      - mysql_password
+      - rabbitmq_password
+      - thrift_token
+      - login_rsa_private_key
+      - login_rsa_public_key
+    volumes:
+      - ${config_dir}/java/jaas_zk_client.conf:/data/app/titan-config-tmpl/jaas_zk_client.conf
+      - ${config_dir}/java/java.properties:/data/app/titan-config/java.properties
+      - /data/titan-logs/java/gateway:/data/titan-logs/java/gateway
+      - ${script_dir}/dockerize:/dockerize
+    entrypoint: /dockerize
+    command: -template /data/app/titan-config-tmpl/jaas_zk_client.conf:/data/app/titan-config/jaas_zk_client.conf -mergeToJson /data/app/titan-config/java.properties:/data/app/titan-config/java.json -wait tcp://zookeeper:2181 -wait tcp://redisjava:6381 -timeout 60s /data/app/titan-gateway/init.d/gateway start
+
+  titan-user-srv:
+    image: ${usersrv_image}
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "200M"
+        max-file: "3"
+    container_name: titan-user-srv
+    hostname: titan-user-srv
+    networks:
+      titan_net:
+        ipv4_address: 10.172.16.23
+    healthcheck:
+      test: ["CMD-SHELL", "curl -k -sS http://127.0.0.1:6120/api/checkall | grep -F 'abnormal_service\":[]' || exit 1"]
+      interval: 1m30s
+      timeout: 10s
+      retries: 3
+      start_period: 120s
+    restart: unless-stopped
+    env_file:
+      - /data/titan-container/config/env/user-srv.env
+      - /data/titan-container/titan.env
+    secrets:
+      - pbeconfig
+      - rediserl_password
+      - redisjava_password
+      - redisphp_password
+      - zk_password
+      - kafka_password
+      - mongo_password
+      - mysql_password
+      - rabbitmq_password
+      - thrift_token
+      - login_rsa_private_key
+      - login_rsa_public_key
+    volumes:
+      - ${config_dir}/java/jaas_zk_client.conf:/data/app/titan-config-tmpl/jaas_zk_client.conf
+      - ${config_dir}/java/java.properties:/data/app/titan-config/java.properties
+      - /data/titan-logs/java/user-srv:/data/titan-logs/java/user-srv
+      - ${script_dir}/dockerize:/dockerize
+    entrypoint: /dockerize
+    command: --template /data/app/titan-config-tmpl/jaas_zk_client.conf:/data/app/titan-config/jaas_zk_client.conf -mergeToJson /data/app/titan-config/java.properties:/data/app/titan-config/java.json -wait tcp://zookeeper:2181 -wait tcp://redisjava:6381 -timeout 120s /data/app/titan-user-srv/init.d/user-srv start
+
+  titan-upload-srv:
+    image: ${uploadsrv_image}
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "200M"
+        max-file: "3"
+    container_name: titan-upload-srv
+    hostname: titan-upload-srv
+    networks:
+      titan_net:
+        ipv4_address: 10.172.16.24
+    # ports:
+    #   - "6130:6130"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -k -sS http://127.0.0.1:6130/internal/ping/checkall | grep -F 'abnormal_service\":[]' || exit 1"]
+      interval: 1m30s
+      timeout: 10s
+      retries: 3
+      start_period: 240s
+    restart: unless-stopped
+    env_file:
+      - /data/titan-container/config/env/upload-srv.env
+      - /data/titan-container/titan.env
+    secrets:
+      - pbeconfig
+      - rediserl_password
+      - redisjava_password
+      - redisphp_password
+      - zk_password
+      - kafka_password
+      - mongo_password
+      - mysql_password
+      - rabbitmq_password
+      - thrift_token
+      - login_rsa_private_key
+      - login_rsa_public_key
+    volumes:
+      - ${config_dir}/java/jaas_zk_client.conf:/data/app/titan-config-tmpl/jaas_zk_client.conf
+      - ${config_dir}/java/java.properties:/data/app/titan-config/java.properties
+      - /data/titan-logs/java/upload-srv:/data/titan-logs/java/upload-srv
+      - /data/titan-container/java/upload-srv/titan_ave:/data/app/titan-upload-srv/titan_ave
+      - /data/titan-container/java/upload-srv/qingteng-openjdk:/usr/local/qingteng/qingteng-openjdk
+      - /data/titan-container/java/upload-srv/cdc:/data/app/titan-upload-srv/cdc
+      - /data/titan-container/java/upload-srv/titan-upload:/data/titan-upload
+      - /data/titan-container/java/upload-srv/yara-rules:/data/app/titan-upload-srv/yara-rules
+      - ${script_dir}/dockerize:/dockerize
+    entrypoint: /dockerize
+    command: -template /data/app/titan-config-tmpl/jaas_zk_client.conf:/data/app/titan-config/jaas_zk_client.conf -mergeToJson /data/app/titan-config/java.properties:/data/app/titan-config/java.json -wait tcp://zookeeper:2181 -wait tcp://kafka:9092 -wait tcp://mongo:27017 -wait tcp://mysql:3306 -wait tcp://rabbitmq:5672 -wait tcp://redisjava:6381 -wait tcp://rediserl:6379 -timeout 240s bash -c '/data/app/titan-upload-srv/init.d/upload-srv start'
+
+  titan-detect-srv:
+    image: ${detectsrv_image}
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "200M"
+        max-file: "3"
+    container_name: titan-detect-srv
+    hostname: titan-detect-srv
+    networks:
+      titan_net:
+        ipv4_address: 10.172.16.26
+    healthcheck:
+      test: ["CMD-SHELL", "curl -k -sS http://127.0.0.1:6140/api/checkall | grep -F 'abnormal_service\":[]' || exit 1"]
+      interval: 1m30s
+      timeout: 10s
+      retries: 3
+      start_period: 240s
+    restart: unless-stopped
+    env_file:
+      - /data/titan-container/config/env/detect-srv.env
+      - /data/titan-container/titan.env
+    secrets:
+      - pbeconfig
+      - rediserl_password
+      - redisjava_password
+      - redisphp_password
+      - zk_password
+      - kafka_password
+      - mongo_password
+      - mysql_password
+      - rabbitmq_password
+      - thrift_token
+      - login_rsa_private_key
+      - login_rsa_public_key
+    volumes:
+      - ${config_dir}/java/jaas_zk_client.conf:/data/app/titan-config-tmpl/jaas_zk_client.conf
+      - ${config_dir}/java/java.properties:/data/app/titan-config/java.properties
+      - /data/titan-logs/java/detect-srv:/data/titan-logs/java/detect-srv
+      - ${script_dir}/dockerize:/dockerize
+    entrypoint: /dockerize
+    command: -template /data/app/titan-config-tmpl/jaas_zk_client.conf:/data/app/titan-config/jaas_zk_client.conf -mergeToJson /data/app/titan-config/java.properties:/data/app/titan-config/java.json -wait tcp://zookeeper:2181 -wait tcp://kafka:9092 -wait tcp://mongo:27017 -wait tcp://mysql:3306 -wait tcp://rabbitmq:5672  -wait tcp://redisjava:6381 -timeout 240s /data/app/titan-detect-srv/init.d/detect-srv start
+
+  titan-job-srv:
+    image: ${jobsrv_image}
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "200M"
+        max-file: "3"
+    container_name: titan-job-srv
+    hostname: titan-job-srv
+    networks:
+      titan_net:
+        ipv4_address: 10.172.16.27
+    healthcheck:
+      test: ["CMD-SHELL", "curl -k -sS http://127.0.0.1:6170/api/checkall | grep -F 'abnormal_service\":[]' || exit 1"]
+      interval: 1m30s
+      timeout: 10s
+      retries: 3
+      start_period: 180s
+    restart: unless-stopped
+    env_file:
+      - /data/titan-container/config/env/job-srv.env
+      - /data/titan-container/titan.env
+    secrets:
+      - pbeconfig
+      - rediserl_password
+      - redisjava_password
+      - redisphp_password
+      - zk_password
+      - kafka_password
+      - mongo_password
+      - mysql_password
+      - rabbitmq_password
+      - thrift_token
+      - login_rsa_private_key
+      - login_rsa_public_key
+    environment:
+      - TITAN_DIRS=/data/titan-logs/java/job-data
+    volumes:
+      - ${config_dir}/java/jaas_zk_client.conf:/data/app/titan-config-tmpl/jaas_zk_client.conf
+      - ${config_dir}/java/java.properties:/data/app/titan-config/java.properties
+      - ${config_dir}/java/job.properties:/data/app/titan-config/job.properties
+      - /data/titan-logs/java/job-srv:/data/titan-logs/java/job-srv
+      - /data/titan-logs/java/job-data:/data/titan-logs/java/job-data
+      - ${script_dir}/dockerize:/dockerize
+    entrypoint: /dockerize
+    command: -template /data/app/titan-config-tmpl/jaas_zk_client.conf:/data/app/titan-config/jaas_zk_client.conf -mergeToJson /data/app/titan-config/java.properties:/data/app/titan-config/java.json -mergeToJson /data/app/titan-config/job.properties:/data/app/titan-config/job.json -wait tcp://zookeeper:2181 -wait tcp://kafka:9092 -wait tcp://mongo:27017 -wait tcp://mysql:3306 -wait tcp://rabbitmq:5672  -wait tcp://redisjava:6381 -timeout 240s /data/app/titan-job-srv/init.d/job-srv start
+
+
+  titan-dbbackup:
+    image: ${dbbackup_image}
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "200M"
+        max-file: "3"
+    container_name: titan-dbbackup
+    hostname: titan-dbbackup
+    networks:
+      titan_net:
+        ipv4_address: 10.172.16.40
+    restart: unless-stopped
+    env_file:
+      - /data/titan-container/config/env/dbbackup.env
+    secrets:
+      - pbeconfig
+      - mongo_password
+      - mysql_password
+    volumes:
+      - /data/titan-backup/:/data/titan-backup/
+      - /data/titan-logs/:/data/titan-logs/
+      - ${script_dir}/dockerize:/dockerize
+    entrypoint: bash
+    command: -c '/dockerize -template /envconfig.json.tpl:/envconfig.json ; python schedule.py'
+
+  titan-go-patrol:
+    image: ${patrol_image}
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "200M"
+        max-file: "3"
+    container_name: titan-go-patrol
+    hostname: titan-go-patrol
+    networks:
+      titan_net:
+        ipv4_address: 10.172.16.41
+    restart: unless-stopped
+    ports:
+      - "6110:6110"
+    env_file:
+      - /data/titan-container/config/env/go-patrol.env
+      - /data/titan-container/titan.env
+    secrets:
+      - pbeconfig
+      - rediserl_password
+      - mysql_password
+      - login_rsa_private_key
+      - login_rsa_public_key
+    environment:
+      patrol_port: 6110
+      GODEBUG: netdns=cgo
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - /data/titan-container/config/patrol/cert:/data/app/titan-go-patrol/config/cert
+      - /data/titan-container/config/patrol/settings.yml.tpl:/data/app/titan-go-patrol/config/settings.yml.tpl
+      - /data/titan-container/patrol/db/:/data/app/titan-go-patrol/db/
+      - /data/titan-logs/:/data/titan-logs/
+      - ${script_dir}/dockerize:/dockerize
+      - ./.env:/data/app/titan-go-patrol/compose/.env
+      - ./docker-compose.yml:/data/app/titan-go-patrol/compose/docker-compose.yml
+    entrypoint: sh
+    command: -c '/dockerize -template /data/app/titan-go-patrol/config/settings.yml.tpl:/data/app/titan-go-patrol/config/settings.yml; /start.sh'
+
+secrets:
+  mongo_password:
+    file: /data/titan-container/secrets/mongo_password
+  mysql_password:
+    file: /data/titan-container/secrets/mysql_password
+  zk_password:
+    file: /data/titan-container/secrets/zk_password
+  kafka_password:
+    file: /data/titan-container/secrets/kafka_password
+  rabbitmq_password:
+    file: /data/titan-container/secrets/rabbitmq_password
+  redisjava_password:
+    file: /data/titan-container/secrets/redisjava_password
+  redisphp_password:
+    file: /data/titan-container/secrets/redisphp_password
+  rediserl_password:
+    file: /data/titan-container/secrets/rediserl_password
+  thrift_token:
+    file: /data/titan-container/secrets/thrift_token
+  pbeconfig:
+    file: /data/titan-container/secrets/pbeconfig
+  login_rsa_private_key:
+    file: /data/titan-container/secrets/login_rsa_private_key
+  login_rsa_public_key:
+    file: /data/titan-container/secrets/login_rsa_public_key
+
+networks:
+  titan_net:
+    external:
+      name: titan_net
+       

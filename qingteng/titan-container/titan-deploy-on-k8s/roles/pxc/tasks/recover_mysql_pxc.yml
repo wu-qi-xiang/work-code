@@ -1,0 +1,147 @@
+# 恢复 mysql-pxc 集群
+# 参考 https://www.percona.com/doc/kubernetes-operator-for-pxc/recovery.html 但是未完全按照这个来
+# 注意：不能删除statefulSet然后重新挂载，因为pvc不会重复使用，新创建的statefulset尝试绑定之前的pv和pvc将一直处于Pending状态
+# 其实主要就是要能获取 grastate.dat，因此依次删除pod让他自动重建
+# 启动statefulSet,使用命令 tail -f /dev/null，用于保持启动状态来读取 /data/mysql/grastate.dat
+
+# 1、如果safe_to_bootstrap 都为零，比较三台服务器上seqno的对应值。
+# 1.1、如果seqno对应相同，则在三台中任意一台执行以下内容：
+# 修改/data/mysql/grastate.dat 中 safe_to_bootstrap:0 更改为 safe_to_bootstrap:1 
+# 1.2、如果seqno对应值不相同，则选择seqno对应值最大的那台上更改safe_to_bootstrap:1
+# 2、如果safe_to_bootstrap有等于1的情况下,则应当先启动这个，因此 mysql的statefulset的podManagementPolicy必须为Parallel
+
+# - name: delete statefulset mysql
+#   shell: kubectl delete statefulset mysql -n {{namespace}}
+
+- name: Remove mysql StatefulSet
+  kubernetes.core.k8s:
+    state: absent
+    api_version: apps/v1
+    kind: StatefulSet
+    namespace: "{{ namespace }}"
+    name: "mysql"
+
+- pause:
+    seconds: 10
+
+- name: create mysql StatefulSet for recover
+  kubernetes.core.k8s:
+    definition: "{{ lookup('template', 'mysql_statefulset_for_recover.yml' ) | from_yaml }}"
+    apply: yes
+
+# 依次执行删除po操作保证重新创建新的po，否则Pod不running的情况下获取不到 grastate.dat
+# - name: Remove old mysql po
+#   kubernetes.core.k8s:
+#     state: absent
+#     api_version: v1
+#     kind: Pod
+#     namespace: "{{ namespace }}"
+#     name: "mysql-{{index}}"
+#   loop: "{{ range(mysql_replicas) | list }}"
+#   loop_control:
+#     loop_var: index
+
+- pause:
+    seconds: 10
+
+# 获取 recover pod 信息，测试 pod 已 running
+- name: get recover mysql pods 
+  kubernetes.core.k8s_info:
+    kind: Pod
+    label_selectors:
+      - "app = mysql"
+    namespace: "{{ namespace }}"
+  register: recover_podobj
+  until: ( recover_podobj | json_query('resources[*].status.{hostIP:hostIP, phase:phase}') | selectattr("phase", "equalto", "Running") | list | length ) == mysql_replicas
+  retries: 6
+  delay: 10
+
+- name: set recover pods
+  set_fact:
+    "recover_mysql_pods": "{{ recover_podobj | json_query('resources[*].{name:metadata.name, ip:status.podIP,hostname:spec.nodeName}') }}"
+
+# 1、touch sst_in_progress
+- name: get grastate.dat
+  kubernetes.core.k8s_exec:
+    validate_certs: no
+    namespace: "{{ namespace }}"
+    pod: "{{ item.name }}"
+    command: sh -c "touch /data/mysql/sst_in_progress "
+  register: grastates
+  loop: "{{ recover_mysql_pods }}"
+
+# 2、获取grastate.dat中 seqno 和 safe_to_bootstrap的值
+- name: get grastate.dat
+  kubernetes.core.k8s_exec:
+    validate_certs: no
+    namespace: "{{ namespace }}"
+    pod: "{{ item.name }}"
+    command: sh -c "cat /data/mysql/grastate.dat | grep -E 'seqno|safe_to_bootstrap' | tr -d ' ' | xargs echo '{{item.name}}' "
+  register: grastates
+  loop: "{{ recover_mysql_pods }}"
+
+- debug:
+    msg: "{{grastates | json_query('results[*].stdout')}}"
+
+- set_fact:
+    grastate_list: "{{grastates | json_query('results[*].stdout') | map('trim') | list }}"   
+
+- set_fact:
+    bootstrap_pod: "{{grastate_list | grastates_filter }}" 
+
+- name: change grastate.dat safe_to_bootstrap to 1
+  kubernetes.core.k8s_exec:
+    validate_certs: no
+    namespace: "{{ namespace }}"
+    pod: "{{ bootstrap_pod }}"
+    command: sh -c "mysqld --wsrep_recover && sed -i '/safe_to_bootstrap/s/0/1/' /data/mysql/grastate.dat && sed -i 's/wsrep_cluster_address=.*/wsrep_cluster_address=gcomm:\/\//g' /etc/mysql/node.cnf "
+  when: bootstrap_pod != ""
+
+- name: start boot strap server
+  kubernetes.core.k8s_exec:
+    validate_certs: no
+    namespace: "{{ namespace }}"
+    pod: "{{ bootstrap_pod }}"
+    command: sh -c "mysqld &"
+  when: bootstrap_pod != ""
+
+- pause:
+    seconds: 60
+
+# restart other pod's mysql
+- name: retsrat other mysql
+  kubernetes.core.k8s_exec:
+    validate_certs: no
+    namespace: "{{ namespace }}"
+    pod: "{{ item.name }}"
+    command: sh -c "sed -i '/safe_to_bootstrap/s/1/0/' /data/mysql/grastate.dat && rm -f /data/mysql/sst_in_progress && /entrypoint.sh mysqld &"
+  when: item.name != bootstrap_pod
+  loop: "{{ recover_mysql_pods }}"
+
+- name: please wait 300 seconds 
+  pause:
+    seconds: 300
+
+- name: if no need wait more time , you can ctrol+c to stop wait
+  pause:
+    seconds: 2400
+
+- name: delete /data/mysql/sst_in_progress
+  kubernetes.core.k8s_exec:
+    validate_certs: no
+    namespace: "{{ namespace }}"
+    pod: "{{ item.name }}"
+    command: sh -c "rm -f /data/mysql/sst_in_progress "
+  register: grastates
+  loop: "{{ recover_mysql_pods }}"
+
+- name: delete statefulset mysql
+  shell: kubectl -n {{namespace}} delete statefulset mysql 
+
+- pause:
+    seconds: 10
+
+- name: create mysql StatefulSet for recover
+  kubernetes.core.k8s:
+    definition: "{{ lookup('template', 'mysql_statefulset.yml' ) | from_yaml }}"
+    apply: yes

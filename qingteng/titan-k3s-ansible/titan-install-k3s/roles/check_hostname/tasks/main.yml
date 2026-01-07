@@ -1,0 +1,13 @@
+---
+##写入所有主机的hostname到/tmp/ansible_hostname_list1.txt
+- name: check ansible_hostname file 
+  shell: ls /tmp/ansible_hostname_list.txt
+  ignore_errors: yes
+  register: file_status
+  delegate_to: localhost
+  run_once: true
+
+- name: Write all server hostname to ansible_hostname_list.txt
+  shell: echo "{{ ansible_hostname }}" >> /tmp/ansible_hostname_list.txt
+  delegate_to: localhost
+  when: file_status.rc == 1  

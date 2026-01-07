@@ -1,0 +1,231 @@
+
+# 首先拉取 titan-env.yml
+- name: get titan-env.yml from ConfigMap
+  shell: kubectl -n {{namespace}} get cm titan-env  -o jsonpath='{.data.titan-env\.yml}' > titan-env.yml
+
+- name: include_var titan-env.yml
+  include_vars: titan-env.yml
+
+#供 parallel_main.yml 和 main.yml 共用的 pre_tasks 部分
+- name: create ServiceAccount
+  include_role:
+    name: common
+    tasks_from: service_account.yml
+
+- name: Get titan-secrets
+  kubernetes.core.k8s_info:
+    kind: Secret
+    name: titan-all-secrets
+    namespace: "{{ namespace }}"
+  register: titan_secrets_result
+  no_log: True
+    
+- block:
+  # 各个密码值如果没有特别设置则随机生成，如果在custom_var.yml中定义了，则使用自定义的
+  - set_fact:
+      pbeconfig: "{{ pbeconfig | default(32|randomString, true) }}"
+
+  # default(16|randomString, true) 默认生成16位的随机字符串作为密码
+  - set_fact:
+      zk_passwd: "{{ zk_passwd | default(16|randomString, true) }}"
+      kafka_passwd: "{{ kafka_passwd | default(16|randomString, true) }}"
+      mysql_passwd: "{{ mysql_passwd | default(16|randomString, true) }}"
+      mongo_passwd: "{{ mongo_passwd | default(16|randomString, true) }}"
+      msmongo_passwd: "{{ msmongo_passwd | default(16|randomString, true) }}"
+      rabbitmq_passwd: "{{ rabbitmq_passwd | default(16|randomString, true) }}"
+      redisjava_passwd: "{{ redisjava_passwd | default(16|randomString, true) }}"
+      redisphp_passwd: "{{ redisphp_passwd | default(16|randomString, true) }}"
+      rediserl_passwd: "{{ rediserl_passwd | default(16|randomString, true) }}"
+      thrift_token: "{{ thrift_token | default(16|randomString, true) }}"
+    no_log: True
+
+  # 生成前端登录公私钥
+  - name: create login rsa key
+    shell: cd /tmp && openssl genrsa -out pkcs1_prikey.pem 2048 && openssl pkcs8 -topk8 -inform PEM -in pkcs1_prikey.pem -outform pem -nocrypt -out pkcs8_prikey.pem && openssl rsa -in pkcs1_prikey.pem -pubout -out tmp_pubkey.pem
+
+  - set_fact:
+      login_rsa_private_key: "{{lookup('file', '/tmp/pkcs8_prikey.pem') | regex_replace('-----.*KEY-----','') | replace('\n','') }}"
+      login_rsa_public_key: "{{lookup('file', '/tmp/tmp_pubkey.pem') | regex_replace('-----.*KEY-----','') | replace('\n','') }}"
+    vars:
+      screen_only: true
+      
+  - name: delete tmp login rsa key file
+    shell: rm -rf /tmp/*.pem
+
+  - name: Create titan-secrets 
+    kubernetes.core.k8s:
+      state: present
+      definition:
+        apiVersion: v1
+        kind: Secret
+        metadata:
+          name: titan-all-secrets
+          namespace: "{{ namespace }}"
+        data:
+          pbeconfig: "{{pbeconfig | b64encode}}"
+          zk_passwd: "{{zk_passwd | encrypt_string(pbeconfig) | b64encode}}"
+          kafka_passwd: "{{kafka_passwd | encrypt_string(pbeconfig) | b64encode}}"
+          mysql_passwd: "{{mysql_passwd | encrypt_string(pbeconfig) | b64encode}}"
+          mongo_passwd: "{{mongo_passwd | encrypt_string(pbeconfig) | b64encode}}"
+          msmongo_passwd: "{{msmongo_passwd | encrypt_string(pbeconfig) | b64encode}}"
+          rabbitmq_passwd: "{{rabbitmq_passwd | encrypt_string(pbeconfig) | b64encode}}"
+          redisjava_passwd: "{{redisjava_passwd | encrypt_string(pbeconfig) | b64encode}}"
+          redisphp_passwd: "{{redisphp_passwd | encrypt_string(pbeconfig) | b64encode}}"
+          rediserl_passwd: "{{rediserl_passwd | encrypt_string(pbeconfig) | b64encode}}"
+          thrift_token: "{{thrift_token | encrypt_string(pbeconfig) | b64encode}}"
+          login_rsa_private_key: "{{login_rsa_private_key | b64encode}}"
+          login_rsa_public_key: "{{login_rsa_public_key | b64encode}}"
+    no_log: True
+
+  # 如果 titan-secrets 还没有创建则重新生成
+  when: titan_secrets_result is not defined or (titan_secrets_result['resources']|length == 0)
+
+- block:
+  - set_fact:
+      titan_secret_data: "{{ titan_secrets_result['resources'][0]['data'] }}"
+    no_log: True
+      
+  - set_fact:
+      pbeconfig: "{{ titan_secret_data['pbeconfig'] | b64decode }}"
+    no_log: True
+
+  - set_fact:
+      zk_passwd: "{{ titan_secret_data['zk_passwd'] | b64decode | decrypt_string(pbeconfig) }}"
+      kafka_passwd: "{{ titan_secret_data['kafka_passwd'] | b64decode | decrypt_string(pbeconfig) }}"
+      mysql_passwd: "{{ titan_secret_data['mysql_passwd'] | b64decode | decrypt_string(pbeconfig) }}"
+      mongo_passwd: "{{ titan_secret_data['mongo_passwd'] | b64decode | decrypt_string(pbeconfig) }}"
+      msmongo_passwd: "{{ titan_secret_data['msmongo_passwd'] | b64decode | decrypt_string(pbeconfig) }}"
+      rabbitmq_passwd: "{{ titan_secret_data['rabbitmq_passwd'] | b64decode | decrypt_string(pbeconfig) }}"
+      redisjava_passwd: "{{ titan_secret_data['redisjava_passwd'] | b64decode | decrypt_string(pbeconfig) }}"
+      redisphp_passwd: "{{ titan_secret_data['redisphp_passwd'] | b64decode | decrypt_string(pbeconfig) }}"
+      rediserl_passwd: "{{ titan_secret_data['rediserl_passwd'] | b64decode | decrypt_string(pbeconfig) }}"
+    no_log: True
+
+  # 如果 titan-all-secrets 已创建，则获取到并用于安装部署
+  when: titan_secrets_result is defined and (titan_secrets_result['resources']|length > 0)
+
+- name: Get titan-java-config
+  kubernetes.core.k8s_info:
+    kind: ConfigMap
+    name: titan-java-config
+    namespace: "{{ namespace }}"
+  register: titan_java_config_result
+
+# 创建 titan-java-config ConfigMap, 用于java生成最终的配置文件
+- name: create titan-java-config ConfigMap
+  shell: "kubectl -n {{namespace}} create configmap titan-java-config --from-file={{titan_config_dir}}/java"
+  when: titan_java_config_result is not defined or (titan_java_config_result['resources']|length == 0)
+
+- name: Get titan-php-config
+  kubernetes.core.k8s_info:
+    kind: ConfigMap
+    name: titan-php-config
+    namespace: "{{ namespace }}"
+  register: titan_php_config_result
+
+# 创建 titan-php-config ConfigMap, 用于php生成最终的配置文件
+- name: create titan-php-config ConfigMap
+  shell: "kubectl -n {{namespace}} create configmap titan-php-config --from-file={{titan_config_dir}}/php"
+  when: titan_php_config_result is not defined or (titan_php_config_result['resources']|length == 0)
+
+
+- block:
+  - name: Get titan-java-config
+    kubernetes.core.k8s_info:
+      kind: ConfigMap
+      name: titan-ms-srv-config
+      namespace: "{{ namespace }}"
+    register: titan_ms_srv_config_result
+
+  # 创建 titan-java-config ConfigMap, 用于java生成最终的配置文件
+  - name: create titan-ms-srv-config ConfigMap
+    shell: "kubectl -n {{namespace}} create configmap titan-ms-srv-config --from-file={{titan_config_dir}}/custom.yml"
+    when: titan_ms_srv_config_result is not defined or (titan_ms_srv_config_result['resources']|length == 0)
+
+
+# 确定需要安装的role，允许下面2种方式 1、传入 -e from_role=php，将从php开始继续安装 2、传入 -e install_role=php,gateway 将安装指定的这2个角色
+
+- set_fact:
+    all_roles: "{{all_roles | difference(['event-srv']) }}"
+    app_roles: "{{app_roles | difference(['event-srv']) }}"
+    java_images: "{{ java_images | difference([eventsrv_image]) }}"
+  when: ( event_srv_enable == "false" or event_srv_enable == false ) and ( ms_srv_enable == "false" or ms_srv_enable == false )
+
+- set_fact:
+    all_roles: "{{all_roles | difference(['ms-srv','mongo-ms-srv']) }}"
+    base_roles: "{{base_roles | difference(['mongo-ms-srv']) }}"
+    app_roles: "{{app_roles | difference(['ms-srv']) }}"
+    java_images: "{{ java_images | difference([mssrv_image]) }}"
+  when: ms_srv_enable == "false" or ms_srv_enable == false
+
+- set_fact:
+    all_roles: "{{all_roles | difference(['anti-virus-srv']) }}"
+    app_roles: "{{app_roles | difference(['anti-virus-srv']) }}"
+    java_images: "{{ java_images | difference([antivirussrv_image]) }}"
+  when: anti_virus_srv_enable == "false" or anti_virus_srv_enable == false
+
+- set_fact:
+    all_roles: "{{ all_roles | difference(app_hive_roles) }}"
+    app_roles: "{{ app_roles | difference(app_hive_roles) }}"
+    java_images: "{{ java_images | difference([scansrv_image,clusterlinksrv_image]) }}"
+  when: docker_enable == "false" or docker_enable == false
+
+
+- set_fact:
+    all_roles: "{{ all_roles | union(extra_roles) }}"
+    app_roles: "{{ app_roles | union(extra_roles) }}"
+
+#默认安装所有role
+- set_fact:
+    install_roles: "{{ all_roles }}"
+
+- set_fact:
+    install_roles: "{{ install_role.split(',') | intersect(all_roles) }}"
+  when: install_role is defined
+
+# 传入指定的 from_role, 从指定的role开始
+- block:
+  - set_fact:
+      from_index: "{{all_roles.index(from_role) | int}}"
+  - set_fact:
+      install_roles: "{{ all_roles | sublist(from_index) }}"
+    when: from_index is defined and from_index != -1
+  when: from_role is defined and from_role != ''
+
+# 检查存储，决定一些存储相关的逻辑，会涉及到判断某些存储相关的role是否安装
+- name: storage_patch.yml
+  include_tasks: storage_patch.yml
+
+# 如果未提供安装角色，则自动检测应该安装哪些role
+- block:
+  - name: check base service
+    import_role:
+      name: common
+      tasks_from: check_base.yml
+    ignore_errors: yes
+
+  - set_fact:
+      install_roles: "{{ abnormal_base_roles | sortRoles(all_roles) | union(app_roles) }}"
+
+  # 如果 wiseria已经存在，则自动检查 app_roles, 去掉已经ok的app role
+  - name: get titan-wisteria
+    kubernetes.core.k8s_info:
+      kind: Deployment
+      name: "titan-wisteria"
+      namespace: "{{ namespace }}"
+    register: wisteria_setobj
+
+  - block:
+    - name: check {{item}}
+      include_role:
+        name: "{{item}}"
+        tasks_from: check.yml
+      loop: "{{app_roles}}"
+    # 删除ok_app_roles
+    - set_fact:
+        install_roles: "{{ install_roles | difference(ok_app_roles) }}"
+
+    when: wisteria_setobj | resource_exist
+
+  when: install_role is not defined and from_role is not defined 
+

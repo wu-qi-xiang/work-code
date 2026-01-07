@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: titan-job-srv
+  namespace: "{{namespace}}"
+spec:
+  selector:
+    app: titan-job-srv
+  ports:
+    - protocol: TCP
+      port: {{jobsrv_port}}

@@ -1,0 +1,103 @@
+upstream javaserver { 
+}
+
+server
+{
+    listen 6000;
+    client_max_body_size 100m;
+    ssl off;
+    if ($request_uri  ~* "/.*\.\..*") {
+      return 404;
+    }
+    if ($uri ~ [^-A-Za-z0-9_\/.]) {
+      return 404;
+    }
+    location / {
+        proxy_pass http://javaserver;
+    }
+}
+
+upstream connectselector {
+}
+
+server
+{
+    listen 6677;
+    client_max_body_size 100m;
+    ssl off;
+    if ($request_uri  ~* "/.*\.\..*") {
+      return 404;
+    }
+    if ($uri ~ [^-A-Za-z0-9_\/.]) {
+      return 404;
+    }
+    location / {
+        proxy_pass http://connectselector;
+    }
+}
+
+upstream phpbackend {
+}
+
+server
+{
+    listen 81;
+    server_name  backend-sec.qingteng.cn;
+    client_max_body_size 500m;
+    ssl off;
+    if ($request_uri  ~* "/.*\.\..*") {
+      return 404;
+    }
+    if ($uri ~ [^-A-Za-z0-9_\/.]) {
+      return 404;
+    }
+    location / {
+        proxy_pass http://phpbackend;
+        proxy_next_upstream error timeout http_502 http_503 http_504 non_idempotent;
+        proxy_next_upstream_tries 3;
+    }
+}
+
+upstream phpinnerapi {
+}
+
+server
+{
+    listen 8000;
+    server_name  innerapi-sec.qingteng.cn;
+    client_max_body_size 500m;
+    ssl off;
+    if ($request_uri  ~* "/.*\.\..*") {
+      return 404;
+    }
+    if ($uri ~ [^-A-Za-z0-9_\/.]) {
+      return 404;
+    }
+    location / {
+        proxy_pass http://phpinnerapi;
+        proxy_next_upstream error timeout http_502 http_503 http_504 non_idempotent;
+        proxy_next_upstream_tries 3;
+    }
+}
+
+upstream phpapi {
+}
+
+server
+{
+    listen 8001;
+    server_name  api-sec.qingteng.cn;
+    client_max_body_size 500m;
+    ssl off;
+    if ($request_uri  ~* "/.*\.\..*") {
+      return 404;
+    }
+    if ($uri ~ [^-A-Za-z0-9_\/.]) {
+      return 404;
+    }
+    location / {
+        proxy_pass http://phpapi;
+        proxy_next_upstream error timeout http_502 http_503 http_504 non_idempotent;
+        proxy_next_upstream_tries 3;
+    }
+}

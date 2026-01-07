@@ -1,0 +1,9 @@
+---
+# defaults file for connectselector
+connectselector_pullPolicy: IfNotPresent
+connectselector_uid: 2020
+connectselector_gid: 2020
+connectselector_port: 6677
+
+connectselector_limit_memory: 1024Mi
+connectselector_limit_cpu: 8

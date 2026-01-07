@@ -1,0 +1,13 @@
+FROM oraclelinux:8-slim
+
+RUN rpm -U https://repo.mysql.com/mysql80-community-release-el8-1.noarch.rpm \
+  && microdnf install -y --disablerepo=ol8_appstream \
+     mysql-community-client-8.0.25 mysql-router-community-8.0.25 \
+  && microdnf clean all && rm -f /usr/bin/mysql_migrate_keyring /usr/bin/mysqlcheck /usr/bin/mysqlshow /usr/bin/mysqlslap /usr/bin/mysqlbinlog /usr/bin/mysqlpump
+
+COPY run.sh /run.sh
+HEALTHCHECK \
+	CMD mysqladmin --port 6446 --protocol TCP ping 2>&1 | grep Access || exit 1
+EXPOSE 6446 6447 
+ENTRYPOINT ["/run.sh"]
+CMD ["mysqlrouter"]

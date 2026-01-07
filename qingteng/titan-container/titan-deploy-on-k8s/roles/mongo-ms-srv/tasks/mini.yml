@@ -1,0 +1,56 @@
+---
+# 检查 mongo-configmap 是否已创建
+- name: Get msmongo-configmap
+  kubernetes.core.k8s_info:
+    kind: ConfigMap
+    name: msmongo-configmap
+    namespace: "{{ namespace }}"
+  register: mongo_cm_result
+
+- block:
+  - name: create msmongo key file
+    shell: openssl rand -base64 756
+    register: random_key_result
+
+  - set_fact:
+      random_key: "{{ random_key_result['stdout'].strip() }}"
+
+- name: create mongo configmap
+  kubernetes.core.k8s:
+    definition: "{{ lookup('template', 'mongo_configmap_single.yml') | from_yaml }}"
+
+# 获取mongod节点
+- set_fact:
+    work_nodes: "{{ label_nodes[msmongod_nodelabel] }}"
+
+- fail:
+    msg: "have no available node for mongod"
+  when: work_nodes|length < 1
+
+- name: set new_shard_info
+  set_fact:
+    new_shard_nodes: "{{ [work_nodes[0]] }}"
+
+- name: create msmongod headless service
+  kubernetes.core.k8s:
+    definition: "{{ lookup('template', 'mongod_hs.yml') | from_yaml }}"
+
+- name: create msmongod StatefulSet
+  kubernetes.core.k8s:
+    definition: "{{ lookup('template', 'mongod_statefulset_single.yml') | from_yaml | titan_combine(common_patch) }}"
+    apply: yes
+
+- name: create mongod service
+  kubernetes.core.k8s:
+    definition: "{{ lookup('template', 'mongod_svc.yml') | from_yaml }}"
+
+# 等待mongod ready
+- name: get msmongod statefulset 
+  kubernetes.core.k8s_info:
+    kind: StatefulSet
+    name: "msmongod"
+    namespace: "{{ namespace }}"
+    wait: yes
+    wait_sleep: 15
+    wait_timeout: 180
+  register: mongod_setobj

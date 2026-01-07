@@ -1,0 +1,17 @@
+# - name: get kafka topic list
+#   kubernetes.core.k8s_exec:
+#     validate_certs: no
+#     namespace: "{{ namespace }}"
+#     pod: "kafka-0"
+#     command: /usr/local/qingteng/kafka/bin/kafka-topics.sh --list --zookeeper zk-0.zk-hs:2181
+#   register: kafka_topic_lists
+
+
+- name: create kafka topic 
+  kubernetes.core.k8s_exec:
+    validate_certs: no
+    namespace: "{{ namespace }}"
+    pod: "kafka-0"
+    command: /usr/local/qingteng/kafka/bin/kafka-topics.sh --alter --zookeeper zk-0.zk-hs:2181 --replication-factor {{ kafka_replicas }} --topic {{item['name']}} --add-config retention.ms={{item['retention']}},retention.bytes={{item['retention_bytes']}}
+  #when: item['name'] not in kafka_topic_lists.stdout.split()
+  with_items: "{{ kafka_topic_thp }}"

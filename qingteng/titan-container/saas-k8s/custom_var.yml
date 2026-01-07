@@ -1,0 +1,55 @@
+---
+registry: registry.qingteng.cn/titan-container
+
+docker_enable: "true"
+bigdata_enable: "true"
+
+default_uname: ""
+
+console_publicip: "123.59.41.42"
+console_domain: "console.qingteng.cn"
+
+backend_publicip: "123.59.54.71"
+backend_domain: "back.qingteng.me"
+
+api_publicip: "123.59.40.169"
+api_domain: ""
+
+upload_publicip: "123.59.87.121"
+upload_domain: ""
+
+selector_publicip: "106.75.104.108"
+selector_domain: ""
+
+#下面2个对应于 10-10-91-47 下载 不需要迁移
+agent_publicip: "123.59.41.43"
+agent_domain: "dump.qingteng.cn"
+
+download_publicip: "123.59.41.43"
+download_domain: "download.qingteng.cn"
+
+
+external_kafka_servers: "10.10.5.200:9093 10.10.5.200:9094 10.10.5.200:9095"
+
+pbeconfig: 
+kafka_passwd: 
+mysql_root_passwd: 
+mongo_passwd: 
+rabbitmq_passwd: 
+redisjava_passwd: 
+redisphp_passwd: 
+rediserl_passwd: 
+
+login_rsa_private_key: ""
+login_rsa_public_key: ""
+
+# sh节点的配置，规划几个sh节点就配置几个
+sh_nodes:
+  - nodeid: 1
+    hostname: node7
+    ipv4: 106.75.37.57
+    sh_port: 7788
+    thrift_port: 6201
+
+console_access_domains: ["console.qingteng.cn","pre-console.qingteng.cn","fwqaq.ctyun.cn","asset.cloudguarder.com","qcloud.qingteng.cn","demo.ispower.com.cn","test.etiir.com"]
+

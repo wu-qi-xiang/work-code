@@ -1,0 +1,11 @@
+---
+# defaults file for titan-backup
+dbbackup_pullPolicy: IfNotPresent
+dbbackup_limit_memory: 16Gi
+#目前titan安装的K8S集群组件是0时区的，北京时间+8，下面定时将在北京时间凌晨4点，5点执行
+dbbackup_schedule: "04 21 * * *"
+dbclean_schedule: "30 21 * * *"
+logclean_schedule: "04 22 * * *"
+backupconf_json: "/export_config.json"
+
+backup_storage_capacity: "100Gi"

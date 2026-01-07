@@ -1,0 +1,107 @@
+#!/bin/bash
+# ------------------------------------------------------------------------------
+# @author:  Jitang Hu
+# @copyright jitang.hu@qingteng.cn
+# @doc:     Auto rsync_agent version for test
+#-------------------------------------------------------------------------------
+
+AGENT_BUILD_SSH_URL=qingteng@172.16.6.187
+
+#ssh -p 22 -t $AGENT_BUILD_SSH_URL -oStrictHostKeyChecking=no "sudo bash /data/app/www/agent-update/rsync_saas_agent.sh" 
+mkdir -p agent_files agent_files/www agent_files/www/agent-update
+rsync -rv --delete $AGENT_BUILD_SSH_URL:/data/app/www/agent-update/newshellaudit agent_files/www/
+rsync -rv --delete $AGENT_BUILD_SSH_URL:/data/app/www/agent-update/rpm agent_files/www/
+rm -rf agent_files/www/agent-update/*
+mkdir -p agent_files/www/agent-update/shell_audit/v1.1.0
+mkdir -p agent_files/www/agent-update/shell_audit/v1.5.2
+mkdir -p agent_files/www/agent-update/shell_audit/v1.5.3
+mkdir -p agent_files/www/agent-update/shell_audit/v1.5.4
+mkdir -p agent_files/www/agent-update/shell_audit/v1.5.6/aarch64
+rsync -rv --delete $AGENT_BUILD_SSH_URL:/data/app/www/agent-update/shell_audit/v1.1.0/libshellaudit.so agent_files/www/agent-update/shell_audit/v1.1.0/libshellaudit.so
+rsync -rv --delete $AGENT_BUILD_SSH_URL:/data/app/www/agent-update/shell_audit/v1.5.2/libshellaudit.so agent_files/www/agent-update/shell_audit/v1.5.2/libshellaudit.so
+rsync -rv --delete $AGENT_BUILD_SSH_URL:/data/app/www/agent-update/curl agent_files/www/agent-update/
+rsync -rv --delete $AGENT_BUILD_SSH_URL:/data/app/www/agent-update/shell_audit/v1.5.3/libshellaudit.so agent_files/www/agent-update/shell_audit/v1.5.3/libshellaudit.so
+rsync -rv --delete $AGENT_BUILD_SSH_URL:/data/app/www/agent-update/shell_audit/v1.5.4/libshellaudit.so agent_files/www/agent-update/shell_audit/v1.5.4/libshellaudit.so
+rsync -rv --delete $AGENT_BUILD_SSH_URL:/data/app/www/agent-update/shell_audit/v1.5.6/libshellaudit.so agent_files/www/agent-update/shell_audit/v1.5.6/libshellaudit.so
+rsync -rv --delete $AGENT_BUILD_SSH_URL:/data/app/www/agent-update/shell_audit/v1.5.6/aarch64/libshellaudit.so agent_files/www/agent-update/shell_audit/v1.5.6/aarch64/libshellaudit.so
+
+ssh -p 22 -t $AGENT_BUILD_SSH_URL -oStrictHostKeyChecking=no "[ -d /data/app/www/agent-update/publish/debug/linux/x86_64/$2 ]"
+if [ $? = 0 ]; then
+    ver=$(echo $2 | sed -E "s/(v.*)\/.*/\1/g")
+
+    rsync -rv $AGENT_BUILD_SSH_URL:/data/app/www/agent-update/publish/debug/linux/x86_64/$2/* agent_files/www/agent-update/$ver
+    # remove unused files
+    rm -f agent_files/www/agent-update/$ver/App_Linux_All*.tar.gz
+    rm -f agent_files/www/agent-update/$ver/App_Linux*.zip
+    rm -f agent_files/www/agent-update/$ver/titan-agent-*.tar.gz
+
+else
+    echo "Not found linux version: $2 !!!"
+    exit 1
+fi
+
+ssh -p 22 -t $AGENT_BUILD_SSH_URL -oStrictHostKeyChecking=no "[ -d /data/app/www/agent-update/publish/debug/windows/x86_64/$3 ]"
+if [ $? = 0 ]; then
+    ver=$(echo $3 | sed -E "s/(v.*)\/.*/\1/g")
+    rsync -rv $AGENT_BUILD_SSH_URL:/data/app/www/agent-update/publish/debug/windows/x86_64/$3/* agent_files/www/agent-update/$ver-win64
+    # remove unused files
+    rm -f agent_files/www/agent-update/$3/titan-agent-*.tar.gz
+else
+    echo "Not found windows version: $3 !!!"
+    exit 1
+fi
+
+if [[ -n "$4" ]]; then
+    if [[ -n $7 ]];then
+        ssh -p 22 -t $AGENT_BUILD_SSH_URL -oStrictHostKeyChecking=no "[ -d /data/app/www/agent-update/publish/debug/aix/ppc64/$4 ]"
+        if [ $? = 0 ]; then
+            ver=$(echo $4 | sed -E "s/(v.*)\/.*/\1/g")
+            rsync -rv $AGENT_BUILD_SSH_URL:/data/app/www/agent-update/publish/debug/aix/ppc64/$4/* agent_files/www/agent-update/$ver-aix
+        else
+            echo "Not found aix version: $4 !!!"
+            exit 1
+        fi    
+    else
+        ssh -p 22 -t $AGENT_BUILD_SSH_URL -oStrictHostKeyChecking=no "[ -d /data/app/www/agent-update/publish/debug/linux/$4 ]"
+        if [ $? = 0 ]; then
+            ver=$(echo $4 | sed -E "s/aarch64\/(v.*)\/.*/\1/g")
+            rsync -rv $AGENT_BUILD_SSH_URL:/data/app/www/agent-update/publish/debug/linux/$4/* agent_files/www/agent-update/$ver-aarch64
+        else
+            echo "Not found arm aarch64 version: $4 !!!"
+            exit 1
+        fi
+    fi
+fi
+
+if [[ -n "$5" ]]; then
+    ssh -p 22 -t $AGENT_BUILD_SSH_URL -oStrictHostKeyChecking=no "[ -d /data/app/www/agent-update/publish/debug/solaris/x86_64/$5 ]"
+    if [ $? = 0 ]; then
+        ver=$(echo $5 | sed -E "s/(v.*)\/.*/\1/g")
+        rsync -rv $AGENT_BUILD_SSH_URL:/data/app/www/agent-update/publish/debug/solaris/x86_64/$5/* agent_files/www/agent-update/$ver-solaris-x86
+
+        if [[ -n "$6" ]]; then
+            ssh -p 22 -t $AGENT_BUILD_SSH_URL -oStrictHostKeyChecking=no "[ -d /data/app/www/agent-update/publish/debug/solaris/sparc64/$6 ]"
+            if [ $? = 0 ]; then
+                ver=$(echo $6 | sed -E "s/(v.*)\/.*/\1/g")
+                rsync -rv $AGENT_BUILD_SSH_URL:/data/app/www/agent-update/publish/debug/solaris/sparc64/$6/* agent_files/www/agent-update/$ver-solaris-x86
+            else
+                echo "Not found solaris sparc  version: $6 !!!"
+                exit 1
+            fi
+        fi
+    else
+        echo "Not found solaris  x86  version: $5 !!!"
+        exit 1
+    fi
+fi
+
+if [[ -n "$7" ]]; then
+    ssh -p 22 -t $AGENT_BUILD_SSH_URL -oStrictHostKeyChecking=no "[ -d /data/app/www/agent-update/publish/debug/linux/$7 ]"
+    if [ $? = 0 ]; then
+        ver=$(echo $7 | sed -E "s/aarch64\/(v.*)\/.*/\1/g")
+        rsync -rv $AGENT_BUILD_SSH_URL:/data/app/www/agent-update/publish/debug/linux/$7/* agent_files/www/agent-update/$ver-aarch64
+    else
+        echo "Not found arm aarch64 version: $7 !!!"
+        exit 1
+    fi
+fi

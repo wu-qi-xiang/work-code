@@ -1,0 +1,22 @@
+- name: get rules file
+  shell: sh -c "ls -t *-rule-*.zip | head -1"
+  register: rules_file_result
+
+- debug:
+    msg: "{{rules_file_result['stdout_lines'][0]}}"
+
+- set_fact:
+    rules_file: "{{rules_file_result['stdout_lines'][0]}}"
+
+- name: cp rules file to pod
+  shell: kubectl -n {{namespace}} cp {{rules_file}} {{web_pod}}:/data/app/www/titan-web/ -n {{namespace}} 
+
+- name: unzip rules file
+  shell: kubectl -n {{namespace}} exec -i {{web_pod}}  -c titan-web -- sh -c "rm -rf /data/app/www/titan-web/rules/* && unzip /data/app/www/titan-web/{{rules_file}} -d /data/app/www/titan-web/rules/ && chown -R nginx:nginx /data/app/www/titan-web/rules/ " 
+
+# 这一步同步规则有失败也继续执行下一步，不中断
+- name: execute sync rules
+  shell: kubectl -n {{namespace}} exec -i {{web_pod}} -c titan-web -- /docker-run.sh sync_rules 2>&1 > /tmp/sync_rules.log
+  vars:
+    live_output: "/tmp/sync_rules.log"
+  ignore_errors: yes

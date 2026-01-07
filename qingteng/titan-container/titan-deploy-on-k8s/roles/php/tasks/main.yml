@@ -1,0 +1,43 @@
+---
+# tasks file for php
+- set_fact:
+    work_nodes: "{{ label_nodes[php_nodelabel] }}"
+
+- name: Print result
+  debug:
+    msg: "{{ work_nodes }}"
+
+- fail:
+    msg: "have no available node for php"
+  when: work_nodes|length <= 0
+
+# 使用 Secret 保存 cert
+- name: Get titan-cert-secrets
+  kubernetes.core.k8s_info:
+    kind: Secret
+    name: titan-cert-secrets
+    namespace: "{{ namespace }}"
+  register: titan_cert_result
+  no_log: True
+
+- block:
+  # create cert for nginx
+  - name: Create simple self-signed certificate
+    shell: mkdir -p /tmp/cert && CAROOT=/tmp/cert mkcert -cert-file /tmp/cert/server.pem -key-file /tmp/cert/server.key localhost 127.0.0.1 {{web_publicip}} {{web_domain}}
+
+  - name: create titan-cert-secrets
+    shell: kubectl -n {{namespace}} create secret generic titan-cert-secrets --from-file=/tmp/cert
+  # 如果 titan-cert-secrets 还没有创建则重新生成
+  when: titan_cert_result is not defined or (titan_cert_result['resources']|length == 0)
+
+- name: create php web service
+  kubernetes.core.k8s:
+    definition: "{{ lookup('template', 'web_service.yml' ) | from_yaml }}"
+    apply: yes
+
+- name: create php DaemonSet
+  kubernetes.core.k8s:
+    definition: "{{ lookup('template', 'php_daemonset.yml' ) | from_yaml | titan_combine(common_patch, titanlogs_patch) }}"
+    apply: yes
+
+

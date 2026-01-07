@@ -1,0 +1,73 @@
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: "{{csi_controller_sa}}"
+  namespace: "{{ namespace }}"
+{% if use_registry_key %}
+imagePullSecrets:
+  - name: registry-key
+{% endif %}
+
+---
+
+kind: ClusterRole
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: qt-csi-glusterfs-controller-clusterrole
+rules:
+  - apiGroups: [""]
+    resources: ["persistentvolumes"]
+    verbs: ["get", "list", "watch", "create", "delete"]
+  - apiGroups: ["storage.k8s.io"]
+    resources: ["storageclasses"]
+    verbs: ["get", "list", "watch"]
+  - apiGroups: ["storage.k8s.io"]
+    resources: ["csinodes"]
+    verbs: ["get", "list", "watch"]
+---
+
+kind: ClusterRoleBinding
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: qt-csi-glusterfs-controller-binding
+subjects:
+  - kind: ServiceAccount
+    name: "{{csi_controller_sa}}"
+    namespace: "{{ namespace }}"
+roleRef:
+  kind: ClusterRole
+  name: qt-csi-glusterfs-controller-clusterrole
+  apiGroup: rbac.authorization.k8s.io
+
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: qt-csi-glusterfs-controller-role
+rules:
+  - apiGroups: [""]
+    resources: ["persistentvolumeclaims"]
+    verbs: ["get", "list", "watch", "update"]
+  - apiGroups: [""]
+    resources: ["events"]
+    verbs: ["get", "list", "watch", "create", "update", "patch"]
+  - apiGroups: ["coordination.k8s.io"]
+    resources: ["leases"]
+    verbs: ["get", "list", "watch", "create", "update", "patch"]
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: qt-csi-glusterfs-controller-bind
+  namespace: "{{ namespace }}"
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: qt-csi-glusterfs-controller-role
+subjects:
+  - kind: ServiceAccount
+    name: "{{csi_controller_sa}}"
+    namespace: "{{ namespace }}"

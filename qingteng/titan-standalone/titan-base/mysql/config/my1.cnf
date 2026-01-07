@@ -1,0 +1,70 @@
+[mysqld]
+sql_mode= 'STRICT_TRANS_TABLES,NO_ENGINE_SUBSTITUTION'
+datadir=/data/mysql
+socket=/var/lib/mysql/mysql.sock
+user=mysql
+# Disabling symbolic-links is recommended to prevent assorted security risks
+symbolic-links=0
+init_connect='SET collation_connection = utf8_general_ci'
+init_connect='SET NAMES utf8'
+character-set-server=utf8
+collation-server=utf8_general_ci
+default_storage_engine=InnoDB
+log_bin
+binlog_format=ROW
+innodb_locks_unsafe_for_binlog = 1
+innodb_autoinc_lock_mode=2
+innodb_data_file_path                   = ibdata1:10M:autoextend
+innodb_log_files_in_group               = 3
+innodb_buffer_pool_size                 = 4G
+transaction-isolation                   = READ-COMMITTED
+innodb_log_file_size                    = 256M
+innodb_log_buffer_size                  = 128M
+innodb_flush_log_at_trx_commit          = 2
+innodb_file_per_table                   = 1
+innodb_lock_wait_timeout                = 20
+innodb_buffer_pool_instances            = 4
+innodb_flush_method                     = O_DIRECT
+innodb_read_io_threads                  = 8
+innodb_write_io_threads                 = 8
+innodb_io_capacity                      = 600
+innodb_max_dirty_pages_pct              = 70
+innodb_sync_spin_loops                  = 10
+innodb_file_format                      = Barracuda
+innodb_file_format_max                  = Barracuda
+expand_fast_index_creation              = 1
+back_log                                = 400
+max_connections                         = 2048
+max_connect_errors                      = 999999999
+thread_cache_size                       = 64
+table_open_cache                        = 2048
+interactive_timeout                     = 3600
+wait_timeout                            = 120
+sort_buffer_size                        = 16M
+read_buffer_size                        = 16M
+join_buffer_size                        = 8M
+read_rnd_buffer_size                    = 24M
+myisam_sort_buffer_size                 = 64M
+key_buffer_size                         = 1024M
+query_cache_size                        = 128M
+query_cache_limit                       = 2M
+query_cache_type                        = 1
+max_tmp_tables                          = 64
+tmp_table_size                          = 192M
+max_heap_table_size                     = 192M
+expire_logs_days                        = 2
+max_allowed_packet                      = 256M
+skip-external-locking
+skip-name-resolve
+server_id=226
+wsrep_provider=/usr/lib64/galera3/libgalera_smm.so
+wsrep_cluster_address=gcomm://172.16.4.226,172.16.4.227
+wsrep_node_address=172.16.4.226
+wsrep_cluster_name=qingteng
+wsrep_sst_auth=qingteng:qttest
+#wsrep_sst_method=xtrabackup-v2
+wsrep_sst_method=rsync
+
+[mysqld_safe]
+log-error=/data/titan-logs/mysql/error.log
+pid-file=/data/mysql/mysql.pid

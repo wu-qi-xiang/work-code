@@ -1,0 +1,12 @@
+- name: get redisjava statefulset 
+  kubernetes.core.k8s_info:
+    kind: StatefulSet
+    name: "redisjava"
+    namespace: "{{ namespace }}"
+  register: redisjava_setobj
+- set_fact:
+    redisjava_ok: "{{redisjava_setobj | statefulset_check}}"
+
+- set_fact:
+    ok_base_roles: "{{ok_base_roles | union(['redisjava']) }}" 
+  when: redisjava_ok      

@@ -1,0 +1,17 @@
+# 创建zookeeper headless服务
+apiVersion: v1
+kind: Service
+metadata:
+  name: redisjava-hs
+  namespace: {{ namespace }}
+  labels:
+    app: redisjava
+spec:
+  ports:
+  - port: 6379
+    name: server
+  - port: 16379
+    name: cluster
+  clusterIP: None
+  selector:
+    app: redisjava

@@ -1,0 +1,61 @@
+---
+- name: Template rbac file
+  ansible.builtin.template:
+    src: templates/rbac-csi-glusterfs-controller-tpl.yml
+    dest: /tmp/rbac-csi-glusterfs-controller.yml
+
+- name: create csi glusterfs rbac 
+  shell: "kubectl -n {{ namespace }} apply -f /tmp/rbac-csi-glusterfs-controller.yml"
+
+- name: get api-version
+  shell: kubectl api-resources --api-group=storage.k8s.io |grep CSIDriver | awk '{print $2}'
+  register: CSIDriverApi
+
+- set_fact:
+    CSIDriverVersion: "{{CSIDriverApi['stdout']}}"
+
+- name: create csi glusterfs driver info
+  kubernetes.core.k8s:
+    definition: "{{ lookup('template', 'csi-glusterfs-driverinfo.yml') | from_yaml }}"
+
+- name: create csi controller 
+  kubernetes.core.k8s:
+    definition: "{{ lookup('template', 'csi-glusterfs-controller.yml') | from_yaml | titan_combine(common_patch) }}"
+
+- name: create csi node 
+  kubernetes.core.k8s:
+    definition: "{{ lookup('template', 'csi-glusterfs-node.yml') | from_yaml | titan_combine(common_patch) }}"
+    apply: yes
+
+# 等待 csi controller ready
+- name: get csi-glusterfs-controller 
+  kubernetes.core.k8s_info:
+    kind: Deployment
+    name: "csi-glusterfs-controller"
+    namespace: "{{ namespace }}"
+    wait: yes
+    wait_sleep: 10
+    wait_timeout: 150
+  register: csi_controller_setobj
+
+# 等待 csi csi node ready
+- name: get csi-glusterfs-node 
+  kubernetes.core.k8s_info:
+    kind: DaemonSet
+    name: "csi-glusterfs-node"
+    namespace: "{{ namespace }}"
+    wait: yes
+    wait_sleep: 10
+    wait_timeout: 150
+  register: csi_node_setobj 
+
+- name: create csi pv 
+  kubernetes.core.k8s:
+    definition: "{{ lookup('template', 'pv-titan-dfs.yml') | from_yaml }}"
+    apply: yes
+
+- name: create csi pvc 
+  kubernetes.core.k8s:
+    definition: "{{ lookup('template', 'pvc-titan-dfs.yml') | from_yaml }}"
+    apply: yes 
+

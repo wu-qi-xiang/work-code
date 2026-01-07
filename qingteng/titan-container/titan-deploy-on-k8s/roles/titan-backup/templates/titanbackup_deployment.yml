@@ -1,0 +1,83 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: titan-backup
+  namespace: "{{namespace}}"
+  labels:
+    app: titan-backup
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: titan-backup
+  progressDeadlineSeconds: 5
+  minReadySeconds: 3
+  template:
+    metadata:
+      name: titan-backup
+      labels:
+        app: titan-backup
+    spec:
+      nodeSelector:
+        "{{titanbackup_nodelabel}}": "true"
+      serviceAccountName: "{{service_account}}"
+      containers:
+        - name: titan-backup
+          imagePullPolicy: "{{dbbackup_pullPolicy}}"
+          image: "{{ dbbackup_image }}"
+          resources:
+            limits:
+              memory: "{{ dbbackup_limit_memory }}"
+              cpu: "8"
+            requests:
+              cpu: "0.5"
+              memory: "256Mi"
+          env:
+            # k8s下日志清理由patrol控制
+            - name: LOGCLEAN_ENBALE
+              value: "false"
+            - name: DFS_ARCHIVE_DIR
+              value: "/data/titan-dfs/titan-backup/"
+          lifecycle:
+            postStart:
+              exec:
+                command: ["/bin/sh", "-c", "cd /data/titan-dfs; mkdir -p titan-backup"]
+          volumeMounts:
+            - name: var-secrets
+              mountPath: /var/secrets
+            - name: titan-backup
+              mountPath: "/data/titan-backup/"
+            - name: dbbackup-config
+              subPath: backup_config.json
+              mountPath: "/backup_config.json"
+            - name: dbbackup-config
+              subPath: envconfig.json
+              mountPath: "/envconfig.json"
+            - mountPath: /tmp
+              name: tmp
+            - mountPath: /data/titan-dfs
+              name: dfs-volume
+          securityContext:
+            readOnlyRootFilesystem: true
+            allowPrivilegeEscalation: false
+      volumes:
+        - name: var-secrets
+          secret:
+            secretName: titan-all-secrets
+            items:
+            - key: mysql_passwd
+              path: mysql_passwd
+            - key: mongo_passwd
+              path: mongo_passwd
+            - key: pbeconfig
+              path: pbeconfig
+        - name: titan-backup
+          emptyDir: {}
+        - name: dbbackup-config
+          configMap:
+            name: dbbackup-config
+        - emptyDir: {}
+          name: tmp
+        - name: dfs-volume
+          persistentVolumeClaim:
+            claimName: titan-dfs

@@ -1,0 +1,119 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: rediserl
+  namespace: "{{ namespace }}"
+spec:
+  serviceName: rediserl-hs
+  podManagementPolicy: Parallel
+  replicas: {{ redis_erl_master_num + redis_erl_master_num * redis_erl_slave_num }}
+  selector:
+    matchLabels:
+      app: rediserl
+  template:
+    metadata:
+      labels:
+        app: rediserl
+    spec:
+      nodeSelector:
+        "{{rediserl_nodelabel}}": "true"
+      serviceAccountName: "{{service_account}}"
+      containers:
+        - name: k8s-redis
+          imagePullPolicy: "{{ redis_pullPolicy }}"
+          image: "{{ rediserl_image }}"
+          ports:
+            - containerPort: 6379
+              name: client
+            - containerPort: 16379
+              name: server
+          env:
+            - name: POD_IP
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.podIP
+          lifecycle:
+            postStart:
+              exec:
+                command: ["/bin/sh", "-c", "/usr/local/bin/keep_master.sh"]
+          command: ["update_ip.sh", "redis-server", "/tmp/redis.conf"]
+          resources:
+            limits:
+              memory: {{rediserl_limit_memory}}
+            requests:
+              cpu: "{{cpu_req}}"
+              memory: {{rediserl_req_memory}}
+          readinessProbe:
+            exec:
+              command:
+              - sh
+              - -c
+              - "redis-cli -h 127.0.0.1 ping"
+            initialDelaySeconds: 15
+            timeoutSeconds: 5
+          livenessProbe:
+            exec:
+              command:
+              - sh
+              - -c
+              - "redis-cli -h 127.0.0.1 ping"
+            initialDelaySeconds: 20
+            periodSeconds: 3
+          volumeMounts:
+            - name: rediserl-configmap
+              subPath: update_ip.sh
+              mountPath: /usr/local/bin/update_ip.sh
+              readOnly: false
+            - name: rediserl-configmap
+              subPath: keep_master.sh
+              mountPath: /usr/local/bin/keep_master.sh
+              readOnly: false
+            - name: datadir
+              mountPath: /data/redis
+            - mountPath: /tmp
+              name: tmp
+          securityContext:
+            readOnlyRootFilesystem: true
+            allowPrivilegeEscalation: false
+      initContainers:
+        - name: titan-init
+          image: "{{ init_image }}"
+          imagePullPolicy: IfNotPresent
+          command: ["sh", "-c", "dockerize -secretdir /var/secrets/ -template /etc/redis/redis.conf:/tmp/redis.conf "]
+          volumeMounts:
+            - name: rediserl-configmap
+              subPath: redis.conf
+              mountPath: /etc/redis/redis.conf
+            - name: var-secrets
+              mountPath: /var/secrets/
+            - name: tmp
+              mountPath: /tmp
+      volumes:
+        - name: var-secrets
+          secret:
+            secretName: titan-all-secrets
+        - name: rediserl-configmap
+          configMap:
+            defaultMode: 0755
+            name: rediserl-configmap
+            items:
+            - key: redis.conf
+              path: redis.conf
+            - key: update_ip.sh
+              path: update_ip.sh
+            - key: keep_master.sh
+              path: keep_master.sh
+        - emptyDir: {}
+          name: tmp
+      securityContext:
+        runAsUser: {{redis_uid}}
+        fsGroup: {{redis_gid}}
+  volumeClaimTemplates:
+  - metadata:
+      name: datadir
+    spec:
+        accessModes: ["ReadWriteOnce"]
+        storageClassName: "{{storageName}}"
+        resources:
+          requests:
+            storage: "{{ rediserl_storage_capacity }}"

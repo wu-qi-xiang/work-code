@@ -1,0 +1,16 @@
+- name: Remove keepalived DaemonSet
+  kubernetes.core.k8s:
+    state: absent
+    api_version: apps/v1
+    kind: DaemonSet
+    namespace: "{{ namespace }}"
+    name: "titan-keepalived"
+
+- name: Remove keepalived configmap
+  kubernetes.core.k8s:
+    state: absent
+    api_version: v1
+    kind: ConfigMap
+    namespace: "{{ namespace }}"
+    name: "keepalived-config"
+    

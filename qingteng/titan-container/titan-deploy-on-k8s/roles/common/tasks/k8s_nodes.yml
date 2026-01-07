@@ -1,0 +1,30 @@
+- set_fact:
+    qt_node_cache: "{{ qt_node_cache | default({}) }}"
+
+- block:
+    #获取集群标签信息
+  - name: Get the nodes
+    kubernetes.core.k8s_info:
+      kind: Node
+      label_selectors: ["{{ label_selector }}"]
+    register: nodeobj
+
+    # result_key 相当于返回值的名称，多个地方调用可传入此变量避免混淆,不传则默认为 k8s_nodes
+    # 比如可以调用两次 k8s_nodes.yml,第一次的结果保存为 nodes1, 第二次调用的结果保存为 nodes2
+  - name: "set tmp node result of {{ label_selector }}"
+    set_fact:
+      "tmp_node_result": "{{ nodeobj | json_query('resources[*].status.addresses[*].{value:address, key:type}') | map('items2dict') | list }} "
+  
+  - name: "set tmp_node_result of {{ label_selector }} to qt_node_cache"
+    set_fact:
+      qt_node_cache: "{{ qt_node_cache | combine({label_selector: tmp_node_result}) }}"
+
+  when: 'label_selector not in qt_node_cache'
+
+- name: "set {{ result_key }}"
+  set_fact:
+    "{{ result_key }}": "{{ qt_node_cache[label_selector] }} "
+
+- name: Print k8s nodes hostname and ip
+  debug:
+    msg: "{{ result_key }}: {{ vars[result_key] }}"

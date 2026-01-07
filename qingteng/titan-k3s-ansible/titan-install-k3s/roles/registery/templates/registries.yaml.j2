@@ -1,0 +1,24 @@
+mirrors:
+  docker.io:
+    endpoint:
+      - "https://{{REGISTRY_URL}}:{{REGISTRY_PORT}}"
+  registry.qingteng.cn:
+    endpoint:
+      - "https://{{REGISTRY_URL}}:{{REGISTRY_PORT}}"
+configs:
+  "https://{{REGISTRY_URL}}:{{REGISTRY_PORT}}":
+    auth:
+      username: "{{REGISTRY_USER}}"
+      password: "{{REGISTRY_PASSWD}}"
+    tls:
+      cert_file: /data/registry/certs/registry.pem
+      key_file:  /data/registry/certs/registry.key
+      ca_file: /data/registry/certs/rootCA.pem
+  "{{REGISTRY_URL}}:{{REGISTRY_PORT}}":
+    auth:
+      username: "{{REGISTRY_USER}}"
+      password: "{{REGISTRY_PASSWD}}"
+    tls:
+      cert_file: /data/registry/certs/registry.pem
+      key_file:  /data/registry/certs/registry.key
+      ca_file: /data/registry/certs/rootCA.pem

@@ -1,0 +1,262 @@
+---
+  - hosts: localhost
+    name: upgrade titan-standalone
+    gather_facts: false
+    vars_files: 
+      - var_file.yml
+    module_defaults:
+      kubernetes.core.k8s_info:
+        validate_certs: no
+        namespace: "{{ namespace }}"
+      kubernetes.core.k8s:
+        validate_certs: no
+        namespace: "{{ namespace }}"
+      kubernetes.core.k8s_exec:
+        validate_certs: no
+        namespace: "{{ namespace }}"
+
+    pre_tasks:
+      - name: include pre_titan_env
+        include_tasks: pre_titan_env.yml
+
+      - name: include check_titan_version
+        include_role:
+          name: common
+          tasks_from: check_titan_version.yml
+      
+      - name: storage_patch.yml
+        include_tasks: storage_patch.yml
+
+
+      - set_fact:
+          registry: "{{ old_image['stdout_lines'][0].split('/titan-java-wisteria')[0] }}"
+        when: registry == "registry.qingteng.cn/titan-container"
+
+      - set_fact:
+          old_version: "{{ old_tag.split('-')[0] }}"
+          new_version: "{{ common_tag.split('-')[0] }}" 
+
+      # 备份老的配置
+      - name: backup old titan-config
+        include_role:
+          name: common
+          tasks_from: backup_config.yml
+
+      # 获取老的密码配置，用于升级 upgradeTool，升级不改变原密码配置
+      - name: get password config
+        include_role:
+          name: common
+          tasks_from: get_pass_config.yml
+
+      - set_fact:
+          new_java_properties: "{{ lookup('file', 'titan-config/java/java.properties') }}"
+          new_job_properties: "{{ lookup('file', 'titan-config/java/job.properties') }}"
+          new_sh_properties: "{{ lookup('file', 'titan-config/java/sh.properties') }}"
+          new_application_properties: "{{ lookup('file', 'titan-config/php/application.properties') }}"
+          new_build_properties: "{{ lookup('file', 'titan-config/php/build.properties') }}"
+          new_proxy_conf: "{{ lookup('file', 'titan-config/php/nginx.proxy.conf') }}"
+          new_server_conf: "{{ lookup('file', 'titan-config/php/nginx.servers.conf.tmpl') }}"
+        when: (mini_mode is not defined) or (not mini_mode)
+
+      - set_fact:
+          new_java_properties: "{{ lookup('file', 'titan-config-mini/java/java.properties') }}"
+          new_job_properties: "{{ lookup('file', 'titan-config-mini/java/job.properties') }}"
+          new_sh_properties: "{{ lookup('file', 'titan-config-mini/java/sh.properties') }}"
+          new_application_properties: "{{ lookup('file', 'titan-config-mini/php/application.properties') }}"
+          new_build_properties: "{{ lookup('file', 'titan-config-mini/php/build.properties') }}"
+          new_proxy_conf: "{{ lookup('file', 'titan-config-mini/php/nginx.proxy.conf') }}"
+          new_server_conf: "{{ lookup('file', 'titan-config-mini/php/nginx.servers.conf.tmpl') }}"
+        when: (mini_mode is defined) and mini_mode
+
+      - set_fact:
+          merged_java_properties: "{{ new_java_properties | merge_properties_keepold(titan_java_config_data['java.properties']) }}"
+          merged_job_properties: "{{ new_job_properties | merge_properties_keepold(titan_java_config_data['job.properties']) }}"
+          merged_sh_properties: "{{ new_sh_properties | merge_properties_keepold(titan_java_config_data['sh.properties']) }}"
+          merged_application_properties: "{{ new_application_properties | merge_properties_keepold(titan_php_config_data['application.properties']) }}"
+          merged_build_properties: "{{ new_build_properties | merge_properties_keepold(titan_php_config_data['build.properties']) }}"
+
+      # titan_java_config_data titan_php_config_data来自于 backup_config.yml
+      - set_fact:
+          titan_java_config_data: "{{ titan_java_config_data | combine({'java.properties': merged_java_properties}) }}"
+      - set_fact:
+          titan_java_config_data: "{{ titan_java_config_data | combine({'job.properties': merged_job_properties}) }}"
+      - set_fact:
+          titan_java_config_data: "{{ titan_java_config_data | combine({'sh.properties': merged_sh_properties}) }}"
+      - set_fact:
+          titan_php_config_data: "{{ titan_php_config_data | combine({'application.properties': merged_application_properties}) }}"
+      - set_fact:
+          titan_php_config_data: "{{ titan_php_config_data | combine({'build.properties': merged_build_properties}) }}"
+      - set_fact:
+          titan_php_config_data: "{{ titan_php_config_data | combine({'nginx.proxy.conf': new_proxy_conf}) }}"
+      - set_fact:
+          titan_php_config_data: "{{ titan_php_config_data | combine({'nginx.servers.conf.tmpl': new_server_conf}) }}"
+
+      #将merge后的配置重新生成 titan-env ConfigMap
+      - name: create new titan-env 
+        kubernetes.core.k8s:
+          state: present
+          definition:
+            apiVersion: v1
+            kind: ConfigMap
+            metadata:
+              name: "titan-env"
+              namespace: "{{ namespace }}"
+            data: "{{titan_env_data}}"
+
+      - name: create new titan-java-config 
+        kubernetes.core.k8s:
+          state: present
+          definition:
+            apiVersion: v1
+            kind: ConfigMap
+            metadata:
+              name: "titan-java-config"
+              namespace: "{{ namespace }}"
+            data: "{{titan_java_config_data}}"
+
+      - name: create new titan-php-config 
+        kubernetes.core.k8s:
+          state: present
+          definition:
+            apiVersion: v1
+            kind: ConfigMap
+            metadata:
+              name: "titan-php-config"
+              namespace: "{{ namespace }}"
+            data: "{{titan_php_config_data}}"
+    # 更新APP镜像来进行升级
+    tasks:
+      # 根据 docker_enable 来决定是否包含 蜂巢的服务
+      - set_fact:
+          all_roles: "{{ all_roles | difference(app_hive_roles) }}"
+          app_roles: "{{ app_roles | difference(app_hive_roles) }}"
+          java_images: "{{ java_images | difference([scansrv_image,clusterlinksrv_image]) }}"
+        when: docker_enable == "false" or docker_enable == false
+
+      # 根据目前实际环境判断是否包含 event-srv 和 ms-srv
+      - name: get event-srv Deployment 
+        kubernetes.core.k8s_info:
+          kind: Deployment
+          name: "titan-event-srv"
+          namespace: "{{ namespace }}"
+        register: eventsrv_setobj
+
+      - set_fact:
+          all_roles: "{{ all_roles | difference(['event-srv']) }}"
+          app_roles: "{{ app_roles | difference(['event-srv']) }}"
+          java_images: "{{ java_images | difference([eventsrv_image]) }}"
+        when: (eventsrv_setobj.get('resources',[]) | length) <= 0
+
+      - name: get ms-srv Deployment 
+        kubernetes.core.k8s_info:
+          kind: Deployment
+          name: "titan-ms-srv"
+          namespace: "{{ namespace }}"
+        register: mssrv_setobj
+  
+      - set_fact:
+          all_roles: "{{all_roles | difference(['ms-srv','mongo-ms-srv']) }}"
+          base_roles: "{{base_roles | difference(['mongo-ms-srv']) }}"
+          app_roles: "{{  app_roles | difference(['ms-srv']) }}"
+          java_images: "{{ java_images | difference([mssrv_image]) }}"
+        when: (mssrv_setobj.get('resources',[]) | length) <= 0
+
+      # 根据目前实际环境判断是否包含 anti-virus-srv
+      - name: get anti-virus-srv Deployment
+        kubernetes.core.k8s_info:
+          kind: Deployment
+          name: "titan-anti-virus-srv"
+          namespace: "{{ namespace }}"
+        register: antivirussrv_setobj
+
+      - set_fact:
+          app_roles: "{{  app_roles | difference(['anti-virus-srv']) }}"
+          java_images: "{{ java_images | difference([antivirussrv_image]) }}"
+        when: (antivirussrv_setobj.get('resources',[]) | length) <= 0
+
+      # 升级所有安装的 app role
+      - name: upgrade app roles
+        include_role:
+          name: "{{item}}"
+          tasks_from: upgrade.yml
+        loop: "{{app_roles}}"
+
+      - name: get titan-web deployment 
+        kubernetes.core.k8s_info:
+          kind: DaemonSet
+          name: "titan-web"
+        register: titan_web_obj
+
+      - set_fact:
+          web_replicas: "{{ titan_web_obj['resources'][0].get('status',{})['desiredNumberScheduled'] }}"
+      
+      - name: wait php pods upgrade ok
+        kubernetes.core.k8s_info:
+          kind: Pod
+          label_selectors:
+            - "app = titan-web"
+          namespace: "{{ namespace }}"
+          wait: yes
+          wait_sleep: 15
+          wait_timeout: 120
+        register: temp_pods_obj
+        until: temp_pods_obj['resources'] | pods_check(common_tag,web_replicas)
+        retries: 5
+        delay: 10
+        ignore_errors: yes
+      
+      - name: wait wisteria and connect-agent upgrade ok
+        shell: kubectl -n {{namespace}} get po | grep -E "(wisteria|connect-agent).*Running"
+        vars:
+          log_retry: true
+        register: java_status
+        until: ' "connect-agent" in java_status.stdout and "2/2" in java_status.stdout'
+        retries: 30
+        delay: 10
+
+      - import_role:
+          name: php
+          tasks_from: wait_web_and_get.yml
+
+      - import_role:
+          name: php
+          tasks_from: updatedb.yml
+      
+      # 注意 SAAS 不能执行这个
+      - import_role:
+          name: php
+          tasks_from: update_agent_config.yml
+        vars:
+          upgrade_flag: "upgrade"
+
+      - include_role:
+          name: common
+          tasks_from: k8s_one_pod.yml
+        vars:
+          label_selector: "app=titan-wisteria"
+          result_key: "wisteria_pod"
+
+      # 最后执行mongo数据库升级脚本 
+      - name: execute mongodb upgrade script
+        shell: kubectl -n {{namespace}} exec -i {{wisteria_pod}} -c upgradetool -- sh -c 'cd /data/app/upgradeTool && python upgrade.py --type standalone byVersion --fromVer {{old_version}} --toVer {{new_version}};'
+        when: old_version < new_version
+
+      - name: prepull java images
+        import_role:
+          name: common
+          tasks_from: prepull_images.yml
+      # 更新titan-app-version
+
+      - name: Create titan-version
+        kubernetes.core.k8s:
+          state: present
+          definition:
+            apiVersion: v1
+            kind: ConfigMap
+            metadata:
+              name: titan-app-version
+              namespace: "{{ namespace }}"
+            data:
+              titan-app-version: "{{common_tag}}"
+
+      

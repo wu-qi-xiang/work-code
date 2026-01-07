@@ -1,0 +1,26 @@
+---
+
+- name: Create CA 
+  shell: cd /data/source/registry && bash creat_ca.sh {{ REGISTRY_URL }}
+
+- name: Copy CA to docker
+  copy:
+    src: "{{ CA_PATH }}/rootCA.pem"
+    dest: "/etc/docker/certs.d/{{ REGISTRY_URL }}:{{ REGISTRY_PORT }}/ca.crt"
+    remote_src: yes
+    mode: '0755'
+
+- name: find /data/registry/certs/
+  shell: ls
+  args:
+    chdir: "{{ CA_PATH }}"
+  register: files_list
+
+- name: Copy CA to local
+  fetch:
+    src: "{{ CA_PATH }}/{{ item }}"
+    dest: "{{ ansible_tmp }}/certs/"
+    flat: yes
+  with_items:
+    - "{{files_list.stdout_lines}}"
+

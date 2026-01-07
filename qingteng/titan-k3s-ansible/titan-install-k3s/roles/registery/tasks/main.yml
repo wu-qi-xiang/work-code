@@ -1,0 +1,17 @@
+- include_tasks: "set_file.yml"
+
+#- include_tasks: "Set_dependencies.yml"
+
+- include_tasks: "set_ca.yml"
+
+- include_tasks: "load_images.yml"
+
+- include_tasks: "set_passd.yml"
+
+- include_tasks: "set_registry.yml"
+
+- set_fact:
+      file_contents_lines: "{{ lookup('file', 'k3s-images.txt').splitlines() }}"
+
+- include_tasks: "push_k3s_images.yml"
+

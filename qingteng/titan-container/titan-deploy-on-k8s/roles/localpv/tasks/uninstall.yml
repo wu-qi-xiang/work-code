@@ -1,0 +1,23 @@
+- name: Remove local-path-provisioner Deployment
+  kubernetes.core.k8s:
+    state: absent
+    api_version: apps/v1
+    kind: Deployment
+    namespace: "{{ namespace }}"
+    name: "local-path-provisioner"
+
+- name: Remove local-path configmap
+  kubernetes.core.k8s:
+    state: absent
+    api_version: v1
+    kind: ConfigMap
+    namespace: "{{ namespace }}"
+    name: "local-path-config"
+
+- name: Template rbac file
+  ansible.builtin.template:
+    src: templates/localpv_provisioner_rbac_tpl.yml
+    dest: /tmp/localpv_provisioner_rbac.yml
+
+- name: delete localpv_provisioner rbac 
+  shell: "kubectl -n {{ namespace }} delete -f /tmp/localpv_provisioner_rbac.yml"

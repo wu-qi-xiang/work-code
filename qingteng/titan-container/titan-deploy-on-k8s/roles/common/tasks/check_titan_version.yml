@@ -1,0 +1,37 @@
+---
+# 校验，如果将要升级到的tag比当前tag小(比较后十二位时间戳)，则报错，不允许. 
+- name: Get titan-prepull-images
+  kubernetes.core.k8s_info:
+    kind: ConfigMap
+    name: titan-app-version
+    namespace: "{{ namespace }}"
+  register: titan_app_version_result
+
+- name: get old image
+  shell: kubectl describe -n {{namespace}} po titan-wisteria | grep 'Image:' | head -n 1 | awk '{print $2}' 
+  register: old_image
+
+- set_fact:
+    old_tag: "{{ titan_app_version_result['resources'][0].get('data',{}).get('titan-app-version','') }}"
+  when: titan_app_version_result is defined and (titan_app_version_result['resources']|length > 0)
+
+- set_fact:
+    old_tag: "{{old_image['stdout_lines'][0].split('/titan-java-wisteria:')[1]}}"
+  when: old_tag is not defined
+
+- name: Create titan-version
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: v1
+      kind: ConfigMap
+      metadata:
+        name: titan-app-version
+        namespace: "{{ namespace }}"
+      data: 
+        titan-app-version: "{{old_tag}}"
+
+- fail:
+    msg: "old version: {{old_tag}}, can not upgrade to : {{common_tag}}"
+  when: common_tag[-12:] <= old_tag[-12:]
+

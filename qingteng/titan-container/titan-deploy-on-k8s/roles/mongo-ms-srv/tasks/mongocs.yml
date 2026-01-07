@@ -1,0 +1,70 @@
+---
+# tasks file for mongocs
+- set_fact:
+    msmongocs_nodes: "{{ label_nodes[msmongocs_nodelabel] }}"
+
+- fail:
+    msg: "have no available node for msmongocs"
+  when: msmongocs_nodes|length < mongocs_replicas
+
+
+- name: create msmongocs headless service
+  kubernetes.core.k8s:
+    definition: "{{ lookup('template', 'mongocs_hs.yml') | from_yaml }}"
+
+- name: create msmongocs StatefulSet
+  kubernetes.core.k8s:
+    definition: "{{ lookup('template', 'mongocs_statefulset.yml') | from_yaml | titan_combine(common_patch) }}"
+    apply: yes
+
+# 获取 msmongocs pod 信息，测试 pod 已 running
+- name: get msmongocs pods 
+  kubernetes.core.k8s_info:
+    kind: Pod
+    label_selectors:
+      - "app = msmongocs"
+    namespace: "{{ namespace }}"
+    wait: yes
+    wait_sleep: 15
+    wait_timeout: 300
+  register: msmongocs_podobj
+
+# 等待所有已Ready，否则执行rs.initiate会失败
+- name: get msmongocs statefulset 
+  kubernetes.core.k8s_info:
+    kind: StatefulSet
+    name: "msmongocs"
+    namespace: "{{ namespace }}"
+    wait: yes
+    wait_sleep: 15
+    wait_timeout: 300
+  register: msmongocs_setobj
+
+- set_fact:
+    mscs_initiate_cmd: "rs.initiate({ _id : 'cs',configsvr: true,members:[{% for i in range(mongocs_replicas) %} {_id: {{i}}, host: 'msmongocs-{{i}}.msmongocs-hs.{{namespace}}.svc.cluster.local:27018'}{% if not loop.last %},{% endif %} {% endfor %} ] })" 
+
+- name: configsvr rs.initiate
+  kubernetes.core.k8s_exec:
+    validate_certs: no
+    namespace: "{{ namespace }}"
+    pod: "msmongocs-0"
+    command: mongo --port 27018 --eval "{{mscs_initiate_cmd}}"
+
+# 获取 primary节点
+- name: get msmongocs nodes and wait primary ok
+  kubernetes.core.k8s_exec:
+    validate_certs: no
+    namespace: "{{ namespace }}"
+    pod: "msmongocs-0"
+    command: mongo --quiet --port 27018 --eval 'db.isMaster().primary'
+  register: msmongocs_pri
+  until: ( 'stdout' in msmongocs_pri and msmongocs_pri['stdout']|trim != '' )
+  retries: 6
+  delay: 10
+
+- name: set msmongo configsvr username and password
+  kubernetes.core.k8s_exec:
+    validate_certs: no
+    namespace: "{{ namespace }}"
+    pod: "{{ msmongocs_pri['stdout'] | trim | regex_search('^msmongocs-\\d') }}"
+    command: mongo --port 27018 admin --eval 'db.system.users.remove({user:"qingteng"}), db.createUser({user:"qingteng", pwd:"{{msmongo_passwd}}", roles:["root"]})'

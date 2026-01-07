@@ -1,0 +1,93 @@
+#!/bin/bash
+
+# redis6381d - Startup script for redis6381d
+
+# chkconfig: 2345 64 36
+# Simple Redis init.d script conceived to work on Linux systems
+# as it does use of the /proc filesystem.
+# set -x
+
+if [ -f /etc/init.d/functions ]; then
+    . /etc/init.d/functions
+fi
+
+REDISPORT=6381
+REDIS_INSTALL_DIR=/usr/local/qingteng/redis
+EXEC=${REDIS_INSTALL_DIR}/bin/redis-server
+CLIEXEC=${REDIS_INSTALL_DIR}/bin/redis-cli
+
+PIDFILE=/data/redis/${REDISPORT}/redis_${REDISPORT}.pid
+CONF="/etc/redis/${REDISPORT}.conf"
+
+start() {
+    [ -f $CONF ] || exit 6
+    [ -x $EXEC ] || exit 5
+    echo -n $"Starting Redis: "
+    daemon --user ${REDIS_USER-redis} "$EXEC $CONF --daemonize yes --pidfile $PIDFILE"
+    retval=$?
+    echo
+    return $retval
+}
+
+stop(){
+    if [ ! -f ${PIDFILE} ]
+    then
+        echo -n "$PIDFILE does not exist"
+        failure
+        echo
+        return 1
+    else
+        PID=$(cat ${PIDFILE})
+        ${CLIEXEC} -a 9pbsoq6hoNhhTzl -p ${REDISPORT} shutdown
+        num=0
+        while [ -x /proc/${PID} ]
+        do
+           if [ $num -le 60 ] ;then
+               echo "Waiting for Redis to shutdown ..."
+               sleep 1
+               let num+=1
+           else
+               echo "Shutdown Redis Error..." && break
+           fi
+        done
+        echo -n "Stopping Redis:"
+        success
+        echo
+        return 0
+    fi
+}
+
+
+restart() {
+    stop
+    start
+}
+
+rh_status() {
+    status -p $PIDFILE redis-server
+}
+
+rh_status_q() {
+    rh_status >/dev/null 2>&1
+}
+
+case "$1" in
+    start)
+        rh_status_q && exit 0
+        $1
+        ;;
+    stop)
+        rh_status_q || exit 0
+        $1
+        ;;
+    restart)
+        $1
+        ;;
+    status)
+        rh_status
+        ;;
+    *)
+        echo $"Usage: $0 {start|stop|status|restart}"
+        exit 2
+esac
+exit $?

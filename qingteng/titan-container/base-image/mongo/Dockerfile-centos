@@ -1,0 +1,32 @@
+FROM centos:7.9.2009
+
+RUN groupadd -g 1001 mongodb && useradd -u 1001 -r -g 1001 -s /sbin/nologin -c "Default Monodb User" mongodb
+
+# grab gosu for easy step-down from root (https://github.com/tianon/gosu/releases)
+ENV GOSU_VERSION 1.12
+# grab "js-yaml" for parsing mongod's YAML config files (https://github.com/nodeca/js-yaml/releases)
+ENV JSYAML_VERSION 3.13.1
+
+COPY ./gosu /usr/local/bin/gosu
+COPY ./mongodb-org-4.2.repo /etc/yum.repos.d/
+COPY ./js-yaml.js /
+
+RUN set -x \
+    && curl -o CentOS-Base.repo http://mirrors.aliyun.com/repo/Centos-7.repo \    
+    && mv CentOS-Base.repo /etc/yum.repos.d/CentOS-Base.repo \
+    && yum install -y epel-release \
+    && yum clean all  \
+    && yum -y install mongodb-org-4.2.11 mongodb-org-server-4.2.11 mongodb-org-shell-4.2.11 mongodb-org-mongos-4.2.11 mongodb-org-tools-4.2.11 iproute jq && yum clean all \
+    && rm -rf /var/lib/mongodb \
+    && mv /etc/mongod.conf /etc/mongod.conf.orig \
+    && chmod +x /usr/local/bin/gosu && gosu --version; gosu nobody true 
+
+RUN mkdir /docker-entrypoint-initdb.d && mkdir -p /data/db /data/configdb \
+    && chown -R mongodb:mongodb /data/db /data/configdb
+VOLUME /data/db /data/configdb
+
+COPY docker-entrypoint.sh /usr/local/bin/
+ENTRYPOINT ["docker-entrypoint.sh"]
+
+EXPOSE 27017
+CMD ["mongod"]

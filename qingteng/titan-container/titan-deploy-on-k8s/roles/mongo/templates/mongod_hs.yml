@@ -1,0 +1,16 @@
+# 创建mongocs headless服务
+apiVersion: v1
+kind: Service
+metadata:
+  name: mongod-hs
+  namespace: {{ namespace }}
+  labels:
+    app: mongod
+spec:
+  ports:
+  - port: 27017
+    name: mongod
+  clusterIP: None
+  publishNotReadyAddresses: true
+  selector:
+    app: mongod

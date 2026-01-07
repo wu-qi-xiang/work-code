@@ -1,0 +1,11 @@
+---
+# defaults file for mysql
+mysql_replicas: 3
+mysql_storage_capacity: 300Gi
+mysql_hostpath: /data/titan-container/mysql
+mysql_pullPolicy: IfNotPresent
+mysql_uid: 999
+mysql_gid: 999
+presetrule: Y
+
+mysql_limit_memory: 8192Mi

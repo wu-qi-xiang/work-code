@@ -1,0 +1,13 @@
+- name: get titan-php
+  kubernetes.core.k8s_info:
+    kind: DaemonSet
+    name: "titan-web"
+    namespace: "{{ namespace }}"
+  register: tmp_setobj
+
+- set_fact:
+    tmp_ok: "{{tmp_setobj | daemonset_check }}"
+
+- set_fact:
+    ok_app_roles: "{{ok_app_roles | union(['php']) }}" 
+  when: tmp_ok

@@ -1,0 +1,13 @@
+- name: get mysql statefulset 
+  kubernetes.core.k8s_info:
+    kind: StatefulSet
+    name: "mysql"
+    namespace: "{{ namespace }}"
+  register: mysql_setobj
+  
+- set_fact:
+    mysql_ok: "{{mysql_setobj | statefulset_check(mysql_replicas)}}"
+
+- set_fact:
+    ok_base_roles: "{{ok_base_roles | union(['mysql']) }}" 
+  when: mysql_ok

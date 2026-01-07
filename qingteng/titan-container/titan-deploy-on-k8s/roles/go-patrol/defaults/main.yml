@@ -1,0 +1,9 @@
+---
+# defaults file for patrol
+patrol_pullPolicy: IfNotPresent
+patrol_uid: 2021
+patrol_gid: 2021
+patrol_port: 6110
+
+patrol_limit_memory: 512Mi
+patrol_limit_cpu: 4

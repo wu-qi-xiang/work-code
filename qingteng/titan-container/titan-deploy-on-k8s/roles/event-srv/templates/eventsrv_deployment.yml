@@ -1,0 +1,92 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: titan-event-srv
+  namespace: "{{namespace}}"
+  labels:
+    app: titan-event-srv
+spec:
+  replicas: {{eventsrv_replicas}}
+  selector:
+    matchLabels:
+      app: titan-event-srv
+  strategy:
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 1
+    type: RollingUpdate
+  progressDeadlineSeconds: 120
+  minReadySeconds: 30
+  revisionHistoryLimit: 3
+  template:
+    metadata:
+      name: titan-event-srv
+      labels:
+        app: titan-event-srv
+    spec:
+      nodeSelector:
+        "{{eventsrv_nodelabel}}": "true"
+      serviceAccountName: "{{service_account}}"
+      containers:
+        - image: "{{eventsrv_image}}"
+          imagePullPolicy: "{{ eventsrv_pullPolicy }}"
+          name: titan-event-srv
+          resources:
+            limits:
+              cpu: "{{ eventsrv_limit_cpu }}"
+              memory: "{{ eventsrv_limit_memory }}"
+            requests:
+              cpu: "{{cpu_req}}"
+              memory: 512Mi
+          readinessProbe:
+            httpGet:
+              path: /api/checkall
+              port: {{eventsrv_port}}
+            initialDelaySeconds: 20
+            periodSeconds: 10
+            timeoutSeconds: 3
+            failureThreshold: 6
+          livenessProbe:
+            exec:
+              command:
+                - "/bin/bash"
+                - "-c"
+                - result=`curl -k -sS http://127.0.0.1:{{eventsrv_port}}/api/checkall 2>&1`; if [[ $result =~ 'abnormal_service":[]' ]]; then echo ok; else echo $result && exit 1; fi
+            initialDelaySeconds: 60
+            periodSeconds: 30
+            timeoutSeconds: 15
+            failureThreshold: 3
+          ports:
+            - containerPort: {{eventsrv_port}}
+              protocol: TCP
+          command: ['/bin/sh', '-c', 'dockerize -secretdir /var/secrets/ -yaml-env /titan-env/titan-env.yml -template /titan-java-config/jaas_zk_client.conf:/data/app/titan-config/jaas_zk_client.conf -mergeToJson /titan-java-config/java.properties:/data/app/titan-config/java.json -mergeToJson /titan-java-config/eventsrv.properties:/data/app/titan-config/java.json; chown -R titan:titan /data/app/titan-config; /data/app/titan-event-srv/init.d/event-srv start']
+          volumeMounts:
+            - name: var-secrets
+              mountPath: /var/secrets/
+            - name: titan-env
+              mountPath: /titan-env
+            - name: titan-java-config
+              mountPath: /titan-java-config
+            - mountPath: /data/titan-logs/java/event-srv
+              subPath: event-srv
+              name: titan-logs
+            - name: tmp
+              mountPath: /data/app/titan-event-srv/tomcat
+              subPath: tomcat
+            - name: tmp
+              mountPath: /tmp
+          securityContext:
+            readOnlyRootFilesystem: false
+            allowPrivilegeEscalation: false
+      volumes:
+        - name: var-secrets
+          secret:
+            secretName: titan-all-secrets
+        - name: titan-env
+          configMap:
+            name: titan-env
+        - name: titan-java-config
+          configMap:
+            name: titan-java-config
+        - emptyDir: {}
+          name: tmp

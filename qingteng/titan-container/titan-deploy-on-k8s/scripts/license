@@ -1,0 +1,17 @@
+#!/bin/bash
+
+source $(dirname $0)/utils.sh
+check_env license $1
+
+cd /data/;
+case $1 in
+    code)
+      ansible-playbook utils.yml --tags license_code
+      ;;
+    update)
+      ansible-playbook utils.yml --tags license_update
+      ;;
+    *)
+      ansible-playbook utils.yml --tags license_status
+      ;;
+esac

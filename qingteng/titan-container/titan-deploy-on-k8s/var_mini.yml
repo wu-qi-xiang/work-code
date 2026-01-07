@@ -1,0 +1,192 @@
+---
+kafka_nodelabel: "{{namespace}}-base"
+mongod_nodelabel: "{{namespace}}-base"
+mysql_nodelabel: "{{namespace}}-base"
+zk_nodelabel: "{{namespace}}-base"
+rabbitmq_nodelabel: "{{namespace}}-base"
+rediserl_nodelabel: "{{namespace}}-base"
+redisjava_nodelabel: "{{namespace}}-base"
+redisphp_nodelabel: "{{namespace}}-base"
+
+msmongod_nodelabel: "{{namespace}}-app"
+
+# 需要创建localpv的node label
+localpv_nodelabels: "{{ [kafka_nodelabel,mongod_nodelabel,msmongod_nodelabel,mysql_nodelabel,zk_nodelabel,rabbitmq_nodelabel,rediserl_nodelabel,redisjava_nodelabel,redisphp_nodelabel] | unique }}"
+
+titanbackup_nodelabel: "{{namespace}}-java"
+patrol_nodelabel: "{{namespace}}-java"
+
+connectagent_nodelabel: "{{namespace}}-java"
+connectdh_nodelabel: "{{namespace}}-java"
+connectselector_nodelabel: "{{namespace}}-java"
+connectsh_nodelabel: "{{namespace}}-java"
+detectsrv_nodelabel: "{{namespace}}-java"
+gateway_nodelabel: "{{namespace}}-java"
+uploadsrv_nodelabel: "{{namespace}}-java"
+usersrv_nodelabel: "{{namespace}}-java"
+wisteria_nodelabel: "{{namespace}}-java"
+jobsrv_nodelabel: "{{namespace}}-java"
+php_nodelabel: "{{namespace}}-php"
+scansrv_nodelabel: "{{namespace}}-java"
+clusterlinksrv_nodelabel: "{{namespace}}-java"
+antivirussrv_nodelabel: "{{namespace}}-java"
+mssrv_nodelabel: "{{namespace}}-java"
+eventsrv_nodelabel: "{{namespace}}-app"
+
+java_nodelabels: "{{ [connectdh_nodelabel,connectdh_nodelabel,connectselector_nodelabel,connectsh_nodelabel,detectsrv_nodelabel,gateway_nodelabel,uploadsrv_nodelabel,usersrv_nodelabel,wisteria_nodelabel,jobsrv_nodelabel,patrol_nodelabel,mssrv_nodelabel,eventsrv_nodelabel,antivirussrv_nodelabel,scansrv_nodelabel,clusterlinksrv_nodelabel] | unique }}"
+java_images: "{{ [wisteria_image,upgradetool_image,gateway_image,usersrv_image,scansrv_image,clusterlinksrv_image,connectagent_image,connectdh_image,connectselector_image,connectsh_image,detectsrv_image,uploadsrv_image,uploadsrv_cdc_image,uploadsrv_ave_image,jobsrv_image,patrol_image,antivirussrv_image,mssrv_image,eventsrv_image] }}"
+
+base_nodelabels:
+  - "{{localpv_provisioner_nodelabel}}"
+  - "{{kafka_nodelabel}}"
+  - "{{mongod_nodelabel}}"
+  - "{{msmongod_nodelabel}}"
+  - "{{mysql_nodelabel}}"
+  - "{{zk_nodelabel}}"
+  - "{{rabbitmq_nodelabel}}"
+  - "{{rediserl_nodelabel}}"
+  - "{{redisjava_nodelabel}}"
+  - "{{redisphp_nodelabel}}"
+
+all_nodelabels: "{{ java_nodelabels | union(base_nodelabels) | union([php_nodelabel]) | unique }}"
+
+rabbitmq_replicas: 1
+mongos_replicas: 1
+msmongos_replicas: 1
+zk_replicas: 1
+kafka_replicas: 1
+replica_factor: 1
+mysql_replicas: 1
+
+#默认的CPU请求
+cpu_req: "0.2"
+
+jobsrv_req_memory: 1Gi
+connectagent_req_memory: 1Gi
+connectdh_req_memory: 1Gi
+connectsh_req_memory: 1Gi
+detectsrv_req_memory: 1Gi
+wisteria_req_memory: 1Gi
+
+wisteria_replicas: 1
+gateway_replicas: 1
+usersrv_replicas: 1
+scansrv_replicas: 1
+clusterlinksrv_replicas: 1
+uploadsrv_replicas: 1
+jobsrv_replicas: 1
+detectsrv_replicas: 1
+connectagent_replicas: 1
+connectdh_replicas: 1
+connectselector_replicas: 1
+eventsrv_replicas: 1
+antivirussrv_replicas: 1
+mssrv_replicas: 1
+patrol_replicas: 1
+
+# mini模式和正常高可用模式的配置文件有区别
+titan_config_dir: "titan-config-mini"
+dfs_storage_capacity: 100Gi
+
+# 所有公共的角色
+all_roles:
+  - localpv
+  - zookeeper
+  - kafka
+  - mysql
+  - rabbitmq
+  - redisjava
+  - redisphp
+  - rediserl
+  - mongo
+  - mongo-ms-srv
+  - fluentbit
+  - titan-backup
+  - wisteria
+  - gateway
+  - user-srv
+  - upload-srv
+  - job-srv
+  - detect-srv
+  - connect-dh
+  - connect-agent
+  - connect-sh
+  - connect-selector
+  - go-patrol
+  - php
+  - ms-srv
+  - event-srv
+  - anti-virus-srv
+  - scan-srv
+  - clusterlink-srv
+
+uninstall_sort_roles:
+  - php
+  - go-patrol
+  - wisteria
+  - gateway
+  - user-srv
+  - detect-srv
+  - job-srv
+  - upload-srv
+  - connect-agent
+  - connect-selector
+  - connect-sh
+  - connect-dh
+  - scan-srv
+  - clusterlink-srv
+  - ms-srv
+  - event-srv
+  - anti-virus-srv
+  - rabbitmq
+  - titan-backup
+  - mongo-ms-srv
+  - mongo
+  - mysql
+  - kafka
+  - zookeeper
+  - redisjava
+  - redisphp
+  - rediserl
+  - localpv
+
+base_roles:
+  - localpv
+  - mysql
+  - mongo
+  - mongo-ms-srv
+  - zookeeper
+  - kafka
+  - rabbitmq
+  - redisjava
+  - redisphp
+  - rediserl
+  - titan-backup
+
+app_roles:
+  - wisteria
+  - gateway
+  - user-srv
+  - upload-srv
+  - job-srv
+  - detect-srv
+  - connect-dh
+  - connect-agent
+  - connect-sh
+  - connect-selector
+  - go-patrol
+  - php
+  - ms-srv
+  - event-srv
+  - anti-virus-srv
+  - scan-srv
+  - clusterlink-srv
+
+# 蜂巢容器的才包含这两个角色
+app_hive_roles:
+  - scan-srv
+  - clusterlink-srv
+
+extra_roles: []
+mini_mode: true
+install_roles: []

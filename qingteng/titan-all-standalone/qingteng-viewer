@@ -1,0 +1,69 @@
+#!/bin/bash
+#
+# qingteng-viewer   qingteng bigdata viewer
+#
+# Author:       jiang.wu <jiang.wu@qingteng.cn>
+#
+# chkconfig:	- 96 96
+#
+# description:  qingteng bigdata viewer
+#               
+# processname:  qt_viewer
+#
+# source function library
+. /etc/rc.d/init.d/functions
+
+PY_BIN=/usr/local/qingteng/python2.7.9/bin/uwsgi
+CONFIG=/usr/local/qingteng/bigdata/qt_viewer/uwsgi.ini
+LOG=/data/titan-logs/bigdata/qingteng-viewer.log
+PIDFILE=/data/titan-logs/bigdata/qingteng-viewer.pid
+RETVAL=0
+
+start() {
+	echo -n $"Starting qingteng-viewer: "
+	daemon --user bigdata --pidfile=${PIDFILE} "$PY_BIN --pidfile ${PIDFILE} --ini $CONFIG &>>$LOG &"
+	RETVAL=$?
+	echo
+	[ $RETVAL -eq 0 ] && touch /var/lock/subsys/qingteng-viewer
+}
+
+stop() {
+        echo -n $"Stopping qingteng-viewer: "
+        killproc -p $PIDFILE qt_viewer
+        echo
+        [ $RETVAL -eq 0 ] && rm -f /var/lock/subsys/qingteng-viewer
+}
+
+rh_status() {
+    status -p $PIDFILE qt_viewer
+}
+
+
+restart() {
+	stop
+	start
+}
+
+case "$1" in
+  start)
+	start
+	;;
+  stop) 
+	stop
+	;;
+  restart|force-reload|reload)
+	restart
+	;;
+  condrestart)
+	[ -f /var/lock/subsys/qingteng-viewer ] && restart
+	;;
+  status)
+	rh_status
+	RETVAL=$?
+	;;
+  *)
+	echo $"Usage: $0 {start|stop|status|restart|reload|force-reload|condrestart}"
+	exit 1
+esac
+
+exit $RETVAL

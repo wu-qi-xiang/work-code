@@ -1,0 +1,9 @@
+---
+# defaults file for event-srv
+antivirussrv_pullPolicy: IfNotPresent
+antivirussrv_uid: 2020
+antivirussrv_gid: 2020
+antivirussrv_port: 6240
+
+antivirussrv_limit_memory: 2048Mi
+antivirussrv_limit_cpu: 4

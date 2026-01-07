@@ -1,0 +1,6 @@
+---
+- name: update titan-wisteria image
+  shell: "kubectl -n {{ namespace }} set image deployment titan-wisteria titan-wisteria={{wisteria_image}}"
+
+- name: update upgradetool image
+  shell: "kubectl -n {{ namespace }} set image deployment titan-wisteria upgradetool={{upgradetool_image}}"

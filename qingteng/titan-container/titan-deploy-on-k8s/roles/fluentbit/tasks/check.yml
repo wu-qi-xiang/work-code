@@ -1,0 +1,28 @@
+- set_fact:
+    fluentbit_client_ok: true
+  when: fluentbit_client_notinstall is defined
+
+- block:
+  - name: get fluentbit daemonset 
+    kubernetes.core.k8s_info:
+      kind: DaemonSet
+      name: "titan-fluentbit-client"
+      namespace: "{{ namespace }}"
+    register: fluentbit_client_setobj
+  - set_fact:
+      fluentbit_client_ok: "{{fluentbit_client_setobj | daemonset_check}}"
+  when: fluentbit_client_notinstall is not defined
+
+- name: get fluentbit-server deployment 
+  kubernetes.core.k8s_info:
+    kind: Deployment
+    name: "titan-fluentbit-server"
+    namespace: "{{ namespace }}"
+  register: fluentbit_server_setobj
+
+- set_fact:
+    tmp_ok: "{{(fluentbit_server_setobj | deployment_check) and fluentbit_client_ok }}"
+
+- set_fact:
+    ok_base_roles: "{{ok_base_roles | union(['fluentbit']) }}" 
+  when: tmp_ok    

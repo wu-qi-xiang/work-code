@@ -1,0 +1,13 @@
+- name: get titan-connect-sh 
+  kubernetes.core.k8s_info:
+    kind: StatefulSet
+    name: "titan-connect-sh"
+    namespace: "{{ namespace }}"
+  register: tmp_setobj
+
+- set_fact:
+    tmp_ok: "{{tmp_setobj | statefulset_check }}"
+
+- set_fact:
+    ok_app_roles: "{{ok_app_roles | union(['connect-sh']) }}" 
+  when: tmp_ok

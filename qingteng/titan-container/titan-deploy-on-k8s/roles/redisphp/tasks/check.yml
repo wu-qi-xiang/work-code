@@ -1,0 +1,12 @@
+- name: get redisphp statefulset 
+  kubernetes.core.k8s_info:
+    kind: StatefulSet
+    name: "redisphp"
+    namespace: "{{ namespace }}"
+  register: redisphp_setobj
+- set_fact:
+    redisphp_ok: "{{redisphp_setobj | statefulset_check}}"
+
+- set_fact:
+    ok_base_roles: "{{ok_base_roles | union(['redisphp']) }}" 
+  when: redisphp_ok      

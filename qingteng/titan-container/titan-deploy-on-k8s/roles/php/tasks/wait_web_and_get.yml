@@ -1,0 +1,15 @@
+- name: wait to ensure php daemonset OK 
+  kubernetes.core.k8s_info:
+    kind: DaemonSet
+    name: "titan-web"
+    namespace: "{{ namespace }}"
+    wait: yes
+    wait_sleep: 20
+    wait_timeout: 240
+
+- include_role:
+    name: common
+    tasks_from: k8s_one_pod.yml
+  vars:
+    label_selector: "app=titan-web"
+    result_key: "web_pod"

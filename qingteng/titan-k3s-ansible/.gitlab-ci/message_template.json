@@ -1,0 +1,59 @@
+{
+  "msg_type": "post",
+  "content": {
+    "post": {
+      "zh_cn": {
+        "title": "k3s离线构建成功",
+        "content": [
+          [
+            {
+              "tag": "text",
+              "text": "Amd64离线构建包名称: $CI_PROJECT_NAME-$k3s_version-amd64-$CI_BUILD_REF_NAME-$BUILD_TIME.tar.gz "
+            }
+          ],
+	  [
+            {
+              "tag": "text",
+              "text": "Arm64离线构建包名称: $CI_PROJECT_NAME-$k3s_version-arm64-$CI_BUILD_REF_NAME-$BUILD_TIME.tar.gz "
+            }
+          ],
+          [
+            {
+              "tag": "text",
+              "text": "版本: $CI_COMMIT_REF_NAME"
+            }
+          ],
+          [
+            {
+              "tag": "text",
+              "text": "Amd64下载链接: http://172.16.17.164:/k3s-ansible/$CI_PROJECT_NAME-$k3s_version-amd64-$CI_BUILD_REF_NAME-$BUILD_TIME.tar.gz"
+            }
+          ],
+	  [
+            {
+              "tag": "text",
+              "text": "Arm64下载链接: http://172.16.17.164:/k3s-ansible/$CI_PROJECT_NAME-$k3s_version-arm64-$CI_BUILD_REF_NAME-$BUILD_TIME.tar.gz"
+            }
+          ],
+          [
+            {
+              "tag": "text",
+              "text": "说明: "
+            },
+            {
+              "tag": "a",
+              "text": "k3s离线部署安装方式:",
+              "href": "https://confluence.qingteng.cn/pages/viewpage.action?pageId=68275665"
+            }
+          ],
+          [
+            {
+              "tag": "text",
+              "text": "commit: $CI_COMMIT_MESSAGE"
+            }
+          ]
+        ]
+      }
+    }
+  }
+}

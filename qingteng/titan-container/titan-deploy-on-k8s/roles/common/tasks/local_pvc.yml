@@ -1,0 +1,5 @@
+# 用于redis集群预先创建pvc
+---
+- name: create local pvc
+  kubernetes.core.k8s:
+    definition: "{{ lookup('template', 'local_path_pvc.yml') | from_yaml }}"

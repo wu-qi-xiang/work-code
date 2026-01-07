@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: titan-connect-selector
+  namespace: "{{namespace}}"
+spec:
+  selector:
+    app: titan-connect-selector
+  ports:
+    - protocol: TCP
+      port: {{connectselector_port}}

@@ -1,0 +1,30 @@
+---
+# tasks file for mongos
+- name: get architecture
+  shell: uname -m
+  register: architecture_info
+
+- set_fact:
+    arm64: true 
+  when: "'stdout' in architecture_info and ('aarch' in architecture_info['stdout'] or 'arm' in architecture_info['stdout']) "
+
+- name: create mongos-hs service
+  kubernetes.core.k8s:
+    definition: "{{ lookup('template', 'mongos_hs.yml') | from_yaml }}"
+
+- name: create mongos statefulSet
+  kubernetes.core.k8s:
+    definition: "{{ lookup('template', 'mongos_statefulset.yml') | from_yaml | titan_combine(common_patch) }}"
+    apply: yes
+
+# 获取 mongos pod 信息，测试 pod 已 running
+- name: get mongos pods 
+  kubernetes.core.k8s_info:
+    kind: Pod
+    label_selectors:
+      - "app = mongos"
+    namespace: "{{ namespace }}"
+    wait: yes
+    wait_sleep: 15
+    wait_timeout: 120
+  register: mongos_podobj

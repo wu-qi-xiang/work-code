@@ -1,0 +1,106 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: titan-glusterfs
+  namespace: {{ namespace }}
+  labels:
+    app: titan-glusterfs
+spec:
+  serviceName: glusterfs-hs
+  podManagementPolicy: Parallel
+  replicas: {{glusterfs_replicas}}
+  selector:
+    matchLabels:
+      app: titan-glusterfs
+  template:
+    metadata:
+      labels:
+        app: titan-glusterfs
+    spec:
+      nodeSelector:
+        "{{ glusterfs_nodelabel }}": "true"
+      affinity:
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            - topologyKey: "kubernetes.io/hostname"
+              labelSelector:
+                matchLabels:
+                  app: titan-glusterfs
+      # hostNetwork: true
+      # dnsPolicy: ClusterFirstWithHostNet
+      serviceAccountName: "{{service_account}}"
+      containers:
+        - name: titan-glusterfs
+          imagePullPolicy: "{{ gluster_pullPolicy }}"
+          image: "{{ glusterfs_image }}"
+          resources:
+            limits:
+              cpu: "{{ glusterfs_server_limit_cpu }}"
+              memory: "{{ glusterfs_server_limit_memory }}"
+            requests:
+              cpu: "{{cpu_req}}"
+              memory: "100Mi"
+          readinessProbe:
+            timeoutSeconds: 3
+            initialDelaySeconds: 20
+            exec:
+              command:
+              - sh
+              - -c
+              - gluster volume info titan-glusterfs || exit 0; timeout 1 bash -c 'cat < /dev/null > /dev/tcp/127.0.0.1/49152'
+            periodSeconds: 30
+            successThreshold: 1
+            failureThreshold: 6
+          livenessProbe:
+            timeoutSeconds: 3
+            initialDelaySeconds: 20
+            exec:
+              command:
+              - sh
+              - -c
+              - gluster volume info titan-glusterfs || exit 0; timeout 1 bash -c 'cat < /dev/null > /dev/tcp/127.0.0.1/49152'
+            periodSeconds: 30
+            successThreshold: 1
+            failureThreshold: 6
+          command: ["sh","-c"]
+          args: ["/usr/sbin/glusterd -N --log-level=INFO"]
+          volumeMounts:
+            - name: titan-dfs
+              mountPath: "{{ glusterfs_path }}"
+            - name: titan-gluster
+              subPath: log
+              mountPath: "/var/log/glusterfs"
+            - name: titan-gluster
+              subPath: lib
+              mountPath: "/var/lib/glusterd"
+          securityContext:
+            capabilities:
+              add:
+                - SYS_ADMIN
+            privileged: true
+  volumeClaimTemplates:
+    # 服务端所需的分布式文件信息
+    - metadata:
+        name: titan-dfs
+        labels:
+          qtsa_perm: "0-0"
+          qtsa_path: "glusterfs"
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        storageClassName: "{{storageName}}"
+        resources:
+          requests:
+            storage: "{{ glusterfs_storage_capacity }}"
+    # glusterfs server端本身的一些数据
+    - metadata:
+        name: titan-gluster
+        labels:
+          qtsa_perm: "0-0"
+          qtsa_path: "gluster"
+          qtsa_delete_data: "Y"
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        storageClassName: "{{storageName}}"
+        resources:
+          requests:
+            storage: "{{ gluster_storage_capacity }}"

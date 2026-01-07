@@ -1,0 +1,8 @@
+#!/bin/bash
+
+source $(dirname $0)/utils.sh
+check_env 
+
+cd /data/;
+ansible-playbook utils.yml -v --tags sync_rules
+

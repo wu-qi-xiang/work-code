@@ -1,0 +1,7 @@
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: qt-local-path
+provisioner: qingteng.cn/local-path
+volumeBindingMode: WaitForFirstConsumer
+reclaimPolicy: Delete

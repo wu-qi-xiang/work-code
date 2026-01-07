@@ -1,0 +1,15 @@
+# 创建mongocs headless服务
+apiVersion: v1
+kind: Service
+metadata:
+  name: msmongos-hs
+  namespace: {{ namespace }}
+  labels:
+    app: msmongos
+spec:
+  ports:
+  - port: 27017
+    name: msmongos
+  clusterIP: None
+  selector:
+    app: msmongos

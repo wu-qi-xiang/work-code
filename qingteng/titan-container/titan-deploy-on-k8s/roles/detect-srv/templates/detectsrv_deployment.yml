@@ -1,0 +1,98 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: titan-detect-srv
+  namespace: "{{namespace}}"
+  labels:
+    app: titan-detect-srv
+spec:
+  replicas: {{detectsrv_replicas}}
+  selector:
+    matchLabels:
+      app: titan-detect-srv
+  strategy:
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 1
+    type: RollingUpdate
+  progressDeadlineSeconds: 120
+  minReadySeconds: 30
+  revisionHistoryLimit: 3
+  template:
+    metadata:
+      name: titan-detect-srv
+      labels:
+        app: titan-detect-srv
+    spec:
+      nodeSelector:
+        "{{detectsrv_nodelabel}}": "true"
+      serviceAccountName: "{{service_account}}"
+      containers:
+        - image: "{{detectsrv_image}}"
+          imagePullPolicy: "{{ detectsrv_pullPolicy }}"
+          name: titan-detect-srv
+          resources:
+            limits:
+              cpu: "{{ detectsrv_limit_cpu }}"
+              memory: "{{ detectsrv_limit_memory }}"
+            requests:
+              cpu: "{{cpu_req}}"
+              memory: "{{detectsrv_req_memory}}"
+          readinessProbe:
+            httpGet:
+              path: /api/ping
+              port: {{detectsrv_port}}
+            initialDelaySeconds: 180
+            periodSeconds: 10
+            timeoutSeconds: 3
+            failureThreshold: 18
+          livenessProbe:
+            exec:
+              command:
+                - "/bin/bash"
+                - "-c"
+                - result=`curl -k -sS http://127.0.0.1:{{detectsrv_port}}/api/checkall 2>&1`; if [[ $result =~ 'abnormal_service":[]' ]]; then echo ok; else echo $result && exit 1; fi
+            initialDelaySeconds: 120
+            periodSeconds: 30
+            timeoutSeconds: 15
+            failureThreshold: 6
+          command: ['/bin/sh', '-c', 'dockerize -secretdir /var/secrets/ -yaml-env /titan-env/titan-env.yml -template /titan-java-config/jaas_zk_client.conf:/data/app/titan-config/jaas_zk_client.conf -mergeToJson /titan-java-config/java.properties:/data/app/titan-config/java.json; chown -R titan:titan /data/app/titan-config; /data/app/titan-detect-srv/init.d/detect-srv start']
+          ports:
+            - containerPort: {{detectsrv_port}}
+              protocol: TCP
+          volumeMounts:
+            - name: var-secrets
+              mountPath: /var/secrets/
+            - name: titan-env
+              mountPath: /titan-env
+            - name: titan-java-config
+              mountPath: /titan-java-config
+            - mountPath: /data/titan-logs/java/detect-srv
+              subPath: detect-srv
+              name: titan-logs
+            - mountPath: /data/app/titan-detect-srv/tomcat
+              subPath: tomcat
+              name: tmp
+            - mountPath: /tmp
+              name: tmp
+            - mountPath: /data/titan-dfs
+              name: dfs-volume
+          securityContext:
+            allowPrivilegeEscalation: false
+      securityContext:
+        fsGroup: {{detectsrv_gid}}
+      volumes:
+        - name: var-secrets
+          secret:
+            secretName: titan-all-secrets
+        - name: titan-env
+          configMap:
+            name: titan-env
+        - name: titan-java-config
+          configMap:
+            name: titan-java-config
+        - emptyDir: {}
+          name: tmp
+        - name: dfs-volume
+          persistentVolumeClaim:
+            claimName: titan-dfs

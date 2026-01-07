@@ -1,0 +1,36 @@
+---
+# tasks file for redisphp
+- set_fact:
+    work_nodes: "{{ label_nodes[redisphp_nodelabel] }}"
+
+- name: Print result
+  debug:
+    msg: "{{ work_nodes }}"
+
+- fail:
+    msg: "have no available node for redisphp"
+  when: work_nodes|length < 1
+
+- name: create redisphp configmap
+  kubernetes.core.k8s:
+    definition: "{{ lookup('template', 'redisphp_configmap_single.yml', variable_start_string='[%', variable_end_string='%]') | from_yaml }}"
+
+- name: create redisphp headless service
+  kubernetes.core.k8s:
+    definition: "{{ lookup('template', 'redisphp_hs.yml') | from_yaml }}"
+
+- name: create redisphp StatefulSet
+  kubernetes.core.k8s:
+    definition: "{{ lookup('template', 'redisphp_statefulset_single.yml') | from_yaml | titan_combine(common_patch) }}"
+    apply: yes
+
+- name: get redisphp statefulset 
+  kubernetes.core.k8s_info:
+    kind: StatefulSet
+    name: "redisphp"
+    namespace: "{{ namespace }}"
+    wait: yes
+    wait_sleep: 5
+    wait_timeout: 60
+  register: redisphp_setobj
+  

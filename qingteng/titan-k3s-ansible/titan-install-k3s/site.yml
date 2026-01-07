@@ -1,0 +1,56 @@
+---
+- name: checking 
+  import_playbook: check.yaml
+
+- hosts: localhost
+  gather_facts: no
+  become: yes
+  roles: 
+    - role: set_ansible_env
+  
+- hosts: k3s_cluster
+  gather_facts: no
+  become: yes
+  roles:
+    - role: check_hostname
+    - role: prereq
+    - role: k3s_files
+#    - role: raspbian
+#    - role: ubuntu
+
+- hosts: master[0]
+  gather_facts: no
+  become: yes
+  roles:
+    - role: docker
+
+- hosts: master[0]
+  gather_facts: no
+  roles:
+    - { role: registery, when: "REGISTRY_URL == groups['master'][0]"}
+
+
+- hosts: k3s_cluster
+  gather_facts: no
+  become: yes
+  roles:
+    - role: set_k3s_registey
+  tags:
+    - install_master
+    - install_k3s
+
+- hosts: master
+  become: yes
+  roles:
+    - role: k3s/master
+  tags:
+    - install_master
+    - install_k3s
+
+- hosts: node
+  become: yes
+  roles:
+    - role: k3s/node
+  tags:
+    - install_k3s
+

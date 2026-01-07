@@ -1,0 +1,32 @@
+---
+#- name: Build an image and push it to a private repo
+#  docker_image:
+#    name: rancher/{{item.split('/', -1 )[-1]}}
+    # tag: "v0.5.0-build20210505"
+#    repository: "{{REGISTRY_URL}}:5000/{{item.split('/', -1 )[-1]}}"
+#    push: yes
+#    source: local
+#    state: present
+#  with_items: "{{ file_contents_lines }}"
+
+- debug: msg={{ file_contents_lines }}
+
+- name: Build an image and push it to a private repo
+  shell: >-
+         docker tag rancher/{{ item.split('/', -1 )[-1] }} {{ REGISTRY_URL }}:5000/rancher/{{ item.split('/', -1 )[-1] }} &&
+         docker push {{REGISTRY_URL}}:5000/rancher/{{ item.split('/', -1 )[-1] }}
+  with_items: "{{ file_contents_lines }}"
+
+- name: clear images
+  shell: >-
+         docker rmi -f rancher/{{ item.split('/', -1 )[-1] }}
+  with_items: "{{ file_contents_lines }}"
+
+- name: Copy K3s registries.yaml file
+  template:
+    src: "registries.yaml.j2"
+    dest: "/tmp/qt_ansible/registries.yaml"
+    owner: root
+    group: root
+    mode: 0755
+  delegate_to: localhost

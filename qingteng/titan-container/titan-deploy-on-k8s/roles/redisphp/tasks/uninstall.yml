@@ -1,0 +1,26 @@
+- name: Remove redisphp StatefulSet
+  kubernetes.core.k8s:
+    state: absent
+    api_version: apps/v1
+    kind: StatefulSet
+    namespace: "{{ namespace }}"
+    name: "redisphp"
+
+- name: Remove redisphp Service
+  kubernetes.core.k8s:
+    state: absent
+    api_version: v1
+    kind: Service
+    namespace: "{{ namespace }}"
+    name: "redisphp-hs"
+
+- name: Remove redisphp pvc
+  kubernetes.core.k8s:
+    state: absent
+    api_version: v1
+    kind: PersistentVolumeClaim
+    namespace: "{{ namespace }}"
+    name: "datadir-redisphp-{{index}}"
+  loop: "{{ range(redis_php_master_num + redis_php_master_num * redis_php_slave_num) | list }}"
+  loop_control:
+    loop_var: index

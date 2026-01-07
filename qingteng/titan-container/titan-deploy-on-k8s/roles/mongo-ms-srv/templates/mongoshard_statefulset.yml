@@ -1,0 +1,125 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: "msmongoshard{{shardseq}}"
+  namespace: "{{ namespace }}"
+spec:
+  serviceName: "msmongoshard{{shardseq}}-hs"
+  podManagementPolicy: Parallel
+  replicas: {{ mongoshard_replicas }}
+  selector:
+    matchLabels:
+      app: "msmongoshard{{shardseq}}"
+  template:
+    metadata:
+      labels:
+        app: "msmongoshard{{shardseq}}"
+        msshardsvr: "true"
+    spec:
+      terminationGracePeriodSeconds: 10
+      affinity:
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            - topologyKey: "kubernetes.io/hostname"
+              labelSelector:
+                matchLabels:
+                  app: "msmongoshard{{shardseq}}"
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+              - matchExpressions:
+                - key: "kubernetes.io/hostname"
+                  operator: In
+                  values: 
+{% for node in new_shard_nodes %}
+                  - {{node}}
+{% endfor %}
+      serviceAccountName: "{{service_account}}"
+      containers:
+        - name: k8s-msmongoshard
+          imagePullPolicy: "{{ mongo_pullPolicy }}"
+          image: "{{ mongo_image }}"
+          resources:
+            limits:
+              cpu: "{{ mongoshard_limit_cpu }}"
+              memory: "{{ mongoshard_limit_memory }}"
+            requests:
+              cpu: "{{cpu_req}}"
+              memory: "2048Mi"
+          ports:
+            - name: msmongo
+              protocol: TCP
+              containerPort: 27019
+          args: ["--config", "/etc/mongo/shard.conf", "--keyFile", "/etc/mongo/keyfile","--replSet","shard{{shardseq}}"]
+          readinessProbe:
+            tcpSocket:
+              port: 27019
+            initialDelaySeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 5
+          startupProbe:
+            tcpSocket:
+              port: 27019
+            initialDelaySeconds: 30
+            periodSeconds: 15
+            timeoutSeconds: 10
+            failureThreshold: 30
+          livenessProbe:
+            tcpSocket:
+              port: 27019
+            timeoutSeconds: 5
+            periodSeconds: 30
+            failureThreshold: 5
+          volumeMounts:
+            - name: msmongosharddir
+              mountPath: /data/db
+            - name: config
+              mountPath: /etc/mongo
+            - name: tmp
+              mountPath: /tmp
+          securityContext:
+            runAsUser: {{mongo_uid}}
+            runAsGroup: {{mongo_gid}}
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+      initContainers:
+        - name: configmap-copy
+          image: "{{ alpine_image }}"
+          imagePullPolicy: IfNotPresent
+          command:
+          - sh
+          - -c
+          - cp -f /etc/mongo-temp/* /etc/mongo/ && chmod 600 /etc/mongo/keyfile
+          volumeMounts:
+            - name: msmongo-config
+              mountPath: /etc/mongo-temp/
+            - name: config
+              mountPath: /etc/mongo
+      securityContext:
+        runAsUser: {{mongo_uid}}
+        fsGroup: {{mongo_gid}}
+      volumes:
+        - name: msmongo-config
+          configMap:
+            name: msmongo-configmap
+            items:
+            - key: keyfile
+              path: keyfile
+            - key: shard.conf
+              path: shard.conf
+        - name: config
+          emptyDir: {}
+        - emptyDir: {}
+          name: tmp
+  volumeClaimTemplates:
+    - metadata:
+        name: msmongosharddir
+        labels:
+          qtsa_perm: "{{mongo_uid}}-{{mongo_gid}}"
+          qtsa_path_prefix: "mongoshard-ms"
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        storageClassName: "{{storageName}}"
+        resources:
+          requests:
+            storage: "{{ mongoshard_storage_capacity }}"

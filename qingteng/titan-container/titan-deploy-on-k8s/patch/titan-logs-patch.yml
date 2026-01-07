@@ -1,0 +1,9 @@
+# java服务日志卷，默认为hostPath
+spec:
+  template:
+    spec:
+      volumes:
+        - name: titan-logs
+          hostPath:
+            path: "{{titan_logs_path}}"
+            type: DirectoryOrCreate

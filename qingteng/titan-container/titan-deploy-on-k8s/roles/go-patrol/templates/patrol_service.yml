@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: titan-patrol
+  namespace: "{{namespace}}"
+spec:
+  selector:
+    app: titan-patrol
+  ports:
+    - protocol: TCP
+      port: {{patrol_port}}

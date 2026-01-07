@@ -1,0 +1,14 @@
+/data/titan-logs/mongodb/*.log {
+  daily
+  rotate 30
+  ifempty
+  dateext
+  missingok
+  compress
+  delaycompress
+  create 640 mongodb mongodb
+  sharedscripts
+  postrotate
+  /bin/kill -SIGUSR1 `ps -ef|grep mongo|grep -v grep|awk '{print $2}'` > /dev/null 2>&1
+  endscript
+}

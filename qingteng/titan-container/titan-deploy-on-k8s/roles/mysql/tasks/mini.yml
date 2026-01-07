@@ -1,0 +1,77 @@
+---
+# tasks file for mysql
+- set_fact:
+    work_nodes: "{{ label_nodes[mysql_nodelabel] }}"
+
+- name: Print result
+  debug:
+    msg: "{{ work_nodes }}"
+
+- fail:
+    msg: "have no available node for mysql"
+  when: work_nodes|length < 1
+
+
+- name: create mysql headless service
+  kubernetes.core.k8s:
+    definition: "{{ lookup('template', 'mysql_hs.yml') | from_yaml }}"
+
+- name: create mysql service
+  kubernetes.core.k8s:
+    definition: "{{ lookup('template', 'mysql_svc.yml') | from_yaml }}"
+
+- name: create mysql configmap
+  kubernetes.core.k8s:
+    # mysql_configmap_single.yml 使用了dockerize, ansible的 jinja2 模板替换符和 golang template的一样了，这里将ansible的variable_start_string 进行修改
+    definition: "{{ lookup('template', 'mysql_configmap_single.yml', variable_start_string='[%', variable_end_string='%]') | from_yaml }}"
+
+# 解释一下，带预制规则则创建mysql_statefulset_install_withrules.yml， 关键点是podManagementPolicy: Parallel，在多台上同时拉取并解压预制规则
+# 然后 创建不带预制规则的正常创建集群 statefulset
+
+- name: create mysql StatefulSet with rules Parallel
+  kubernetes.core.k8s:
+    definition: "{{ lookup('template', 'mysql_statefulset_single_withrules.yml' ) | from_yaml | titan_combine(common_patch) }}"
+    apply: yes
+
+- name: wait mysql OK 
+  kubernetes.core.k8s_info:
+    kind: StatefulSet
+    name: "mysql"
+    namespace: "{{ namespace }}"
+    wait: yes
+    wait_sleep: 30
+    wait_timeout: 150
+  register: mysql_setobj
+  until: mysql_setobj | statefulset_check
+  retries: 8
+  delay: 10
+
+- name: delete rules statefulset
+  kubernetes.core.k8s:
+    state: absent
+    api_version: apps/v1
+    kind: StatefulSet
+    namespace: "{{ namespace }}"
+    name: "mysql"
+    wait: yes
+    wait_sleep: 10
+    wait_timeout: 150
+
+- name: create mysql normal running StatefulSet
+  kubernetes.core.k8s:
+    definition: "{{ lookup('template', 'mysql_statefulset_single.yml' ) | from_yaml | titan_combine(common_patch) }}"
+    apply: yes
+
+- name: wait mysql OK 
+  kubernetes.core.k8s_info:
+    kind: StatefulSet
+    name: "mysql"
+    namespace: "{{ namespace }}"
+    wait: yes
+    wait_sleep: 20
+    wait_timeout: 120
+  register: mysql_setobj
+  until: mysql_setobj | statefulset_check
+  retries: 2
+  delay: 10
+

@@ -1,0 +1,9 @@
+- name: Create /tmp/qt_ansible/
+  file:
+    path: "{{ ansible_tmp }}"
+    owner: root
+    group: root
+    mode: 0755
+    state: directory
+  with_items:
+    - "{{ ansible_tmp }}"

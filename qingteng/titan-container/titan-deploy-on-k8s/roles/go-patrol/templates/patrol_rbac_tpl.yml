@@ -1,0 +1,55 @@
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: titan-patrol
+  namespace: {{ namespace }}
+rules:
+  - apiGroups:
+      - ""
+    resources:
+      - pods
+      - pods/log
+      - pods/exec
+    verbs:
+      - create
+      - delete
+      - get
+      - list
+      - patch
+      - update
+      - watch
+  - apiGroups:
+      - ""
+    resources:
+      - configmaps
+      - secrets
+    verbs:
+      - get
+      - list
+  - apiGroups:
+      - apps
+    resources:
+      - daemonsets
+      - deployments
+    verbs:
+      - create
+      - delete
+      - get
+      - list
+      - watch
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: titan-patrol
+  namespace: {{ namespace }}
+subjects:
+  - kind: ServiceAccount
+    name: titan-patrol
+    namespace: {{ namespace }}
+roleRef:
+  kind: Role
+  name: titan-patrol
+  apiGroup: rbac.authorization.k8s.io
+

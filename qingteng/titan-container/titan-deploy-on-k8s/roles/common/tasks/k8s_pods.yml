@@ -1,0 +1,19 @@
+- name: get {{ app_name }} pods
+  kubernetes.core.k8s_info:
+    kind: Pod
+    label_selectors:
+      - "app = {{ app_name }}"
+    namespace: "{{ namespace }}"
+    wait: yes
+    wait_sleep: 10
+    wait_timeout: 90
+  register: temp_podobj
+
+- name: Print {{ app_name }} podname,podip,nodename
+  debug:
+    msg: "temp_pods: {{ temp_podobj | json_query('resources[*].{name:metadata.name, ip:status.podIP,hostname:spec.nodeName}') }} "
+
+#返回值为 {{ app_name }}_pods
+- name: set {{ app_name }}_pods
+  set_fact:
+    "{{ app_name }}_pods": "{{ temp_podobj | json_query('resources[*].{name:metadata.name, ip:status.podIP,hostname:spec.nodeName}') }}"

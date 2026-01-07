@@ -1,0 +1,16 @@
+custom:
+# 白名单
+  white_list:
+    app_services:
+      #Agent与万相服务端通信使用到的所有的IP列表，一般情况下是万相服务器IP
+      - ip_list: 127.0.0.1
+        port_list: 80,8443,6677,7788,8001,8002
+        protocols: tcp
+    system_services: []
+      #- ip_list:
+      #  port_list:
+      #  protocols:
+    #万相服务器IP(多个IP以,分隔 如: 172.16.10.1,172.16.10.2,172.16.10.3)
+    qt_server_ips: []
+    #万相服务器AgentId(如果万相服务器也安装了青藤的Agent，需要填此参数，多个AgentId以,分隔)
+    qt_server_agent_ids: []

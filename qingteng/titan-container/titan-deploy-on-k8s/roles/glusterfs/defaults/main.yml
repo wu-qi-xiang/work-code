@@ -1,0 +1,12 @@
+---
+# defaults file for glusterfs
+glusterfs_replicas: 3
+glusterfs_path: "/data/titan-container/glusterfs"
+glusterfs_hostpath: "/data/titan-container/glusterfs"
+gluster_pullPolicy: IfNotPresent
+
+glusterfs_server_limit_cpu: 4
+glusterfs_server_limit_memory: 1024Mi
+
+glusterfs_storage_capacity: 500Gi
+gluster_storage_capacity: 2Gi

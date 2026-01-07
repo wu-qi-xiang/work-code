@@ -1,0 +1,13 @@
+---
+# defaults file for rabbitmq
+rabbitmq_replicas: 3
+# 这个rabbitmq_svc_name根本不能改，只能是rabbitmq，改了就出错
+rabbitmq_svc_name: rabbitmq
+rabbitmq_storage_capacity: 50Gi
+rabbitmq_hostpath: /data/titan-container/rabbitmq
+rabbitmq_pullPolicy: IfNotPresent
+rabbit_uid: 100
+rabbit_gid: 101
+
+rabbit_limit_memory: 16Gi
+rabbit_limit_cpu: 8

@@ -1,0 +1,15 @@
+- set_fact:
+    mongo_ms_srv_ok: true
+
+- block:
+    - name: get mongo ms_srv shard statefulset 
+      shell: kubectl -n qtsa get po | grep msmongoshard | grep Running || echo "notok"
+      register: msmongo_ms_srv_running_status
+    
+    - set_fact:
+        mongo_ms_srv_ok: "{{'Running' in msmongo_ms_srv_running_status['stdout']}}"
+  when: ms_srv_enable == "true" or ms_srv_enable == true
+
+- set_fact:
+    ok_base_roles: "{{ok_base_roles | union(['mongo-ms-srv']) }}" 
+  when: mongo_ms_srv_ok  

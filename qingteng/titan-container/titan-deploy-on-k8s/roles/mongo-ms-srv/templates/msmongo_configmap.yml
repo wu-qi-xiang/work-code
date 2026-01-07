@@ -1,0 +1,62 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: msmongo-configmap
+  namespace: {{ namespace }}
+data:
+  keyfile: |+
+    {{random_key|indent}}
+  configsvr.conf: |+
+    # for documentation of all options, see:
+    #   http://docs.mongodb.org/manual/reference/configuration-options/
+    # Where and how to store data.
+    storage:
+      dbPath: /data/db
+      journal:
+          enabled: true
+      wiredTiger:
+          engineConfig:
+              cacheSizeGB: {{cs_cacheSizeGB}}
+    # network interfaces
+    net:
+      port: 27018
+      bindIp: 0.0.0.0  # Listen to local interface only, comment to listen on all interfaces.
+      unixDomainSocket:
+          enabled: false
+    replication:
+      replSetName: cs
+    sharding:
+      clusterRole: configsvr
+  mongos.conf: |+
+    bind_ip = 0.0.0.0
+    port = 27017
+    ##监听的配置服务器,只能有1个或者3个 cs为配置服务器的副本集名字
+    configdb = cs/{{ range(mongocs_replicas) | format_and_join_list('msmongocs-{0}.msmongocs-hs:27018') }} 
+    # #设置最大连接数
+    maxConns=1000
+    nounixsocket = true
+  shard.conf: |+
+    storage:
+      dbPath: /data/db
+      journal:
+          enabled: true
+      wiredTiger:
+          engineConfig:
+                cacheSizeGB: {{shard_cacheSizeGB}}
+      # network interfaces
+    net:
+      port: 27019
+      bindIp: 0.0.0.0  # Listen to local interface only, comment to listen on all interfaces.
+      unixDomainSocket:
+          enabled: false
+    sharding:
+      clusterRole: shardsvr
+  shard_script.js: |
+    sh.enableSharding('wisteria_ms')
+    sh.shardCollection("wisteria_ms.access_relation", {uuid:1})
+    sh.shardCollection("wisteria_ms.net_connect_record", { _id : "hashed" })
+    sh.shardCollection("wisteria_ms.strategy_dst_host", { _id : "hashed" })
+    sh.shardCollection("wisteria_ms.strategy_dst_host_history", { _id : "hashed" })
+    sh.shardCollection("wisteria_ms.strategy_issue_status", { _id : "hashed" })
+    sh.shardCollection("wisteria_ms.strategy_src_host", { _id : "hashed" })
+    sh.shardCollection("wisteria_ms.strategy_src_host_history", { _id : "hashed" })

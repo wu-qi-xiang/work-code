@@ -1,0 +1,11 @@
+---
+# defaults file for common
+limits_cpu: 1000m
+limits_memory: 1Gi
+label_selector: "node-role.kubernetes.io/master != "
+result_key: k8s_nodes
+split_flag: ""
+
+gluster_pullPolicy: IfNotPresent
+glusterfs_client_limit_cpu: 4
+glusterfs_client_limit_memory: 1024Mi

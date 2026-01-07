@@ -1,0 +1,95 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: titan-fluentbit-client-config
+  namespace: {{namespace}}
+data:
+  # Configuration files: server, input, filters and output
+  # ======================================================
+  fluent-bit.conf: |
+    [SERVICE]
+        Flush         1
+        Log_Level     info
+        Daemon        off
+
+    @INCLUDE input-kubernetes.conf
+    @INCLUDE output-fluentbit-server.conf
+
+  input-kubernetes.conf: |
+    [INPUT]
+        Name              tail
+        Path              /data/titan-logs/*/*/*.log
+        Path_Key          source
+        DB                /data/titan-container/fluentbit-client/flb_titan_logs.db
+        Mem_Buf_Limit     5MB
+        Skip_Long_Lines   On
+        Refresh_Interval  10
+        Tag               java.<service_name>.<container_id>.<log_name>
+        Tag_Regex         /(?<service_name>[^/]+)/(?<container_id>[a-z0-9]([-a-z0-9]*[a-z0-9]))/(?<log_name>[^/]+.log)$
+    [INPUT]
+        Name              tail
+        Path              /data/titan-logs/php/php/cli_log/*/*/*.log,/data/titan-logs/php/php/cli_log/*.log,/data/titan-logs/php/php-fpm/*.log
+        Path_Key          source
+        DB                /data/titan-container/fluentbit-client/flb_titan_logs.db
+        Mem_Buf_Limit     5MB
+        Skip_Long_Lines   On
+        Refresh_Interval  20
+        Tag               php.<log_name>
+        Tag_Regex         /(?<log_name>[^/]+.log)$
+    [INPUT]
+        Name              tail
+        Path              /data/titan-logs/php/php/log/agent/*/*.log
+        Path_Key          source
+        DB                /data/titan-container/fluentbit-client/flb_titan_logs.db
+        Mem_Buf_Limit     5MB
+        Skip_Long_Lines   On
+        Refresh_Interval  20
+        Tag               php.agent.<log_name>
+        Tag_Regex         /(?<log_name>[^/]+.log)$
+    [INPUT]
+        Name              tail
+        Path              /data/titan-logs/php/php/log/api/*/*.log
+        Path_Key          source
+        DB                /data/titan-container/fluentbit-client/flb_titan_logs.db
+        Mem_Buf_Limit     5MB
+        Skip_Long_Lines   On
+        Refresh_Interval  20
+        Tag               php.api.<log_name>
+        Tag_Regex         /(?<log_name>[^/]+.log)$
+    [INPUT]
+        Name              tail
+        Path              /data/titan-logs/php/php/log/inner-api/*/*.log
+        Path_Key          source
+        DB                /data/titan-container/fluentbit-client/flb_titan_logs.db
+        Mem_Buf_Limit     5MB
+        Skip_Long_Lines   On
+        Refresh_Interval  20
+        Tag               php.innerapi.<log_name>
+        Tag_Regex         /(?<log_name>[^/]+.log)$
+    [INPUT]
+        Name              tail
+        Path              /data/titan-logs/php/php/log/user-backend/*/*.log
+        Path_Key          source
+        DB                /data/titan-container/fluentbit-client/flb_titan_logs.db
+        Mem_Buf_Limit     5MB
+        Skip_Long_Lines   On
+        Refresh_Interval  20
+        Tag               php.user-backend.<log_name>
+        Tag_Regex         /(?<log_name>[^/]+.log)$
+    [INPUT]
+        Name              tail
+        Path              /data/titan-logs/php/nginx/*.log
+        Path_Key          source
+        DB                /data/titan-container/fluentbit-client/flb_titan_logs.db
+        Mem_Buf_Limit     5MB
+        Skip_Long_Lines   On
+        Refresh_Interval  20
+        Tag               php.nginx.<log_name>
+        Tag_Regex         /(?<log_name>[^/]+.log)$
+  output-fluentbit-server.conf: |
+    [OUTPUT]
+        Name          forward
+        Match         *
+        Host          fluentbit-server
+        Port          {{fluentbit_server_port}}
+        

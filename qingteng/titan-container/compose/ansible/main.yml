@@ -1,0 +1,50 @@
+---
+- hosts: localhost
+  name: docker-compose deploy titan-standalone
+  gather_facts: false
+
+  tasks:
+    - name: Check that the secrets/pbeconfig exists
+      stat:
+        path: /data/titan-container/secrets/pbeconfig
+      register: stat_result
+
+    - block:
+        - command: mkdir -p /data/titan-container/secrets
+
+        - set_fact:
+            pbeconfig: "{{ pbeconfig | default(32|randomString, true) }}"
+
+        - set_fact:
+            zk_password: "{{ zk_password | default(16|randomString, true) }}"
+            kafka_password: "{{ kafka_password | default(16|randomString, true) }}"
+            mysql_password: "{{ mysql_password | default(16|randomString, true) }}"
+            mongo_password: "{{ mongo_password | default(16|randomString, true) }}"
+            rabbitmq_password: "{{ rabbitmq_password | default(16|randomString, true) }}"
+            redisjava_password: "{{ redisjava_password | default(16|randomString, true) }}"
+            redisphp_password: "{{ redisphp_password | default(16|randomString, true) }}"
+            rediserl_password: "{{ rediserl_password | default(16|randomString, true) }}"
+            thrift_token: "{{ thrift_token | default(16|randomString, true) }}"
+
+        - set_fact:
+            rsa_key_pair: "{{ '2048' | create_rsa_key }}"
+        
+        - set_fact:
+            login_rsa_private_key: "{{ rsa_key_pair['private_key'] }}"
+            login_rsa_public_key: "{{ rsa_key_pair['public_key'] }}"
+        
+        - copy: content="{{ pbeconfig }}" dest=/data/titan-container/secrets/pbeconfig backup=yes mode=0644
+        - copy: content="{{ zk_password }}" dest=/data/titan-container/secrets/zk_password backup=yes mode=0644
+        - copy: content="{{ kafka_password }}" dest=/data/titan-container/secrets/kafka_password backup=yes mode=0644
+        - copy: content="{{ mysql_password }}" dest=/data/titan-container/secrets/mysql_password backup=yes mode=0644
+        - copy: content="{{ mongo_password }}" dest=/data/titan-container/secrets/mongo_password backup=yes mode=0644
+        - copy: content="{{ rabbitmq_password }}" dest=/data/titan-container/secrets/rabbitmq_password backup=yes mode=0644
+        - copy: content="{{ redisjava_password }}" dest=/data/titan-container/secrets/redisjava_password backup=yes mode=0644
+        - copy: content="{{ redisphp_password }}" dest=/data/titan-container/secrets/redisphp_password backup=yes mode=0644
+        - copy: content="{{ rediserl_password }}" dest=/data/titan-container/secrets/rediserl_password backup=yes mode=0644
+        - copy: content="{{ thrift_token }}" dest=/data/titan-container/secrets/thrift_token backup=yes mode=0644
+        - copy: content="{{ login_rsa_private_key }}" dest=/data/titan-container/secrets/login_rsa_private_key backup=yes mode=0644
+        - copy: content="{{ login_rsa_public_key }}" dest=/data/titan-container/secrets/login_rsa_public_key backup=yes mode=0644
+
+      when: not stat_result.stat.exists
+

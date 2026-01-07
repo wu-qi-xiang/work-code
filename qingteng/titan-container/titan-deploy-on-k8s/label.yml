@@ -1,0 +1,70 @@
+---
+- hosts: localhost
+  name: titan-k8s tools
+  gather_facts: false
+  vars_files:
+    - var_file.yml
+
+  pre_tasks:
+    - name: include pre_titan_env
+      include_tasks: pre_titan_env.yml
+
+  tasks:
+
+    - debug:
+        msg: "{{label_nodes}}"
+
+    # 当 titan-env.yml 里配置了not_label_nodes的时候不主动打标签，由外部保证
+    - meta: end_play
+      when: not_label_nodes is defined
+    
+    - block:
+      # 检查 glusterfs 的节点数必须是 glusterfs_replicas 的倍数
+      - fail:
+          msg: "glusterfs nodes must be in multiples of glusterfs_replicas: {{glusterfs_replicas}} "
+        when: ' (label_nodes[glusterfs_nodelabel] | length) <= 0 or (label_nodes[glusterfs_nodelabel] | length)%glusterfs_replicas != 0 '
+      # 检查 base 的节点数量必须大于等于3
+      - fail:
+          msg: "number of base nodes must greater than or equal to 3 "
+        when: ' (label_nodes[namespace+"-base"] | length) < 3 '
+
+      when: not mini_mode
+
+    - block:
+      # 检查 java 的节点数量只能是1
+      - fail:
+          msg: "number of java nodes must equal to 1 "
+        when: ' (label_nodes[namespace+"-java"] | length) != 1 '
+
+      when: mini_mode
+
+    - name: with_dict
+      command: "kubectl label --overwrite node {{item.1}} {{item.0.key}}=true"
+      loop: "{{ label_nodes | dict2items | subelements('value')  }}"
+    
+    - name: Get the nodes
+      kubernetes.core.k8s_info:
+        kind: Node
+      register: nodeobj
+    
+    - name: "set k8s node labels"
+      set_fact:
+        all_nodelabels: "{{ nodeobj | json_query('resources[*].metadata.{name:name, labels:labels}') }} "
+    
+    - name: "get cur_label_nodes "
+      set_fact:
+        cur_label_nodes: "{{ all_nodelabels | labels_stat(namespace) }} "
+    
+    - block:
+      - fail:
+          msg: "glusterfs nodes must be in multiples of glusterfs_replicas: {{glusterfs_replicas}} "
+        when: '(cur_label_nodes[glusterfs_nodelabel] | length) <= 0 or (cur_label_nodes[glusterfs_nodelabel] | length)%glusterfs_replicas != 0 '
+      when: not mini_mode
+
+    - block:
+      # 检查 java 的节点数量只能是1
+      - fail:
+          msg: "number of java nodes must equal to 1 "
+        when: ' (cur_label_nodes[namespace+"-java"] | length) != 1 '
+
+      when: mini_mode

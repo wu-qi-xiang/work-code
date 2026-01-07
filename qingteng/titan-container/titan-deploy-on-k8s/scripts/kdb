@@ -1,0 +1,41 @@
+#!/bin/bash
+
+source $(dirname $0)/utils.sh
+
+case $1 in
+        mysql)
+          check_env kdb mysql
+          mysql_pwd=`get_plain | grep mysql | tr -d '", ' | cut -d ':' -f2`
+          kubectl -n $NS exec -ti mysql-0 -- bash -c "mysql -uroot -p$mysql_pwd"
+          echo "exit from mysql,now at $HOSTNAME"
+          ;;
+        mongo)
+          check_env kdb mongo
+          mongo_pwd=`get_plain | grep mongo | tr -d '", ' | cut -d ':' -f2`
+          #echo $mongo_pwd
+          kubectl -n $NS exec -ti mongos-0 -- mongo -u qingteng -p $mongo_pwd
+          echo "exit from mongos,now at $HOSTNAME"
+          ;;
+        mongo-ms-srv)
+         check_env kdb mongo-ms-srv
+         msmongo_pwd=`get_plain | grep mongo-ms-srv | tr -d '", ' | cut -d ':' -f2`
+         #echo $mongo_pwd
+         kubectl -n $NS exec -ti msmongos-0 -- mongo -u qingteng -p $msmongo_pwd
+         echo "exit from msmongos,now at $HOSTNAME"
+         ;;
+        redisjava)
+          kubectl -n $NS exec -ti redisjava-0 -- sh -c 'pass=$(cat /tmp/redis.conf |grep pass | cut -d " " -f2); redis-cli -a $pass -c '
+          echo "exit from redisjava,now at $HOSTNAME"
+          ;;
+        redisphp)
+          kubectl -n $NS exec -ti redisphp-0 -- sh -c 'pass=$(cat /tmp/redis.conf |grep pass | cut -d " " -f2); redis-cli -a $pass -c '
+          echo "exit from redisphp,now at $HOSTNAME"
+          ;;
+        rediserl)
+          kubectl -n $NS exec -ti rediserl-0 -- sh -c 'pass=$(cat /tmp/redis.conf |grep pass | cut -d " " -f2); redis-cli -a $pass -c '
+          echo "exit from rediserl,now at $HOSTNAME"
+          ;;
+        *)
+          echo "Wrong option or empty option..." 1>&2
+          ;;
+esac

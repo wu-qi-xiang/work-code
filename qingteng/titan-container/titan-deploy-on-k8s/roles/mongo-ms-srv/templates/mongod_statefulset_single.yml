@@ -1,0 +1,125 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: "msmongod"
+  namespace: "{{ namespace }}"
+spec:
+  serviceName: "msmongod-hs"
+  podManagementPolicy: Parallel
+  replicas: 1
+  selector:
+    matchLabels:
+      app: "msmongod"
+  template:
+    metadata:
+      labels:
+        app: "msmongod"
+    spec:
+      terminationGracePeriodSeconds: 10
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+              - matchExpressions:
+                - key: "kubernetes.io/hostname"
+                  operator: In
+                  values: 
+{% for node in new_shard_nodes %}
+                  - {{node}}
+{% endfor %}
+      serviceAccountName: "{{service_account}}"
+      containers:
+        - name: k8s-msmongod
+          imagePullPolicy: "{{ mongo_pullPolicy }}"
+          image: "{{ mongo_image }}"
+          resources:
+            limits:
+              cpu: "{{ mongod_limit_cpu }}"
+              memory: "{{ mongod_limit_memory }}"
+            requests:
+              cpu: "{{cpu_req}}"
+              memory: "2048Mi"
+          ports:
+            - name: msmongo
+              protocol: TCP
+              containerPort: 27017
+          env:
+            - name: MONGO_INITDB_ROOT_USERNAME
+              value: qingteng
+            - name: MONGO_INITDB_ROOT_PASSWORD_FILE
+              value: /etc/mongo/mongo_passwd_plain
+          args: ["--config", "/etc/mongo/mongod.conf", "--keyFile", "/etc/mongo/keyfile"]
+          readinessProbe:
+            tcpSocket:
+              port: 27017
+            initialDelaySeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 5
+          startupProbe:
+            tcpSocket:
+              port: 27017
+            initialDelaySeconds: 15
+            periodSeconds: 15
+            timeoutSeconds: 10
+            failureThreshold: 30
+          livenessProbe:
+            tcpSocket:
+              port: 27017
+            timeoutSeconds: 5
+            periodSeconds: 30
+            failureThreshold: 5
+          volumeMounts:
+            - name: msmongoddir
+              mountPath: /data/db
+            - name: config
+              mountPath: /etc/mongo
+            - name: tmp
+              mountPath: /tmp
+          securityContext:
+            runAsUser: {{mongo_uid}}
+            runAsGroup: {{mongo_gid}}
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+      initContainers:
+        - name: titan-init
+          image: "{{ init_image }}"
+          imagePullPolicy: IfNotPresent
+          command: ["sh", "-c", "dockerize -secretdir /var/secrets/ -encSecret /var/secrets/msmongo_passwd:/etc/mongo/mongo_passwd_plain -template /etc/mongo-temp/mongod.conf:/etc/mongo/mongod.conf && cp /etc/mongo-temp/keyfile /etc/mongo/ && chmod 600 /etc/mongo/keyfile"] 
+          volumeMounts:
+            - name: var-secrets
+              mountPath: /var/secrets/
+            - name: msmongo-config
+              mountPath: /etc/mongo-temp/
+            - name: config
+              mountPath: /etc/mongo
+      securityContext:
+        runAsUser: {{mongo_uid}}
+        fsGroup: {{mongo_gid}}
+      volumes:
+        - name: var-secrets
+          secret:
+            secretName: titan-all-secrets
+        - name: msmongo-config
+          configMap:
+            name: msmongo-configmap
+            items:
+            - key: mongod.conf
+              path: mongod.conf
+            - key: keyfile
+              path: keyfile            
+        - name: config
+          emptyDir: {}
+        - emptyDir: {}
+          name: tmp
+  volumeClaimTemplates:
+    - metadata:
+        name: msmongoddir
+        labels:
+          qtsa_perm: "{{mongo_uid}}-{{mongo_gid}}"
+          qtsa_path: "mongod-ms"
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        storageClassName: "{{storageName}}"
+        resources:
+          requests:
+            storage: "{{ mongod_storage_capacity }}"

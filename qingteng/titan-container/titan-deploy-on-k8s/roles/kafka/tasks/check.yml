@@ -1,0 +1,12 @@
+- name: get kafka statefulset 
+  kubernetes.core.k8s_info:
+    kind: StatefulSet
+    name: "kafka"
+    namespace: "{{ namespace }}"
+  register: kafka_setobj
+- set_fact:
+    kafka_ok: "{{kafka_setobj | statefulset_check}}"
+
+- set_fact:
+    ok_base_roles: "{{ok_base_roles | union(['kafka']) }}" 
+  when: kafka_ok

@@ -1,0 +1,5 @@
+#!/bin/bash
+
+source $(dirname $0)/utils.sh
+
+(kubectl -n $NS get statefulset -o wide && kubectl -n $NS get deployment -o wide | awk {'print $1"\t" $2"\t" $5"\t" $6"\t" $7'} | column -t ) | sed -r 's#[^, ]+/[^, ]+/##g' | column -t

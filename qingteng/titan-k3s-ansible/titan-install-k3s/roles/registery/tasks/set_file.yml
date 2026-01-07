@@ -1,0 +1,47 @@
+---
+- name: Copy register packages
+  copy:
+    src: "{{ item }}"
+    dest: /data/source/registry/
+    owner: root
+    group: root
+    mode: 0755
+    force: true
+  with_items:
+    - registry-all-x86_64.tar
+    - k3s-airgap-images-amd64.tar
+    - mkcert-v1.4.3-linux-amd64
+    - creat_ca.sh
+  when: ansible_facts.architecture == "x86_64"
+
+- name: Copy register packages
+  copy:
+    src: "{{ item }}"
+    dest: /data/source/registry/
+    owner: root
+    group: root
+    mode: 0755
+    force: true
+  with_items:
+    - registry-all-arrch64.tar
+    - k3s-airgap-images-arm64.tar
+    - mkcert-v1.4.3-linux-arm64
+    - creat_ca.sh
+  when:
+    - ( ansible_facts.architecture is search("arm") and
+        ansible_facts.userspace_bits == "64" ) or
+      ansible_facts.architecture is search("aarch64")
+
+ 
+- name: Create registey  path
+  file:
+    path: "{{ item }}"
+    owner: root
+    group: root
+    mode: 0755
+    state: directory
+  with_items:
+    - "{{ CA_PATH }}"
+    - "/data/registry/data"
+    - "/etc/docker/certs.d/{{ REGISTRY_URL }}:{{ REGISTRY_PORT }}"
+    - "/data/registry/auth/"

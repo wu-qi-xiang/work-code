@@ -1,0 +1,36 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: titan-fluentbit-server-config
+  namespace: {{namespace}}
+  labels:
+    app: titan-fluentbit-server
+data:
+  # Configuration files: server, input and output
+  # ======================================================
+  fluent-bit.conf: |
+    [SERVICE]
+        Flush        5
+        Log_Level    info
+        Plugins_File plugins.conf
+
+    [INPUT]
+        Name              forward
+        Listen            0.0.0.0
+        Port              {{fluentbit_server_port}}
+        Buffer_Chunk_Size 128KB
+        Buffer_Max_Size   4MB
+
+    [OUTPUT]
+        Name  outfile-day
+        Match *
+        Id    outfile-day
+        Path  /data/titan-logs-all/
+
+  plugins.conf: |
+    [PLUGINS]
+        Path /fluent-bit/bin/out.so
+
+
+
+

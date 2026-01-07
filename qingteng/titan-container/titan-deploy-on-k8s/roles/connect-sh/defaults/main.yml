@@ -1,0 +1,10 @@
+---
+# defaults file for connectsh
+connectsh_pullPolicy: IfNotPresent
+connectsh_uid: 2020
+connectsh_gid: 2020
+connectsh_port: 7788
+
+connectsh_limit_memory: 5120Mi
+connectsh_limit_cpu: 8
+connectsh_req_memory: 2Gi

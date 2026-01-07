@@ -1,0 +1,33 @@
+# java日志搜集sidecar
+spec:
+  template:
+    spec:
+      containers:
+      - name: fluent-bit-sidecar
+        image: "{{ fluentbit_image }}"
+        imagePullPolicy: "{{ fluentbit_sidecar_pullPolicy }}"
+        volumeMounts:
+        - name: titan-logs
+          mountPath: /data/titan-logs
+          readOnly: true
+        - name: titan-logs
+          subPath: fluentbit-client
+          mountPath: /data/titan-container/fluentbit-client/
+        - name: fluent-bit-config
+          mountPath: /fluent-bit/etc/
+        resources:
+          limits:
+            cpu: "0.2"
+            memory: {{fluentbit_sidecar_limit_memory}}
+          requests:
+            cpu: "0.01"
+            memory: {{fluentbit_sidecar_req_memory}}
+        securityContext:
+          readOnlyRootFilesystem: true
+          allowPrivilegeEscalation: false
+      volumes:
+        - name: titan-logs
+          emptyDir: {}
+        - name: fluent-bit-config
+          configMap:
+            name: fluentbit-sidecar-config

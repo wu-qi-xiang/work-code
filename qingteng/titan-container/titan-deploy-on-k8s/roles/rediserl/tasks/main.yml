@@ -1,0 +1,92 @@
+---
+# tasks file for rediserl
+- set_fact:
+    work_nodes: "{{ label_nodes[rediserl_nodelabel] }}"
+
+- name: Print result
+  debug:
+    msg: "{{ work_nodes }}"
+
+- fail:
+    msg: "have no available node for rediserl cluster"
+  when: work_nodes|length < ( [redis_erl_master_num,redis_erl_slave_num+1] | max )
+
+- set_fact:
+    cluster_info: "{{ (work_nodes,redis_erl_master_num,redis_erl_slave_num) | combine_redis }}"
+
+
+# 改为手工预先创建pvc来保证调度到指定节点
+- name: create localpvc for rediserl
+  include_role:
+    name: common
+    tasks_from: local_pvc.yml
+  vars:
+    selectedNode: "{{ item['host'] }}"
+    qtsa_perm: "{{redis_uid}}-{{redis_gid}}"
+    qtsa_delete_data: "Y"
+    pvc_name: "datadir-rediserl-{{ item['inst'] }}"
+    app: "rediserl"
+    pvc_storage_capacity: "{{ rediserl_storage_capacity }}"
+    pv_path: "rediserl.{{ item['inst'] }}"
+
+  loop: "{{ cluster_info['host_instances'] }}"
+
+- name: create rediserl configmap
+  kubernetes.core.k8s:
+    definition: "{{ lookup('template', 'rediserl_configmap.yml', variable_start_string='[%', variable_end_string='%]') | from_yaml }}"
+
+- name: create rediserl headless service
+  kubernetes.core.k8s:
+    definition: "{{ lookup('template', 'rediserl_hs.yml') | from_yaml }}"
+
+# - name: create rediserl service
+#   kubernetes.core.k8s:
+#     definition: "{{ lookup('template', 'rediserl_service.yml') | from_yaml }}"
+
+- name: create rediserl StatefulSet
+  kubernetes.core.k8s:
+    definition: "{{ lookup('template', 'rediserl_statefulset.yml') | from_yaml | titan_combine(common_patch) }}"
+    apply: yes
+
+- set_fact:
+    master_slaves: "{{ cluster_info['master_slave_dict'] }}"
+
+- name: get rediserl statefulset 
+  kubernetes.core.k8s_info:
+    kind: StatefulSet
+    name: "rediserl"
+    namespace: "{{ namespace }}"
+    wait: yes
+    wait_sleep: 10
+    wait_timeout: 300
+  register: rediserl_setobj
+  
+- name: get rediserl pods util ok
+  include_role:
+    name: common
+    tasks_from: k8s_pods.yml
+  vars:
+    # 返回值为 {{app_name}}_pods,即rediserl_pods
+    app_name: "rediserl"
+    podnum: "{{ redis_erl_master_num + redis_erl_master_num * redis_erl_slave_num }}"
+
+- set_fact:
+    # pod_ip_dict 是 podname:ip 组成的dict
+    pod_ip_dict: "{{ rediserl_pods | items2dict(key_name='name',value_name='ip')  }}"
+
+- set_fact:
+    master_command: "redis-cli --cluster create {% for master,slaves in master_slaves.items() %}{{ pod_ip_dict['rediserl-'+(master|string)] + ':6379' }}{{ ' ' if not loop.last else '' }}{% endfor %} --cluster-yes -a {{rediserl_passwd}}"
+
+- name: create redis cluster masters
+  kubernetes.core.k8s_exec:
+    validate_certs: no
+    namespace: "{{ namespace }}"
+    pod: "rediserl-0"
+    command: "{{ master_command }}"
+
+- include_tasks: add_slave.yml
+  vars:
+    master: "{{ item.key }}"
+    slaves: "{{ item.value }}"
+    pod_ip_map: "{{ pod_ip_dict }}"
+  loop: "{{ master_slaves | dict2items }}"

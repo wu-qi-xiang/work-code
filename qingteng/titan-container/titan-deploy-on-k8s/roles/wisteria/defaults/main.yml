@@ -1,0 +1,11 @@
+---
+# defaults file for wisteria
+wisteria_pullPolicy: IfNotPresent
+wisteria_uid: 2020
+wisteria_gid: 2020
+wisteria_port: 6100
+
+upgradetool_limit_memory: 8Gi
+wisteria_limit_memory: 12Gi
+wisteria_limit_cpu: 8
+wisteria_req_memory: 3Gi

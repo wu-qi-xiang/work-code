@@ -1,0 +1,21 @@
+- name: wait glusterfs StatefulSet OK 
+  kubernetes.core.k8s_info:
+    kind: StatefulSet
+    name: "titan-glusterfs"
+    namespace: "{{ namespace }}"
+  register: gluster_setobj
+- set_fact:
+    gluster_ok: "{{gluster_setobj | statefulset_check}}"
+
+- block:
+  - name: try to get the volume info
+    shell: kubectl -n {{namespace}} exec -i titan-glusterfs-0 -- bash -c 'gluster volume info titan-glusterfs | grep Started || echo not_ok'
+    register: volume_info
+  - set_fact:
+      gluster_ok: false
+    when: '"Started" not in volume_info.stdout'
+  when: gluster_ok
+
+- set_fact:
+    ok_base_roles: "{{ok_base_roles | union(['glusterfs']) }}" 
+  when: gluster_ok

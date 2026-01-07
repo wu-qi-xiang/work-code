@@ -1,0 +1,30 @@
+---
+# tasks file for dbbackup
+- set_fact:
+    work_nodes: "{{ label_nodes[titanbackup_nodelabel] }}"
+
+- name: Print result
+  debug:
+    msg: "{{ work_nodes }}"
+
+- fail:
+    msg: "have no available node for dbbackup"
+  when: work_nodes|length < 1
+
+
+- name: create dbbackup configmap
+  kubernetes.core.k8s:
+    definition: "{{ lookup('template', 'dbbackup_config_single.yml') | from_yaml }}"
+
+- name: Remove titan-backup Deployment
+  kubernetes.core.k8s:
+    state: absent
+    api_version: apps/v1
+    kind: Deployment
+    namespace: "{{ namespace }}"
+    name: "titan-backup"
+
+- name: create dbbackup Deployment
+  kubernetes.core.k8s:
+    definition: "{{ lookup('template', 'titanbackup_deployment.yml' ) | from_yaml | titan_combine(common_patch) }}"
+    apply: yes

@@ -1,0 +1,3 @@
+---
+- name: update image
+  shell: "kubectl -n {{ namespace }} set image statefulset titan-connect-sh titan-connect-sh={{connectsh_image}}"

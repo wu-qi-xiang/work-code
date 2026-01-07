@@ -1,0 +1,58 @@
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: titan-fluentbit-client
+  namespace: {{namespace}}
+spec:
+  selector:
+    matchLabels:
+      app: titan-fluentbit-client
+  template:
+    metadata:
+      labels:
+        app: titan-fluentbit-client
+    spec:
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+{% for nodelabel in all_nodelabels %}
+              - matchExpressions:
+                - key: "{{nodelabel}}"
+                  operator: In
+                  values: 
+                    - "true"
+{% endfor %}
+      serviceAccountName: "{{service_account}}"
+      containers:
+      - name: fluent-bit
+        image: "{{ fluentbit_image }}"
+        imagePullPolicy: "{{ fluentbit_pullPolicy }}"
+        volumeMounts:
+        - name: titan-logs
+          mountPath: /data/titan-logs
+          readOnly: true
+        - name: titan-logs
+          subPath: fluentbit-db
+          mountPath: /data/titan-container/fluentbit-client/
+        - name: fluent-bit-config
+          mountPath: /fluent-bit/etc/
+        resources:
+          limits:
+            cpu: "0.5"
+            memory: {{fluentbit_client_limit_memory}}
+          requests:
+            cpu: "{{cpu_req}}"
+            memory: {{fluentbit_client_req_memory}}
+        securityContext:
+          readOnlyRootFilesystem: true
+          allowPrivilegeEscalation: false
+      terminationGracePeriodSeconds: 10
+      volumes:
+      - name: fluent-bit-config
+        configMap:
+          name: titan-fluentbit-client-config
+      - name: titan-logs
+        hostPath:
+          path: {{titan_logs_path}}
+          type: DirectoryOrCreate

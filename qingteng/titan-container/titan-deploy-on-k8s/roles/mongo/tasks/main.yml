@@ -1,0 +1,60 @@
+---
+# 检查 mongo-configmap 是否已创建
+- name: Get mongo-configmap
+  kubernetes.core.k8s_info:
+    kind: ConfigMap
+    name: mongo-configmap
+    namespace: "{{ namespace }}"
+  register: mongo_cm_result
+
+- block:
+  - name: create mongo key file
+    shell: openssl rand -base64 756
+    register: random_key_result
+
+  - set_fact:
+      random_key: "{{ random_key_result['stdout'].strip() }}"
+
+  - name: create mongo configmap
+    kubernetes.core.k8s:
+      definition: "{{ lookup('template', 'mongo_configmap.yml') | from_yaml }}"
+  
+  when: mongo_cm_result is not defined or (mongo_cm_result['resources']|length == 0)
+
+#首先安装 mongocs
+- include_tasks: mongocs.yml
+
+#安装 mongos
+- include_tasks: mongos.yml
+
+# 获取当前mongoshard节点
+- set_fact:
+    mongoshard_nodes: "{{ label_nodes[mongoshard_nodelabel] }}"
+
+# 设置mongo集群分片数量，机器数量小于等于三台时，默认为1个分片，多了意义不大
+# 如果指定了，则以指定的数量为准
+- name: set shard_num
+  set_fact:
+    shard_num: "{{shard_num | default(1)}}"
+  when: mongoshard_nodes|length <= 3
+
+- name: set shard_num
+  set_fact:
+    shard_num: "{{shard_num | default(3)}}"
+  when: mongoshard_nodes|length > 3
+
+#安装shard分片副本集
+- include_tasks: mongoshard.yml
+  vars:
+    new_shard_seq: "{{ shard_seq }}"
+  loop: "{{ range(shard_num|int) | list }}"
+  loop_control:
+    loop_var: shard_seq
+
+# 执行分片脚本
+- name: execute shard script
+  kubernetes.core.k8s_exec:
+    validate_certs: no
+    namespace: "{{ namespace }}"
+    pod: "mongos-0"
+    command: mongo --port 27017 -u qingteng -p "{{mongo_passwd}}" --authenticationDatabase admin /etc/mongo/shard_script.js

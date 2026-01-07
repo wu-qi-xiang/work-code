@@ -1,0 +1,39 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: titan-deploy
+  namespace: qtsa
+  labels:
+    app: titan-deploy
+spec:
+  serviceName: titan-deploy
+  replicas: 1
+  selector:
+    matchLabels:
+      app: titan-deploy
+  template:
+    metadata:
+      name: titan-deploy
+      labels:
+        app: titan-deploy
+    spec:
+      serviceAccountName: titan-deploy
+      containers:
+        - image: registry.qingteng.cn/titan-container/titan-deploy-onk8s:COMMON_TAG
+          name: titan-deploy
+          resources:
+            limits:
+              cpu: "4"
+              memory: "1024Mi"
+            requests:
+              cpu: "0.2"
+              memory: 128Mi
+          command: ["/usr/bin/tini", "--", "/shell-operator", "start"]
+          volumeMounts:
+            - mountPath: /logs
+              name: ansible-log
+      volumes:
+        - name: ansible-log
+          emptyDir: {}
+      #imagePullSecrets:
+      #  - name: registry-key

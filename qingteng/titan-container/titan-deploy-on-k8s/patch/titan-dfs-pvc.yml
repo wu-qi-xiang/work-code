@@ -1,0 +1,14 @@
+# titan-dfs 使用客户存储， 提供了storageClassName时，在此创建 titan-dfs 这个pvc
+---
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  name: titan-dfs
+  namespace: "{{ namespace }}"
+spec:
+  accessModes:
+    - ReadWriteMany
+  resources:
+    requests:
+      storage: "{{dfs_storage_capacity}}"
+  storageClassName: "{{titan_dfs_storageclass}}"      

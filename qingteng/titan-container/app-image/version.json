@@ -1,0 +1,37 @@
+{
+    "release": {
+        "java": "pre-release-3.4.0.10",
+        "titanAllStandalone": "3.4.0.10-buildscript",
+        "frontend": "release-v3.4.0.10",
+        "frontend_Micro": "release-v3.4.0.10",
+        "frontend_Virus_branch": "release-v3.4.0.10",
+        "frontend_Event_branch": "release-v3.4.0.10",
+        "frontend_Unix_branch":"release-v3.4.0.10-unix",
+        "php": "deploy-3.4.0.10-0513",
+        "shell_audit_tag": "dev_1.5.10",
+        "dns_access_tag": "dev_2.1.3",
+        "cmdaudit_tag": "dev_1.0.23",
+        "psaudit_tag": "dev_1.0.24",
+        "sysmon_tag": "dev_10.2",
+        "go-patrol": "3.4.0.2-k8s",
+        "go-patrol-frontend": "release-v3.4.0.2-go_portal-k8s"
+    },
+    "test": {
+        "java": "pre-release-3.4.0.10",
+        "titanAllStandalone": "3.4.0.10-buildscript",
+        "frontend": "test-v3.4.0.10",
+        "frontend_Micro": "test-v3.4.0.10",
+        "frontend_Virus_branch": "test-v3.4.0.10",
+        "frontend_Event_branch": "test-v3.4.0.10",
+        "frontend_Unix_branch":"test-v3.4.0.10-unix",
+        "php": "deploy-3.4.0.10",
+        "shell_audit_tag": "dev_1.5.10",
+        "dns_access_tag": "dev_2.1.3",
+        "cmdaudit_tag": "dev_1.0.23",
+        "psaudit_tag": "dev_1.0.24",
+        "sysmon_tag": "dev_10.2",
+        "go-patrol": "3.4.0.2-k8s",
+        "go-patrol-frontend": "release-v3.4.0.2-go_portal-k8s"
+    }
+}
+

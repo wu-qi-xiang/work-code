@@ -1,0 +1,36 @@
+---
+# tasks file for redisjava
+- set_fact:
+    work_nodes: "{{ label_nodes[redisjava_nodelabel] }}"
+
+- name: Print result
+  debug:
+    msg: "{{ work_nodes }}"
+
+- fail:
+    msg: "have no available node for redisjava"
+  when: work_nodes|length < 1
+
+- name: create redisjava configmap
+  kubernetes.core.k8s:
+    definition: "{{ lookup('template', 'redisjava_configmap_single.yml', variable_start_string='[%', variable_end_string='%]') | from_yaml }}"
+
+- name: create redisjava headless service
+  kubernetes.core.k8s:
+    definition: "{{ lookup('template', 'redisjava_hs.yml') | from_yaml }}"
+
+- name: create redisjava StatefulSet
+  kubernetes.core.k8s:
+    definition: "{{ lookup('template', 'redisjava_statefulset_single.yml') | from_yaml | titan_combine(common_patch) }}"
+    apply: yes
+
+- name: get redisjava statefulset 
+  kubernetes.core.k8s_info:
+    kind: StatefulSet
+    name: "redisjava"
+    namespace: "{{ namespace }}"
+    wait: yes
+    wait_sleep: 5
+    wait_timeout: 60
+  register: redisjava_setobj
+  

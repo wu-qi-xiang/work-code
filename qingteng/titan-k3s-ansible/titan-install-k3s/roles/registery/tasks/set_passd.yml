@@ -1,0 +1,19 @@
+- name: check passwd installed
+  stat:
+    path: /data/registry/registry_passwd
+  register: file_status
+
+- name: Create PAASWD
+  shell: head /dev/urandom | tr -dc A-Za-z0-9@%_ | head -c 16 > /data/registry/registry_passwd
+  when: file_status.stat.exists == False
+
+- name: Get PAASWD
+  shell: cat /data/registry/registry_passwd
+  register: registry_passwd
+
+- debug: var=registry_passwd.stdout verbosity=0
+- set_fact: REGISTRY_PASSWD="{{registry_passwd.stdout}}"
+
+- name: Set htpasswd
+  shell: docker run --entrypoint htpasswd httpd:2.4.48-alpine -Bbn {{REGISTRY_USER}} {{REGISTRY_PASSWD}} > /data/registry/auth/htpasswd
+  when: file_status.stat.exists == False

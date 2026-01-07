@@ -1,0 +1,26 @@
+---
+- name: get detect-srv deployment
+  kubernetes.core.k8s_info:
+    kind: Deployment
+    name: "titan-detect-srv"
+  register: detect_srv_obj
+- set_fact:
+    tmp_ok: "{{detect_srv_obj | deployment_check }}"
+    dfs_enable: false
+- block:
+    - name: set detestsrv_info and  dfs_enable
+      set_fact:
+        detestsrv_info: "{{ detect_srv_obj['resources'][0]['spec']['template']['spec']['volumes'] }}"
+    - name: loop detect_srv_obj
+      set_fact:
+        dfs_enable: true
+      when: "'dfs-volume' in item['name']"
+      loop: "{{detestsrv_info}}"
+  when: tmp_ok
+- name: reinstall detect-srv
+  include_tasks: main.yml
+  when: not dfs_enable or not tmp_ok
+
+- name: update titan-detect-srv image
+  shell: "kubectl -n {{ namespace }} set image deployment titan-detect-srv titan-detect-srv={{detectsrv_image}}"
+  when: dfs_enable

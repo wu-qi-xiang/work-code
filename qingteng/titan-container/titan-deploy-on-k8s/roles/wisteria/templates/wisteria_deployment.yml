@@ -1,0 +1,113 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: titan-wisteria
+  namespace: "{{namespace}}"
+  labels:
+    app: titan-wisteria
+spec:
+  replicas: {{wisteria_replicas}}
+  selector:
+    matchLabels:
+      app: titan-wisteria
+  strategy:
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 1
+    type: RollingUpdate
+  progressDeadlineSeconds: 120
+  minReadySeconds: 30
+  revisionHistoryLimit: 3
+  template:
+    metadata:
+      name: titan-wisteria
+      labels:
+        app: titan-wisteria
+    spec:
+      nodeSelector:
+        "{{wisteria_nodelabel}}": "true"
+      serviceAccountName: "{{service_account}}"
+      containers:
+        - image: "{{wisteria_image}}"
+          imagePullPolicy: "{{ wisteria_pullPolicy }}"
+          name: titan-wisteria
+          resources:
+            limits:
+              cpu: "{{ wisteria_limit_cpu }}"
+              memory: "{{ wisteria_limit_memory }}"
+            requests:
+              cpu: "{{cpu_req}}"
+              memory: "{{wisteria_req_memory}}"
+          readinessProbe:
+            httpGet:
+              path: /api/ping
+              port: {{wisteria_port}}
+            initialDelaySeconds: 120
+            periodSeconds: 10
+            timeoutSeconds: 3
+            failureThreshold: 30
+          livenessProbe:
+            exec:
+              command:
+                - "/bin/bash"
+                - "-c"
+                - result=`curl -k -sS http://127.0.0.1:{{wisteria_port}}/v1/assets/selfcheck/checkall 2>&1`; if [[ $result =~ 'abnormal_service":[]' ]]; then echo ok; else echo $result && exit 1; fi;
+            initialDelaySeconds: 180
+            periodSeconds: 30
+            timeoutSeconds: 15
+            failureThreshold: 4
+          lifecycle:
+            postStart:
+              exec:
+                command: ["/bin/sh", "-c", "cd /data/titan-dfs; mkdir -p titan-wisteria/files titan-wisteria/excellog; chown 2020:2020 titan-wisteria/files titan-wisteria/excellog;"]
+          command: ['/bin/sh', '-c', 'dockerize -secretdir /var/secrets/ -yaml-env /titan-env/titan-env.yml -template /titan-java-config/jaas_zk_client.conf:/data/app/titan-config/jaas_zk_client.conf -mergeToJson /titan-java-config/java.properties:/data/app/titan-config/java.json; cp /data/app/titan-config/java.json /data/upgradetool/titan-config/java.json; test -f /titan-java-config/data_sender.json && cp /titan-java-config/data_sender.json /data/app/titan-config/; chown -R titan:titan /data/app/titan-config; /data/app/titan-wisteria/init.d/wisteria start']
+          ports:
+            - containerPort: {{wisteria_port}}
+              protocol: TCP
+          volumeMounts:
+            - name: var-secrets
+              mountPath: /var/secrets/
+            - name: titan-env
+              mountPath: /titan-env
+            - name: titan-java-config
+              mountPath: /titan-java-config
+            - name: titan-config
+              mountPath: /data/upgradetool/titan-config
+            - mountPath: /data/titan-logs/java/wisteria
+              subPath: wisteria
+              name: titan-logs
+            - mountPath: /data/titan-dfs
+              name: dfs-volume
+          securityContext:
+            allowPrivilegeEscalation: true
+        - image: "{{upgradetool_image}}"
+          name: upgradetool
+          command: ["tail", "-f", "/dev/null"]
+          volumeMounts:
+            - mountPath: /data/app/titan-config
+              name: titan-config
+          resources:
+            limits:
+              cpu: 4
+              memory: {{upgradetool_limit_memory}}
+            requests:
+              cpu: "{{cpu_req}}"
+              memory: 50Mi
+      securityContext:
+        fsGroup: {{wisteria_gid}}
+      volumes:
+        - name: var-secrets
+          secret:
+            secretName: titan-all-secrets
+        - name: titan-env
+          configMap:
+            name: titan-env
+        - name: titan-java-config
+          configMap:
+            name: titan-java-config
+        # 用于在 ipgradetool 和 upgradetool 容器之间共享java.json配置
+        - name: titan-config
+          emptyDir: {}
+        - name: dfs-volume
+          persistentVolumeClaim:
+            claimName: titan-dfs

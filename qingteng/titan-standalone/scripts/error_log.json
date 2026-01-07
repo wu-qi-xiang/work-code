@@ -1,0 +1,213 @@
+{
+	"agent": [{
+			"name": "agent_crash",
+			"keyword": "Agent crashed",
+			"desc": "Agent崩溃退出"
+		}, {
+			"name": "agent_proxy_error",
+			"keyword": "Proxy connect: can't connect proxy srv",
+			"desc": "Agent无法连接代理服务器"
+		}, {
+			"name": "agent_selector_error",
+			"keyword": "selector http error",
+			"desc": "Agent连接selector出错"
+		}, {
+			"name": "agent_login_fail_1",
+			"keyword": "socket recv first package fail",
+			"desc": "Agent发送第一个握手包后，接收response失败"
+		}, {
+			"name": "agent_login_fail_2",
+			"keyword": "socket recv second package fail",
+			"desc": "Agent发送第二个握手包后，接收response失败"
+		}, {
+			"name": "agent_heartbeat_timeout",
+			"keyword": "check heart from srv 3 times fail",
+			"desc": "Agent与服务器断开连接"
+		}, {
+			"name": "agent_downgrade",
+			"keyword": "tt_set_agent_fun_level begin set level",
+			"desc": "Agent降级"
+		}, {
+			"name": "agent_suicide_mem",
+			"keyword": "> 500MB, quit",
+			"desc": "Agent自杀：内存超标"
+		}, {
+			"name": "agent_suicide_cpu",
+			"keyword": "> 150, quit",
+			"desc": "Agent自杀：cpu超标"
+		}, {
+			"name": "agent_suicide_titanmonitor",
+			"keyword": "titan_monitor not exist, quit",
+			"desc": "Agent自杀：titanmonitor不存在"
+		}, {
+			"name": "agent_suicide_threadmon",
+			"keyword": "threadmon find job over maxtime",
+			"desc": "Agent自杀：线程执行超时"
+		}, {
+			"name": "agent_disk_full",
+			"keyword": "Update App: create tmp file error",
+			"desc": "Agent主机磁盘满或者inode满"
+		}, {
+			"name": "agent_crond_abnormal",
+			"keyword": "report_agent_state: crond_status is 0",
+			"desc": "crond进程不存在"
+		}, {
+			"name": "agent_audit_failure_flag_abnormal",
+			"keyword": "Kernel audit failure flag is 2",
+			"desc": "kaudit failure flag设置为2 - panic"
+		}, {
+			"name": "agent_msg_queue_full",
+			"keyword": "handle_direct_msg: msg queue full",
+			"desc": "Agent消息队列满"
+		}, {
+			"name": "agent_update_failure",
+			"keyword": "Download Agent Command: found error",
+			"desc": "Agent或插件更新升级失败"
+		}, {
+			"name": "agent_plugin_load_fail",
+			"keyword": "load plugin fail",
+			"desc": "Agent插件加载失败"
+		}
+	],
+	"erlang": [{
+			"name": "erlang_login_init_error",
+			"keyword": "init state error",
+			"desc": "Agent登录初始化失败"
+		}, {
+			"name": "erlang_login_auth_error",
+			"keyword": "agent auth error",
+			"desc": "Agent鉴权失败"
+		}, {
+			"name": "erlang_agent_relogin",
+			"keyword": "packet2 sh node relogin",
+			"desc": "Agent重复登录"
+		}, {
+			"name": "erlang_bad_company",
+			"keyword": "packet2 bad compan",
+			"desc": "company ID错误"
+		}, {
+			"name": "erlang_decrypt_failed",
+			"keyword": "decrypt_failed",
+			"desc": "Agent登录报文解密失败(Agent使用错误的public key)"
+		}, {
+			"name": "erlang_packet_error",
+			"keyword": "packet_error",
+			"desc": "网络错误导致的数据报文长度异常"
+		}, {
+			"name": "erlang_license_error",
+			"keyword": "The license is reached.",
+			"desc": "超过License授权数量"
+		}, {
+			"name": "erlang_agent_script_error",
+			"keyword": "stack traceback",
+			"desc": "Agent脚本执行出错"
+		}, {
+			"name": "erlang_agent_flash_inactive",
+			"keyword": "error,flash_inactive",
+			"desc": "Agent闪断"
+		}, {
+			"name": "erlang_agent_timeout",
+			"keyword": "error,timeout",
+			"desc": "Agent心跳超时"
+		}, {
+			"name": "erlang_agent_monitor_fail_1",
+			"keyword": "Reply timeout",
+			"desc": "Agent实时监控启动失败"
+		}, {
+			"name": "erlang_agent_monitor_fail_2",
+			"keyword": "can't found data",
+			"desc": "Agent实时监控启动失败"
+		}, {
+			"name": "erlang_agent_offline",
+			"keyword": "error,agent_offline",
+			"desc": "Agent掉线"
+		}, {
+			"name": "erlang_agent_invalid_md5",
+			"keyword": "invalid md5",
+			"desc": "Agent本地脚本md5与下发脚本不一致"
+		}, {
+			"name": "erlang_script_return_error",
+			"keyword": "execute_callback(",
+			"desc": "对脚本返回值处理出错"
+		}, {
+			"name": "erlang_msg_response_timeout",
+			"keyword": "Not found correspond msgcache",
+			"desc": "消息返回超时"
+		}
+	],
+	"php": [{
+			"name": "php_warning",
+			"keyword": "[warning]",
+			"desc": "php警告"
+		}, {
+			"name": "php_error",
+			"keyword": "[error]",
+			"desc": "php错误"
+		}, {
+			"name": "php_pack_error",
+			"keyword": "[error].*/api/update/do",
+			"desc": "php规则同步失败"
+		}
+	],
+	"java": [{
+			"name": "java_kb_field_missing",
+			"keyword": "kb missing field",
+			"desc": "KB无对应字段"
+		}, {
+			"name": "java_feature_disabled",
+			"keyword": "FeatureDisabledException",
+			"desc": "开关关闭"
+		}, {
+			"name": "java_db_conn_failed",
+			"keyword": "Communications link failure",
+			"desc": "DB连接断开"
+		}, {
+			"name": "java_kb_dispatch_error",
+			"keyword": "kb dispatch error",
+			"desc": "KB分解错误"
+		}, {
+			"name": "java_job_python_exception",
+			"keyword": "report exception Traceback",
+			"desc": "python任务执行异常"
+		}
+	],
+	"bigdata_viewer": [{
+			"name": "bigdata_aggs_parse_error",
+			"keyword": "聚合解析异常",
+			"desc": "qsl聚合解析错误"
+		}, {
+			"name": "connect_es_timeout_error",
+			"keyword": "connect es cluster timeout",
+			"desc": "连接es集群超时"
+		}, {
+			"name": "es_cluster_error",
+			"keyword": "can not connect es cluster",
+			"desc": "无法连接es集群"
+		}, {
+			"name": "request_es_error",
+			"keyword": "request es error",
+			"desc": "请求es集群错误(dsl语句)"
+		}],
+	"bigdata_consumer": [{
+			"name": "bulk_timeout_error",
+			"keyword": "ConnectionTimeout",
+			"desc": "批量存储数据连接ES集群超时"
+		}, {
+			"name": "sniff_error",
+			"keyword": "Unable to sniff hosts",
+			"desc": "嗅探ES服务器主机异常"
+		}, {
+			"name": "index_illegal_argument_error",
+			"keyword": "illegal_argument_exception",
+			"desc": "存储数据参数异常"
+		}, {
+			"name": "redis_cluster_down_error",
+			"keyword": "CLUSTERDOWN error",
+			"desc": "redis集群异常"
+		}, {
+			"name": "bulk_connection_aborted_error",
+			"keyword": "Connection aborted",
+			"desc": "批量存储ES连接中断"
+		}
+	]
+}

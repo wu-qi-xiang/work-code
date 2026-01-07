@@ -1,0 +1,10 @@
+#!/bin/bash
+
+source $(dirname $0)/utils.sh
+if [[ "$HOSTNAME" != "titan-deploy-0" ]]; then
+    echo "Now try to titan-deploy"
+    try_to_titandeploy
+    exit 0
+else
+    echo "now is already in titan-deploy"
+fi

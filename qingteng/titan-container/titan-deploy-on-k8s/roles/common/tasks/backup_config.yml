@@ -1,0 +1,69 @@
+---
+- name: Get titan-env
+  kubernetes.core.k8s_info:
+    kind: ConfigMap
+    name: titan-env
+    namespace: "{{ namespace }}"
+  register: titan_env_result
+
+- name: get titan_env_data
+  set_fact:
+    titan_env_data: "{{titan_env_result['resources'][0]['data']}}"
+
+- name: backup titan-env 
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: v1
+      kind: ConfigMap
+      metadata:
+        name: "titan-env-{{'%Y%m%d%H%M%S' | strftime }}"
+        namespace: "{{ namespace }}"
+      data: "{{titan_env_data}}"
+
+# 备份 titan-java-config
+- name: Get titan-java-config
+  kubernetes.core.k8s_info:
+    kind: ConfigMap
+    name: titan-java-config
+    namespace: "{{ namespace }}"
+  register: titan_java_config_result
+
+- name: get titan-java-config-data
+  set_fact:
+    titan_java_config_data: "{{titan_java_config_result['resources'][0]['data']}}"
+
+- name: backup titan-java-config 
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: v1
+      kind: ConfigMap
+      metadata:
+        name: "titan-java-config-{{'%Y%m%d%H%M%S' | strftime }}"
+        namespace: "{{ namespace }}"
+      data: "{{titan_java_config_data}}"
+
+
+# 备份 titan-php-config
+- name: Get titan-php-config
+  kubernetes.core.k8s_info:
+    kind: ConfigMap
+    name: titan-php-config
+    namespace: "{{ namespace }}"
+  register: titan_php_config_result
+
+- name: get titan-php-config-data
+  set_fact:
+    titan_php_config_data: "{{titan_php_config_result['resources'][0]['data']}}"
+
+- name: backup titan-php-config 
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: v1
+      kind: ConfigMap
+      metadata:
+        name: "titan-php-config-{{'%Y%m%d%H%M%S' | strftime }}"
+        namespace: "{{ namespace }}"
+      data: "{{titan_php_config_data}}"

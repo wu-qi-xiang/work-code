@@ -1,0 +1,48 @@
+#!/bin/bash
+set -o pipefail
+
+source $(dirname $0)/utils.sh
+check_env 
+
+cd /data/; 
+
+# 检查ansible-playbook是否仍在运行中
+(ps -ef|grep ansible-playbook | grep -v grep) && echo "ansible-playbook process still running" && exit 1
+
+# 打标签
+ansible-playbook label.yml -v
+
+mode_result=`kubectl -n $NS get cm titan-env -o jsonpath='{.data.titan-env\.yml}' | grep ^mini_mode | grep true || echo 'ha_mode'`
+
+if [[ "$mode_result" =~ "mini_mode" ]]; then
+    # 安装售前迷你版本
+    ansible-playbook mini.yml -v $@
+else
+    # 安装正常生产版本
+    ansible-playbook main.yml -v $@
+fi
+
+# 如果是单独安装某一个role，则到此结束
+if [[ "$@" =~ "install_role" ]]; then
+    exit
+fi
+
+# 检查这几个Pod状态正常则注册帐号
+check_pod=`kubectl -n $NS get po |grep -E "(wisteria|titan-web|titan-patrol)" | grep Running`
+if [[ "$check_pod" =~ "wisteria" && "$check_pod" =~ "titan-web" && "$check_pod" =~ "titan-patrol" ]]; then
+	# 注册帐号
+    register
+
+    check_connectagent=`kubectl -n $NS get po | grep titan-connect-agent | grep '1/1' | grep Running`
+    if [[ "$check_connectagent" =~ "titan-connect-agent" ]]; then
+        echo "already update license success"
+	else
+        # 获取授权码
+        license code
+        echo ""
+        echo "now please use the auth code to update license and sync_rules"
+    fi
+else
+    echo "部分服务未安装成功，无法注册帐号"
+    exit 1
+fi

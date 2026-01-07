@@ -1,0 +1,8 @@
+stream {
+    upstream mysql {
+    }
+    server {
+        listen 3305;
+        proxy_pass mysql;
+    }
+}

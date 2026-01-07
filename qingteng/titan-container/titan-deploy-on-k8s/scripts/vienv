@@ -1,0 +1,20 @@
+#!/bin/bash
+
+source $(dirname $0)/utils.sh
+#修改访问配置，不再使用ansible脚本，因为整个流程串起来有 vi 的步骤，还是shell脚本简单一点
+
+mkdir tmp
+kubectl -n $NS get cm titan-env -o jsonpath='{.data.titan-env\.yml}' > tmp/old-titan-env.yml
+cp tmp/old-titan-env.yml tmp/titan-env.yml
+# vi 修改 titan-env
+vi tmp/titan-env.yml
+# 保存vi之后的数据
+    
+# 对比，如果没变化，则提示无变化
+diff_result=`diff -B tmp/old-titan-env.yml tmp/titan-env.yml`
+if [ "$diff_result"x != ""x ]; then
+    kubectl -n $NS create configmap titan-env --from-file=tmp/titan-env.yml --dry-run=client -o yaml | kubectl -n $NS apply -f -
+else
+    echo "titan-env no changes"
+fi
+rm -rf tmp

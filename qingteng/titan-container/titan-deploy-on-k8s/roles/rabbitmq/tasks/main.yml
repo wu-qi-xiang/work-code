@@ -1,0 +1,60 @@
+---
+# tasks file for rabbitmq
+- set_fact:
+    work_nodes: "{{ label_nodes[rabbitmq_nodelabel] }}"
+
+- name: Print result
+  debug:
+    msg: "{{ work_nodes }}"
+
+- fail:
+    msg: "have no available node for rabbitmq"
+  when: work_nodes|length < rabbitmq_replicas
+
+
+- name: create rabbitmq service account
+  kubernetes.core.k8s:
+    definition: "{{ lookup('template', 'rabbitmq_serviceaccount.yml') | from_yaml }}"
+
+- name: create rabbitmq role
+  kubernetes.core.k8s:
+    definition: "{{ lookup('template', 'rabbitmq_role.yml') | from_yaml }}"
+
+- name: create rabbitmq role binding
+  kubernetes.core.k8s:
+    definition: "{{ lookup('template', 'rabbitmq_rolebinding.yml') | from_yaml }}"
+
+- name: create rabbitmq headless service
+  kubernetes.core.k8s:
+    definition: "{{ lookup('template', 'rabbitmq_hs.yml') | from_yaml }}"
+
+- name: create rabbitmq PodDisruptionBudget
+  kubernetes.core.k8s:
+    definition: "{{ lookup('template', 'rabbitmq_pdb.yml') | from_yaml }}"
+
+- name: create rabbitmq configmap
+  kubernetes.core.k8s:
+    definition: "{{ lookup('template', 'rabbitmq_configmap.yml') | from_yaml }}"
+
+- name: create rabbitmq StatefulSet
+  kubernetes.core.k8s:
+    definition: "{{ lookup('template', 'rabbitmq_statefulset.yml') | from_yaml | titan_combine(common_patch) }}"
+    apply: yes
+
+# 等待rabbitmq已Ready
+- name: get rabbitmq statefulset 
+  kubernetes.core.k8s_info:
+    kind: StatefulSet
+    name: "rabbitmq"
+    namespace: "{{ namespace }}"
+    wait: yes
+    wait_sleep: 15
+    wait_timeout: 240
+  register: rabbitmq_setobj
+
+- name: set rabbitmq policy
+  kubernetes.core.k8s_exec:
+    validate_certs: no
+    namespace: "{{ namespace }}"
+    pod: "rabbitmq-0"
+    command: rabbitmqctl set_policy ha-all "^" '{"ha-mode":"all"}'

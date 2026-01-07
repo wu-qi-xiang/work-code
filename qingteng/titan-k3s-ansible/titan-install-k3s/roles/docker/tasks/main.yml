@@ -1,0 +1,44 @@
+---
+- name: Create docker install dir
+  file:
+    path: /data/source/docker
+    owner: root
+    group: root
+    mode: 0755
+    state: directory
+
+- name: Copy install package x86_64
+  unarchive:
+    src: docker-20.10.9-x86_64.tar.gz 
+    dest: /data/source/docker/
+    owner: root
+    group: root
+    mode: 0755
+    copy: yes
+  when: ansible_facts.architecture == "x86_64"
+
+- name: Copy install package aarch64
+  unarchive:
+    src: docker-20.10.9-aarch64.tar.gz
+    dest: /data/source/docker/
+    owner: root
+    group: root
+    mode: 0755
+    copy: yes
+  when:
+    - ( ansible_facts.architecture is search("arm") and
+        ansible_facts.userspace_bits == "64" ) or
+      ansible_facts.architecture is search("aarch64")
+
+- name: check docker installed
+  stat:
+    path: /usr/bin/docker
+  register: file_status
+
+- name: Install docker and docker-compose
+  command:
+    chdir: /data/source/docker/docker-install
+    cmd: sh install.sh
+  when: file_status.stat.exists == False
+
+

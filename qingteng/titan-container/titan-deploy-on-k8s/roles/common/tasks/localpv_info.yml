@@ -1,0 +1,10 @@
+- name: Get the PersistentVolume
+  kubernetes.core.k8s_info:
+    kind: PersistentVolume
+    name: "{{pv_name}}"
+    label_selectors:
+      - usage = "{{ namespace }}-{{pv_for}}"
+  register: volumeinfo
+
+- set_fact:
+    pv_info: "{{ volumeinfo | json_query('resources[0].spec.{path:local.path, host:nodeAffinity.required.nodeSelectorTerms[0].matchExpressions[0].values[0]}') }}"

@@ -1,0 +1,1611 @@
+[
+  {
+    "_id": "41bdf580-3a12-11e7-9fc2-09f1f678ee90",
+    "_type": "dashboard",
+    "_source": {
+      "title": "erlang_errors",
+      "hits": 0,
+      "description": "",
+      "panelsJSON": "[{\"size_x\":3,\"size_y\":2,\"panelIndex\":1,\"type\":\"visualization\",\"id\":\"b61489a0-3a0b-11e7-b19d-7d41f8eaedf8\",\"col\":1,\"row\":1},{\"size_x\":3,\"size_y\":2,\"panelIndex\":2,\"type\":\"visualization\",\"id\":\"d2bde100-3a0b-11e7-868a-a5614d9f93a7\",\"col\":4,\"row\":1},{\"size_x\":3,\"size_y\":2,\"panelIndex\":3,\"type\":\"visualization\",\"id\":\"0d86f130-3a0e-11e7-91ef-77bde01e4170\",\"col\":7,\"row\":1},{\"size_x\":3,\"size_y\":2,\"panelIndex\":4,\"type\":\"visualization\",\"id\":\"1d0501b0-3a0e-11e7-91ef-77bde01e4170\",\"col\":10,\"row\":1},{\"size_x\":3,\"size_y\":2,\"panelIndex\":5,\"type\":\"visualization\",\"id\":\"58293c20-3a0e-11e7-91ef-77bde01e4170\",\"col\":1,\"row\":3},{\"size_x\":3,\"size_y\":2,\"panelIndex\":6,\"type\":\"visualization\",\"id\":\"a9170220-3a0e-11e7-858e-b96d4062cc9a\",\"col\":4,\"row\":3},{\"size_x\":3,\"size_y\":2,\"panelIndex\":7,\"type\":\"visualization\",\"id\":\"03c7b6b0-3a0f-11e7-858e-b96d4062cc9a\",\"col\":7,\"row\":3},{\"size_x\":3,\"size_y\":2,\"panelIndex\":8,\"type\":\"visualization\",\"id\":\"15b0acb0-3a0f-11e7-858e-b96d4062cc9a\",\"col\":10,\"row\":3},{\"size_x\":3,\"size_y\":2,\"panelIndex\":9,\"type\":\"visualization\",\"id\":\"771477c0-3a0f-11e7-858e-b96d4062cc9a\",\"col\":1,\"row\":5},{\"size_x\":3,\"size_y\":2,\"panelIndex\":10,\"type\":\"visualization\",\"id\":\"9223f540-3a0f-11e7-858e-b96d4062cc9a\",\"col\":4,\"row\":5},{\"size_x\":3,\"size_y\":2,\"panelIndex\":11,\"type\":\"visualization\",\"id\":\"c9f33850-3a0f-11e7-9bf2-2d87c3c001da\",\"col\":7,\"row\":5},{\"size_x\":3,\"size_y\":2,\"panelIndex\":12,\"type\":\"visualization\",\"id\":\"f0a2a1c0-3a0f-11e7-9bf2-2d87c3c001da\",\"col\":10,\"row\":5},{\"size_x\":3,\"size_y\":2,\"panelIndex\":13,\"type\":\"visualization\",\"id\":\"2b1abdb0-3a10-11e7-9bf2-2d87c3c001da\",\"col\":1,\"row\":7},{\"size_x\":3,\"size_y\":2,\"panelIndex\":14,\"type\":\"visualization\",\"id\":\"58619f50-3a10-11e7-b7f3-099e91fc515b\",\"col\":4,\"row\":7},{\"size_x\":3,\"size_y\":2,\"panelIndex\":15,\"type\":\"visualization\",\"id\":\"669d6bd0-3a10-11e7-b7f3-099e91fc515b\",\"col\":7,\"row\":7},{\"size_x\":3,\"size_y\":2,\"panelIndex\":16,\"type\":\"visualization\",\"id\":\"74817b60-3a10-11e7-b7f3-099e91fc515b\",\"col\":10,\"row\":7}]",
+      "optionsJSON": "{\"darkTheme\":false}",
+      "uiStateJSON": "{}",
+      "version": 1,
+      "timeRestore": true,
+      "timeTo": "now/w",
+      "timeFrom": "now/w",
+      "refreshInterval": {
+        "display": "Off",
+        "pause": false,
+        "value": 0
+      },
+      "kibanaSavedObjectMeta": {
+        "searchSourceJSON": "{\"filter\":[{\"query\":{\"query_string\":{\"query\":\"*\",\"analyze_wildcard\":true}}}]}"
+      }
+    }
+  },
+  {
+    "_id": "22308670-3a11-11e7-9fc2-09f1f678ee90",
+    "_type": "dashboard",
+    "_source": {
+      "title": "agent_errors",
+      "hits": 0,
+      "description": "",
+      "panelsJSON": "[{\"size_x\":3,\"size_y\":2,\"panelIndex\":7,\"type\":\"visualization\",\"id\":\"c9865bd0-3a06-11e7-ac7f-41864715205a\",\"col\":1,\"row\":3},{\"size_x\":3,\"size_y\":2,\"panelIndex\":8,\"type\":\"visualization\",\"id\":\"b5b9ffd0-3a06-11e7-ac7f-41864715205a\",\"col\":4,\"row\":4},{\"size_x\":3,\"size_y\":2,\"panelIndex\":9,\"type\":\"visualization\",\"id\":\"759b1b00-3a0b-11e7-868a-a5614d9f93a7\",\"col\":7,\"row\":4},{\"size_x\":3,\"size_y\":2,\"panelIndex\":10,\"type\":\"visualization\",\"id\":\"86e7f810-3a0b-11e7-b19d-7d41f8eaedf8\",\"col\":10,\"row\":4},{\"size_x\":3,\"size_y\":2,\"panelIndex\":11,\"type\":\"visualization\",\"id\":\"9e729490-3a0b-11e7-868a-a5614d9f93a7\",\"col\":1,\"row\":5},{\"size_x\":3,\"size_y\":2,\"panelIndex\":12,\"type\":\"visualization\",\"id\":\"51492cc0-3a0f-11e7-858e-b96d4062cc9a\",\"col\":4,\"row\":6}]",
+      "optionsJSON": "{\"darkTheme\":false}",
+      "uiStateJSON": "{}",
+      "version": 1,
+      "timeRestore": true,
+      "timeTo": "now/w",
+      "timeFrom": "now/w",
+      "refreshInterval": {
+        "display": "Off",
+        "pause": false,
+        "value": 0
+      },
+      "kibanaSavedObjectMeta": {
+        "searchSourceJSON": "{\"filter\":[{\"query\":{\"query_string\":{\"query\":\"*\",\"analyze_wildcard\":true}}}]}"
+      }
+    }
+  },
+  {
+    "_id": "6e28b280-3a13-11e7-9a2f-8da2d90c9087",
+    "_type": "dashboard",
+    "_source": {
+      "title": "php_errors",
+      "hits": 0,
+      "description": "",
+      "panelsJSON": "[{\"size_x\":3,\"size_y\":2,\"panelIndex\":1,\"type\":\"visualization\",\"id\":\"8e1184d0-3a10-11e7-b7f3-099e91fc515b\",\"col\":1,\"row\":1},{\"size_x\":3,\"size_y\":2,\"panelIndex\":2,\"type\":\"visualization\",\"id\":\"9bb704c0-3a10-11e7-b7f3-099e91fc515b\",\"col\":4,\"row\":1}]",
+      "optionsJSON": "{\"darkTheme\":false}",
+      "uiStateJSON": "{}",
+      "version": 1,
+      "timeRestore": true,
+      "timeTo": "now/w",
+      "timeFrom": "now/w",
+      "refreshInterval": {
+        "display": "Off",
+        "pause": false,
+        "value": 0
+      },
+      "kibanaSavedObjectMeta": {
+        "searchSourceJSON": "{\"filter\":[{\"query\":{\"query_string\":{\"query\":\"*\",\"analyze_wildcard\":true}}}]}"
+      }
+    }
+  },
+  {
+    "_id": "438c9e10-3b9e-11e7-83ae-e7cf8f7b71df",
+    "_type": "dashboard",
+    "_source": {
+      "title": "Daily Job报表",
+      "hits": 0,
+      "description": "",
+      "panelsJSON": "[{\"col\":1,\"id\":\"113f8810-3b9d-11e7-a247-f9ccbbc24445\",\"panelIndex\":1,\"row\":1,\"size_x\":3,\"size_y\":2,\"type\":\"visualization\"},{\"col\":4,\"id\":\"b8eba3b0-3ba6-11e7-b9bf-876b5fd48a2b\",\"panelIndex\":2,\"row\":1,\"size_x\":3,\"size_y\":2,\"type\":\"visualization\"},{\"col\":7,\"id\":\"3db31320-3ba8-11e7-aa7d-c34056b28e63\",\"panelIndex\":3,\"row\":1,\"size_x\":3,\"size_y\":2,\"type\":\"visualization\"},{\"col\":10,\"id\":\"518434a0-3ba9-11e7-8f86-d5021d1e3b49\",\"panelIndex\":4,\"row\":1,\"size_x\":3,\"size_y\":2,\"type\":\"visualization\"},{\"col\":1,\"id\":\"8ea69390-3baa-11e7-aa7d-c34056b28e63\",\"panelIndex\":5,\"row\":5,\"size_x\":3,\"size_y\":2,\"type\":\"visualization\"},{\"col\":4,\"id\":\"4340d190-3baa-11e7-8f86-d5021d1e3b49\",\"panelIndex\":6,\"row\":5,\"size_x\":3,\"size_y\":2,\"type\":\"visualization\"},{\"col\":7,\"id\":\"147f9a10-3bac-11e7-8f86-d5021d1e3b49\",\"panelIndex\":7,\"row\":5,\"size_x\":3,\"size_y\":2,\"type\":\"visualization\"},{\"col\":10,\"id\":\"992aeb70-3bac-11e7-b2e0-efcccaef70e7\",\"panelIndex\":8,\"row\":5,\"size_x\":3,\"size_y\":2,\"type\":\"visualization\"},{\"col\":1,\"id\":\"8b2aa640-3c39-11e7-8443-d3b1646206b0\",\"panelIndex\":9,\"row\":9,\"size_x\":8,\"size_y\":4,\"type\":\"visualization\"},{\"col\":1,\"id\":\"11f70c60-3d0a-11e7-99e9-b5d0781b2e3c\",\"panelIndex\":10,\"row\":3,\"size_x\":3,\"size_y\":2,\"type\":\"visualization\"},{\"size_x\":3,\"size_y\":2,\"panelIndex\":11,\"type\":\"visualization\",\"id\":\"9b1db740-3d0b-11e7-9383-277f9cea470a\",\"col\":4,\"row\":3},{\"size_x\":3,\"size_y\":2,\"panelIndex\":12,\"type\":\"visualization\",\"id\":\"e90e42d0-3d0b-11e7-99e9-b5d0781b2e3c\",\"col\":7,\"row\":3},{\"size_x\":3,\"size_y\":2,\"panelIndex\":13,\"type\":\"visualization\",\"id\":\"141ac4d0-3d0c-11e7-9383-277f9cea470a\",\"col\":10,\"row\":3},{\"size_x\":3,\"size_y\":2,\"panelIndex\":14,\"type\":\"visualization\",\"id\":\"fbf8add0-3d0c-11e7-9383-277f9cea470a\",\"col\":1,\"row\":7},{\"size_x\":3,\"size_y\":2,\"panelIndex\":15,\"type\":\"visualization\",\"id\":\"67a8e2c0-3d0d-11e7-86ed-2fc91a18eda8\",\"col\":4,\"row\":7},{\"size_x\":3,\"size_y\":2,\"panelIndex\":16,\"type\":\"visualization\",\"id\":\"9e9da450-3d0d-11e7-9383-277f9cea470a\",\"col\":7,\"row\":7},{\"size_x\":3,\"size_y\":2,\"panelIndex\":17,\"type\":\"visualization\",\"id\":\"f3c877c0-3d0d-11e7-9383-277f9cea470a\",\"col\":10,\"row\":7}]",
+      "optionsJSON": "{\"darkTheme\":false}",
+      "uiStateJSON": "{\"P-9\":{\"vis\":{\"params\":{\"sort\":{\"columnIndex\":null,\"direction\":null}}}}}",
+      "version": 1,
+      "timeRestore": true,
+      "timeTo": "now/w",
+      "timeFrom": "now/w",
+      "refreshInterval": {
+        "display": "Off",
+        "pause": false,
+        "value": 0
+      },
+      "kibanaSavedObjectMeta": {
+        "searchSourceJSON": "{\"filter\":[{\"query\":{\"query_string\":{\"analyze_wildcard\":true,\"query\":\"*\"}}}]}"
+      }
+    }
+  },
+  {
+    "_id": "c858ca90-3a01-11e7-ac7f-41864715205a",
+    "_type": "search",
+    "_source": {
+      "title": "agent_heartbeat_timeout",
+      "description": "",
+      "hits": 0,
+      "columns": [
+        "agent_id",
+        "message"
+      ],
+      "sort": [
+        "@timestamp",
+        "desc"
+      ],
+      "version": 1,
+      "kibanaSavedObjectMeta": {
+        "searchSourceJSON": "{\"index\":\"titan_v1-*\",\"filter\":[],\"highlight\":{\"pre_tags\":[\"@kibana-highlighted-field@\"],\"post_tags\":[\"@/kibana-highlighted-field@\"],\"fields\":{\"*\":{}},\"require_field_match\":false,\"fragment_size\":2147483647},\"query\":{\"query_string\":{\"query\":\"type:agent AND \\\"check heart from srv 3 times fail\\\"\",\"analyze_wildcard\":true}}}"
+      }
+    }
+  },
+  {
+    "_id": "dfd39320-3a02-11e7-ac7f-41864715205a",
+    "_type": "search",
+    "_source": {
+      "title": "erlang_agent_relogin",
+      "description": "",
+      "hits": 0,
+      "columns": [
+        "agent_id",
+        "message"
+      ],
+      "sort": [
+        "@timestamp",
+        "desc"
+      ],
+      "version": 1,
+      "kibanaSavedObjectMeta": {
+        "searchSourceJSON": "{\"index\":\"titan_v1-*\",\"filter\":[],\"highlight\":{\"pre_tags\":[\"@kibana-highlighted-field@\"],\"post_tags\":[\"@/kibana-highlighted-field@\"],\"fields\":{\"*\":{}},\"require_field_match\":false,\"fragment_size\":2147483647},\"query\":{\"query_string\":{\"query\":\"type:erlang_sh AND \\\"packet2 sh node relogin\\\"\",\"analyze_wildcard\":true}}}"
+      }
+    }
+  },
+  {
+    "_id": "bfce8da0-3a02-11e7-ac7f-41864715205a",
+    "_type": "search",
+    "_source": {
+      "title": "erlang_agent_flash_inactive",
+      "description": "",
+      "hits": 0,
+      "columns": [
+        "agent_id",
+        "message"
+      ],
+      "sort": [
+        "@timestamp",
+        "desc"
+      ],
+      "version": 1,
+      "kibanaSavedObjectMeta": {
+        "searchSourceJSON": "{\"index\":\"titan_v1-*\",\"filter\":[],\"highlight\":{\"pre_tags\":[\"@kibana-highlighted-field@\"],\"post_tags\":[\"@/kibana-highlighted-field@\"],\"fields\":{\"*\":{}},\"require_field_match\":false,\"fragment_size\":2147483647},\"query\":{\"query_string\":{\"query\":\"type:erlang_dh AND \\\"error,flash_inactive\\\"\",\"analyze_wildcard\":true}}}"
+      }
+    }
+  },
+  {
+    "_id": "db7a55b0-3a03-11e7-ac7f-41864715205a",
+    "_type": "search",
+    "_source": {
+      "title": "erlang_agent_reply_timeout",
+      "description": "",
+      "hits": 0,
+      "columns": [
+        "agent_id",
+        "message"
+      ],
+      "sort": [
+        "@timestamp",
+        "desc"
+      ],
+      "version": 1,
+      "kibanaSavedObjectMeta": {
+        "searchSourceJSON": "{\"index\":\"titan_v1-*\",\"filter\":[],\"highlight\":{\"pre_tags\":[\"@kibana-highlighted-field@\"],\"post_tags\":[\"@/kibana-highlighted-field@\"],\"fields\":{\"*\":{}},\"require_field_match\":false,\"fragment_size\":2147483647},\"query\":{\"query_string\":{\"query\":\"type:erlang_dh AND \\\"reply timeout\\\"\",\"analyze_wildcard\":true}}}"
+      }
+    }
+  },
+  {
+    "_id": "7f507930-3a04-11e7-ac7f-41864715205a",
+    "_type": "search",
+    "_source": {
+      "title": "erlang_agent_update_fail",
+      "description": "",
+      "hits": 0,
+      "columns": [
+        "agent_id",
+        "message"
+      ],
+      "sort": [
+        "@timestamp",
+        "desc"
+      ],
+      "version": 1,
+      "kibanaSavedObjectMeta": {
+        "searchSourceJSON": "{\"index\":\"titan_v1-*\",\"filter\":[],\"highlight\":{\"pre_tags\":[\"@kibana-highlighted-field@\"],\"post_tags\":[\"@/kibana-highlighted-field@\"],\"fields\":{\"*\":{}},\"require_field_match\":false,\"fragment_size\":2147483647},\"query\":{\"query_string\":{\"query\":\"type:erlang_dh AND \\\"update agent fail\\\"\",\"analyze_wildcard\":true}}}"
+      }
+    }
+  },
+  {
+    "_id": "16873790-3a04-11e7-ac7f-41864715205a",
+    "_type": "search",
+    "_source": {
+      "title": "erlang_agent_script_error",
+      "description": "",
+      "hits": 0,
+      "columns": [
+        "agent_id",
+        "message"
+      ],
+      "sort": [
+        "@timestamp",
+        "desc"
+      ],
+      "version": 1,
+      "kibanaSavedObjectMeta": {
+        "searchSourceJSON": "{\"index\":\"titan_v1-*\",\"filter\":[],\"highlight\":{\"pre_tags\":[\"@kibana-highlighted-field@\"],\"post_tags\":[\"@/kibana-highlighted-field@\"],\"fields\":{\"*\":{}},\"require_field_match\":false,\"fragment_size\":2147483647},\"query\":{\"query_string\":{\"query\":\"type:erlang* AND \\\"stack traceback\\\"\",\"analyze_wildcard\":true}}}"
+      }
+    }
+  },
+  {
+    "_id": "d5b8c090-3a02-11e7-ac7f-41864715205a",
+    "_type": "search",
+    "_source": {
+      "title": "erlang_agent_offline",
+      "description": "",
+      "hits": 0,
+      "columns": [
+        "agent_id",
+        "message"
+      ],
+      "sort": [
+        "@timestamp",
+        "desc"
+      ],
+      "version": 1,
+      "kibanaSavedObjectMeta": {
+        "searchSourceJSON": "{\"index\":\"titan_v1-*\",\"filter\":[],\"highlight\":{\"pre_tags\":[\"@kibana-highlighted-field@\"],\"post_tags\":[\"@/kibana-highlighted-field@\"],\"fields\":{\"*\":{}},\"require_field_match\":false,\"fragment_size\":2147483647},\"query\":{\"query_string\":{\"query\":\"type:erlang_dh AND \\\"error,agent_offline\\\"\",\"analyze_wildcard\":true}}}"
+      }
+    }
+  },
+  {
+    "_id": "7338ec40-3a04-11e7-ac7f-41864715205a",
+    "_type": "search",
+    "_source": {
+      "title": "erlang_agent_timeout",
+      "description": "",
+      "hits": 0,
+      "columns": [
+        "agent_id",
+        "message"
+      ],
+      "sort": [
+        "@timestamp",
+        "desc"
+      ],
+      "version": 1,
+      "kibanaSavedObjectMeta": {
+        "searchSourceJSON": "{\"index\":\"titan_v1-*\",\"filter\":[],\"highlight\":{\"pre_tags\":[\"@kibana-highlighted-field@\"],\"post_tags\":[\"@/kibana-highlighted-field@\"],\"fields\":{\"*\":{}},\"require_field_match\":false,\"fragment_size\":2147483647},\"query\":{\"query_string\":{\"query\":\"type:erlang_sh AND \\\"error,timeout\\\"\",\"analyze_wildcard\":true}}}"
+      }
+    }
+  },
+  {
+    "_id": "95ff6da0-3a02-11e7-ac7f-41864715205a",
+    "_type": "search",
+    "_source": {
+      "title": "erlang_agent_closed",
+      "description": "",
+      "hits": 0,
+      "columns": [
+        "agent_id",
+        "message"
+      ],
+      "sort": [
+        "@timestamp",
+        "desc"
+      ],
+      "version": 1,
+      "kibanaSavedObjectMeta": {
+        "searchSourceJSON": "{\"index\":\"titan_v1-*\",\"filter\":[],\"highlight\":{\"pre_tags\":[\"@kibana-highlighted-field@\"],\"post_tags\":[\"@/kibana-highlighted-field@\"],\"fields\":{\"*\":{}},\"require_field_match\":false,\"fragment_size\":2147483647},\"query\":{\"query_string\":{\"query\":\"type:erlang_sh AND \\\"error,closed\\\"\",\"analyze_wildcard\":true}}}"
+      }
+    }
+  },
+  {
+    "_id": "a4f9a820-3a02-11e7-ac7f-41864715205a",
+    "_type": "search",
+    "_source": {
+      "title": "erlang_agent_errors",
+      "description": "",
+      "hits": 0,
+      "columns": [
+        "agent_id",
+        "message"
+      ],
+      "sort": [
+        "@timestamp",
+        "desc"
+      ],
+      "version": 1,
+      "kibanaSavedObjectMeta": {
+        "searchSourceJSON": "{\"index\":\"titan_v1-*\",\"filter\":[],\"highlight\":{\"pre_tags\":[\"@kibana-highlighted-field@\"],\"post_tags\":[\"@/kibana-highlighted-field@\"],\"fields\":{\"*\":{}},\"require_field_match\":false,\"fragment_size\":2147483647},\"query\":{\"query_string\":{\"query\":\"type:erlang_* AND \\\"error,\\\"\",\"analyze_wildcard\":true}}}"
+      }
+    }
+  },
+  {
+    "_id": "05163b40-3a05-11e7-ac7f-41864715205a",
+    "_type": "search",
+    "_source": {
+      "title": "erlang_msg_response_timeout",
+      "description": "",
+      "hits": 0,
+      "columns": [
+        "agent_id",
+        "message"
+      ],
+      "sort": [
+        "@timestamp",
+        "desc"
+      ],
+      "version": 1,
+      "kibanaSavedObjectMeta": {
+        "searchSourceJSON": "{\"index\":\"titan_v1-*\",\"filter\":[],\"highlight\":{\"pre_tags\":[\"@kibana-highlighted-field@\"],\"post_tags\":[\"@/kibana-highlighted-field@\"],\"fields\":{\"*\":{}},\"require_field_match\":false,\"fragment_size\":2147483647},\"query\":{\"query_string\":{\"query\":\"type:erlang_dh AND \\\"Not found correspond msgcache\\\"\",\"analyze_wildcard\":true}}}"
+      }
+    }
+  },
+  {
+    "_id": "f3d6cbb0-3a04-11e7-ac7f-41864715205a",
+    "_type": "search",
+    "_source": {
+      "title": "erlang_login_init_error",
+      "description": "",
+      "hits": 0,
+      "columns": [
+        "agent_id",
+        "message"
+      ],
+      "sort": [
+        "@timestamp",
+        "desc"
+      ],
+      "version": 1,
+      "kibanaSavedObjectMeta": {
+        "searchSourceJSON": "{\"index\":\"titan_v1-*\",\"filter\":[],\"highlight\":{\"pre_tags\":[\"@kibana-highlighted-field@\"],\"post_tags\":[\"@/kibana-highlighted-field@\"],\"fields\":{\"*\":{}},\"require_field_match\":false,\"fragment_size\":2147483647},\"query\":{\"query_string\":{\"query\":\"type:erlang_sh AND \\\"init state error\\\"\",\"analyze_wildcard\":true}}}"
+      }
+    }
+  },
+  {
+    "_id": "267e5330-3a05-11e7-ac7f-41864715205a",
+    "_type": "search",
+    "_source": {
+      "title": "erlang_script_return_error",
+      "description": "",
+      "hits": 0,
+      "columns": [
+        "agent_id",
+        "message"
+      ],
+      "sort": [
+        "@timestamp",
+        "desc"
+      ],
+      "version": 1,
+      "kibanaSavedObjectMeta": {
+        "searchSourceJSON": "{\"index\":\"titan_v1-*\",\"filter\":[],\"highlight\":{\"pre_tags\":[\"@kibana-highlighted-field@\"],\"post_tags\":[\"@/kibana-highlighted-field@\"],\"fields\":{\"*\":{}},\"require_field_match\":false,\"fragment_size\":2147483647},\"query\":{\"query_string\":{\"query\":\"type:erlang_dh AND \\\"execute_callback(\\\"\",\"analyze_wildcard\":true}}}"
+      }
+    }
+  },
+  {
+    "_id": "914aad40-3a04-11e7-ac7f-41864715205a",
+    "_type": "search",
+    "_source": {
+      "title": "erlang_bad_company",
+      "description": "",
+      "hits": 0,
+      "columns": [
+        "agent_id",
+        "message"
+      ],
+      "sort": [
+        "@timestamp",
+        "desc"
+      ],
+      "version": 1,
+      "kibanaSavedObjectMeta": {
+        "searchSourceJSON": "{\"index\":\"titan_v1-*\",\"filter\":[],\"highlight\":{\"pre_tags\":[\"@kibana-highlighted-field@\"],\"post_tags\":[\"@/kibana-highlighted-field@\"],\"fields\":{\"*\":{}},\"require_field_match\":false,\"fragment_size\":2147483647},\"query\":{\"query_string\":{\"query\":\"type:erlang* AND \\\"packet2 bad compan\\\"\",\"analyze_wildcard\":true}}}"
+      }
+    }
+  },
+  {
+    "_id": "e328edc0-3a04-11e7-ac7f-41864715205a",
+    "_type": "search",
+    "_source": {
+      "title": "erlang_login_auth_error",
+      "description": "",
+      "hits": 0,
+      "columns": [
+        "agent_id",
+        "message"
+      ],
+      "sort": [
+        "@timestamp",
+        "desc"
+      ],
+      "version": 1,
+      "kibanaSavedObjectMeta": {
+        "searchSourceJSON": "{\"index\":\"titan_v1-*\",\"filter\":[],\"highlight\":{\"pre_tags\":[\"@kibana-highlighted-field@\"],\"post_tags\":[\"@/kibana-highlighted-field@\"],\"fields\":{\"*\":{}},\"require_field_match\":false,\"fragment_size\":2147483647},\"query\":{\"query_string\":{\"query\":\"type:erlang* AND \\\"packet_error\\\"\",\"analyze_wildcard\":true}}}"
+      }
+    }
+  },
+  {
+    "_id": "99e855b0-3a04-11e7-ac7f-41864715205a",
+    "_type": "search",
+    "_source": {
+      "title": "erlang_decrypt_failed",
+      "description": "",
+      "hits": 0,
+      "columns": [
+        "agent_id",
+        "message"
+      ],
+      "sort": [
+        "@timestamp",
+        "desc"
+      ],
+      "version": 1,
+      "kibanaSavedObjectMeta": {
+        "searchSourceJSON": "{\"index\":\"titan_v1-*\",\"filter\":[],\"highlight\":{\"pre_tags\":[\"@kibana-highlighted-field@\"],\"post_tags\":[\"@/kibana-highlighted-field@\"],\"fields\":{\"*\":{}},\"require_field_match\":false,\"fragment_size\":2147483647},\"query\":{\"query_string\":{\"query\":\"type:erlang* AND \\\"decrypt_failed\\\"\",\"analyze_wildcard\":true}}}"
+      }
+    }
+  },
+  {
+    "_id": "b085fa20-3a04-11e7-ac7f-41864715205a",
+    "_type": "search",
+    "_source": {
+      "title": "erlang_license_error",
+      "description": "",
+      "hits": 0,
+      "columns": [
+        "agent_id",
+        "message"
+      ],
+      "sort": [
+        "@timestamp",
+        "desc"
+      ],
+      "version": 1,
+      "kibanaSavedObjectMeta": {
+        "searchSourceJSON": "{\"index\":\"titan_v1-*\",\"filter\":[],\"highlight\":{\"pre_tags\":[\"@kibana-highlighted-field@\"],\"post_tags\":[\"@/kibana-highlighted-field@\"],\"fields\":{\"*\":{}},\"require_field_match\":false,\"fragment_size\":2147483647},\"query\":{\"query_string\":{\"query\":\"type:erlang* AND \\\"packet_error\\\"\",\"analyze_wildcard\":true}}}"
+      }
+    }
+  },
+  {
+    "_id": "10cd7fc0-3a05-11e7-ac7f-41864715205a",
+    "_type": "search",
+    "_source": {
+      "title": "erlang_packet_error",
+      "description": "",
+      "hits": 0,
+      "columns": [
+        "agent_id",
+        "message"
+      ],
+      "sort": [
+        "@timestamp",
+        "desc"
+      ],
+      "version": 1,
+      "kibanaSavedObjectMeta": {
+        "searchSourceJSON": "{\"index\":\"titan_v1-*\",\"filter\":[],\"highlight\":{\"pre_tags\":[\"@kibana-highlighted-field@\"],\"post_tags\":[\"@/kibana-highlighted-field@\"],\"fields\":{\"*\":{}},\"require_field_match\":false,\"fragment_size\":2147483647},\"query\":{\"query_string\":{\"query\":\"type:erlang* AND \\\"packet_error\\\"\",\"analyze_wildcard\":true}}}"
+      }
+    }
+  },
+  {
+    "_id": "5fa58520-3a05-11e7-ac7f-41864715205a",
+    "_type": "search",
+    "_source": {
+      "title": "php_error",
+      "description": "",
+      "hits": 0,
+      "columns": [
+        "agent_id",
+        "message"
+      ],
+      "sort": [
+        "@timestamp",
+        "desc"
+      ],
+      "version": 1,
+      "kibanaSavedObjectMeta": {
+        "searchSourceJSON": "{\"index\":\"titan_v1-*\",\"filter\":[],\"highlight\":{\"pre_tags\":[\"@kibana-highlighted-field@\"],\"post_tags\":[\"@/kibana-highlighted-field@\"],\"fields\":{\"*\":{}},\"require_field_match\":false,\"fragment_size\":2147483647},\"query\":{\"query_string\":{\"query\":\"type:php* AND log_level:error\",\"analyze_wildcard\":true}}}"
+      }
+    }
+  },
+  {
+    "_id": "8127dbd0-3a05-11e7-ac7f-41864715205a",
+    "_type": "search",
+    "_source": {
+      "title": "php_warning",
+      "description": "",
+      "hits": 0,
+      "columns": [
+        "agent_id",
+        "message"
+      ],
+      "sort": [
+        "@timestamp",
+        "desc"
+      ],
+      "version": 1,
+      "kibanaSavedObjectMeta": {
+        "searchSourceJSON": "{\"index\":\"titan_v1-*\",\"filter\":[],\"highlight\":{\"pre_tags\":[\"@kibana-highlighted-field@\"],\"post_tags\":[\"@/kibana-highlighted-field@\"],\"fields\":{\"*\":{}},\"require_field_match\":false,\"fragment_size\":2147483647},\"query\":{\"query_string\":{\"query\":\"type:php* AND log_level:warning\",\"analyze_wildcard\":true}}}"
+      }
+    }
+  },
+  {
+    "_id": "d8b75000-3a01-11e7-ac7f-41864715205a",
+    "_type": "search",
+    "_source": {
+      "title": "agent_login_fail_1",
+      "description": "",
+      "hits": 0,
+      "columns": [
+        "comid",
+        "agent_id",
+        "message"
+      ],
+      "sort": [
+        "@timestamp",
+        "desc"
+      ],
+      "version": 1,
+      "kibanaSavedObjectMeta": {
+        "searchSourceJSON": "{\"index\":\"titan_v1-*\",\"filter\":[],\"highlight\":{\"pre_tags\":[\"@kibana-highlighted-field@\"],\"post_tags\":[\"@/kibana-highlighted-field@\"],\"fields\":{\"*\":{}},\"require_field_match\":false,\"fragment_size\":2147483647},\"query\":{\"query_string\":{\"query\":\"type:agent AND \\\"socket recv first package fail\\\"\",\"analyze_wildcard\":true}}}"
+      }
+    }
+  },
+  {
+    "_id": "a67a4a20-3a01-11e7-ac7f-41864715205a",
+    "_type": "search",
+    "_source": {
+      "title": "agent_downgrade",
+      "description": "",
+      "hits": 0,
+      "columns": [
+        "comid",
+        "agent_id",
+        "message"
+      ],
+      "sort": [
+        "@timestamp",
+        "desc"
+      ],
+      "version": 1,
+      "kibanaSavedObjectMeta": {
+        "searchSourceJSON": "{\"index\":\"titan_v1-*\",\"filter\":[],\"highlight\":{\"pre_tags\":[\"@kibana-highlighted-field@\"],\"post_tags\":[\"@/kibana-highlighted-field@\"],\"fields\":{\"*\":{}},\"require_field_match\":false,\"fragment_size\":2147483647},\"query\":{\"query_string\":{\"query\":\"type:agent AND \\\"tt_set_agent_fun_level begin set level: 1\\\"\",\"analyze_wildcard\":true}}}"
+      }
+    }
+  },
+  {
+    "_id": "2e816620-3a01-11e7-ac7f-41864715205a",
+    "_type": "search",
+    "_source": {
+      "title": "agent_disk_full",
+      "description": "",
+      "hits": 0,
+      "columns": [
+        "comid",
+        "agent_id",
+        "message"
+      ],
+      "sort": [
+        "@timestamp",
+        "desc"
+      ],
+      "version": 1,
+      "kibanaSavedObjectMeta": {
+        "searchSourceJSON": "{\"index\":\"titan_v1-*\",\"query\":{\"query_string\":{\"query\":\"type:agent AND \\\"Update App: create tmp file error\\\"\",\"analyze_wildcard\":true}},\"filter\":[],\"highlight\":{\"pre_tags\":[\"@kibana-highlighted-field@\"],\"post_tags\":[\"@/kibana-highlighted-field@\"],\"fields\":{\"*\":{}},\"require_field_match\":false,\"fragment_size\":2147483647}}"
+      }
+    }
+  },
+  {
+    "_id": "81570b50-3c38-11e7-8443-d3b1646206b0",
+    "_type": "search",
+    "_source": {
+      "title": "erlang_job_error",
+      "description": "",
+      "hits": 0,
+      "columns": [
+        "comid",
+        "agent_id",
+        "job_id",
+        "error_code",
+        "error_reason",
+        "message"
+      ],
+      "sort": [
+        "@timestamp",
+        "desc"
+      ],
+      "version": 1,
+      "kibanaSavedObjectMeta": {
+        "searchSourceJSON": "{\"index\":\"titan_v1-*\",\"filter\":[],\"highlight\":{\"pre_tags\":[\"@kibana-highlighted-field@\"],\"post_tags\":[\"@/kibana-highlighted-field@\"],\"fields\":{\"*\":{}},\"require_field_match\":false,\"fragment_size\":2147483647},\"query\":{\"query_string\":{\"query\":\"type:erlang_dh AND _exists_:job_id AND \\\"dhlogic_mysql\\\"\",\"analyze_wildcard\":true}}}"
+      }
+    }
+  },
+  {
+    "_id": "e5e1d390-3a01-11e7-ac7f-41864715205a",
+    "_type": "search",
+    "_source": {
+      "title": "agent_login_fail_2",
+      "description": "",
+      "hits": 0,
+      "columns": [
+        "comid",
+        "agent_id",
+        "message"
+      ],
+      "sort": [
+        "@timestamp",
+        "desc"
+      ],
+      "version": 1,
+      "kibanaSavedObjectMeta": {
+        "searchSourceJSON": "{\"index\":\"titan_v1-*\",\"filter\":[],\"highlight\":{\"pre_tags\":[\"@kibana-highlighted-field@\"],\"post_tags\":[\"@/kibana-highlighted-field@\"],\"fields\":{\"*\":{}},\"require_field_match\":false,\"fragment_size\":2147483647},\"query\":{\"query_string\":{\"query\":\"type:agent AND \\\"socket recv second package fail\\\"\",\"analyze_wildcard\":true}}}"
+      }
+    }
+  },
+  {
+    "_id": "01384520-3a02-11e7-ac7f-41864715205a",
+    "_type": "search",
+    "_source": {
+      "title": "agent_proxy_error",
+      "description": "",
+      "hits": 0,
+      "columns": [
+        "comid",
+        "agent_id",
+        "message"
+      ],
+      "sort": [
+        "@timestamp",
+        "desc"
+      ],
+      "version": 1,
+      "kibanaSavedObjectMeta": {
+        "searchSourceJSON": "{\"index\":\"titan_v1-*\",\"filter\":[],\"highlight\":{\"pre_tags\":[\"@kibana-highlighted-field@\"],\"post_tags\":[\"@/kibana-highlighted-field@\"],\"fields\":{\"*\":{}},\"require_field_match\":false,\"fragment_size\":2147483647},\"query\":{\"query_string\":{\"query\":\"type:agent AND \\\"Proxy connect: can't connect proxy srv\\\"\",\"analyze_wildcard\":true}}}"
+      }
+    }
+  },
+  {
+    "_id": "87535320-3a02-11e7-ac7f-41864715205a",
+    "_type": "search",
+    "_source": {
+      "title": "agent_suicide_mem",
+      "description": "",
+      "hits": 0,
+      "columns": [
+        "comid",
+        "agent_id",
+        "message"
+      ],
+      "sort": [
+        "@timestamp",
+        "desc"
+      ],
+      "version": 1,
+      "kibanaSavedObjectMeta": {
+        "searchSourceJSON": "{\"index\":\"titan_v1-*\",\"filter\":[],\"highlight\":{\"pre_tags\":[\"@kibana-highlighted-field@\"],\"post_tags\":[\"@/kibana-highlighted-field@\"],\"fields\":{\"*\":{}},\"require_field_match\":false,\"fragment_size\":2147483647},\"query\":{\"query_string\":{\"query\":\"type:agent AND \\\"> 500MB, quit\\\"\",\"analyze_wildcard\":true}}}"
+      }
+    }
+  },
+  {
+    "_id": "58738200-3a02-11e7-ac7f-41864715205a",
+    "_type": "search",
+    "_source": {
+      "title": "agent_suicide_cpu",
+      "description": "",
+      "hits": 0,
+      "columns": [
+        "comid",
+        "agent_id",
+        "message"
+      ],
+      "sort": [
+        "@timestamp",
+        "desc"
+      ],
+      "version": 1,
+      "kibanaSavedObjectMeta": {
+        "searchSourceJSON": "{\"index\":\"titan_v1-*\",\"filter\":[],\"highlight\":{\"pre_tags\":[\"@kibana-highlighted-field@\"],\"post_tags\":[\"@/kibana-highlighted-field@\"],\"fields\":{\"*\":{}},\"require_field_match\":false,\"fragment_size\":2147483647},\"query\":{\"query_string\":{\"query\":\"type:agent AND \\\"> 150, quit\\\"\",\"analyze_wildcard\":true}}}"
+      }
+    }
+  },
+  {
+    "_id": "16007510-3ba9-11e7-829a-79cd5bb72d6c",
+    "_type": "search",
+    "_source": {
+      "title": "job_execution_ehousechina_781794833955847c1bb9",
+      "description": "",
+      "hits": 0,
+      "columns": [
+        "comid",
+        "job_id",
+        "job_recv_agents",
+        "job_suc_agents",
+        "job_fail_rate",
+        "message"
+      ],
+      "sort": [
+        "@timestamp",
+        "desc"
+      ],
+      "version": 1,
+      "kibanaSavedObjectMeta": {
+        "searchSourceJSON": "{\"index\":\"titan_v1-*\",\"query\":{\"query_string\":{\"query\":\"type:erlang_om AND _exists_:job_recv_agents AND comid:781794833955847c1bb9\",\"analyze_wildcard\":true}},\"filter\":[],\"highlight\":{\"pre_tags\":[\"@kibana-highlighted-field@\"],\"post_tags\":[\"@/kibana-highlighted-field@\"],\"fields\":{\"*\":{}},\"require_field_match\":false,\"fragment_size\":2147483647}}"
+      }
+    }
+  },
+  {
+    "_id": "76490c20-3ba9-11e7-829a-79cd5bb72d6c",
+    "_type": "search",
+    "_source": {
+      "title": "job_execution_yiducloud_3978515652f94c7b5a04",
+      "description": "",
+      "hits": 0,
+      "columns": [
+        "comid",
+        "job_id",
+        "job_recv_agents",
+        "job_suc_agents",
+        "job_fail_rate",
+        "message"
+      ],
+      "sort": [
+        "@timestamp",
+        "desc"
+      ],
+      "version": 1,
+      "kibanaSavedObjectMeta": {
+        "searchSourceJSON": "{\"index\":\"titan_v1-*\",\"query\":{\"query_string\":{\"query\":\"type:erlang_om AND _exists_:job_recv_agents AND comid:3978515652f94c7b5a04\",\"analyze_wildcard\":true}},\"filter\":[],\"highlight\":{\"pre_tags\":[\"@kibana-highlighted-field@\"],\"post_tags\":[\"@/kibana-highlighted-field@\"],\"fields\":{\"*\":{}},\"require_field_match\":false,\"fragment_size\":2147483647}}"
+      }
+    }
+  },
+  {
+    "_id": "5c36abf0-3bac-11e7-829a-79cd5bb72d6c",
+    "_type": "search",
+    "_source": {
+      "title": "job_execution_cnlive_31154355e69a96ae1092",
+      "description": "",
+      "hits": 0,
+      "columns": [
+        "comid",
+        "job_id",
+        "job_recv_agents",
+        "job_suc_agents",
+        "job_fail_rate",
+        "message"
+      ],
+      "sort": [
+        "@timestamp",
+        "desc"
+      ],
+      "version": 1,
+      "kibanaSavedObjectMeta": {
+        "searchSourceJSON": "{\"index\":\"titan_v1-*\",\"query\":{\"query_string\":{\"analyze_wildcard\":true,\"query\":\"type:erlang_om AND _exists_:job_recv_agents AND comid:31154355e69a96ae1092\"}},\"filter\":[],\"highlight\":{\"pre_tags\":[\"@kibana-highlighted-field@\"],\"post_tags\":[\"@/kibana-highlighted-field@\"],\"fields\":{\"*\":{}},\"require_field_match\":false,\"fragment_size\":2147483647}}"
+      }
+    }
+  },
+  {
+    "_id": "129c9420-3baa-11e7-829a-79cd5bb72d6c",
+    "_type": "search",
+    "_source": {
+      "title": "job_execution_9fbank_31006996054590be52a6",
+      "description": "",
+      "hits": 0,
+      "columns": [
+        "comid",
+        "job_id",
+        "job_recv_agents",
+        "job_suc_agents",
+        "job_fail_rate",
+        "message"
+      ],
+      "sort": [
+        "@timestamp",
+        "desc"
+      ],
+      "version": 1,
+      "kibanaSavedObjectMeta": {
+        "searchSourceJSON": "{\"index\":\"titan_v1-*\",\"query\":{\"query_string\":{\"query\":\"type:erlang_om AND _exists_:job_recv_agents AND comid:31006996054590be52a6\",\"analyze_wildcard\":true}},\"filter\":[],\"highlight\":{\"pre_tags\":[\"@kibana-highlighted-field@\"],\"post_tags\":[\"@/kibana-highlighted-field@\"],\"fields\":{\"*\":{}},\"require_field_match\":false,\"fragment_size\":2147483647}}"
+      }
+    }
+  },
+  {
+    "_id": "ff796d40-3ba5-11e7-829a-79cd5bb72d6c",
+    "_type": "search",
+    "_source": {
+      "title": "job_execution_inke_68449356970827cdfa92",
+      "description": "",
+      "hits": 0,
+      "columns": [
+        "comid",
+        "job_id",
+        "job_recv_agents",
+        "job_suc_agents",
+        "job_fail_rate",
+        "message"
+      ],
+      "sort": [
+        "@timestamp",
+        "desc"
+      ],
+      "version": 1,
+      "kibanaSavedObjectMeta": {
+        "searchSourceJSON": "{\"index\":\"titan_v1-*\",\"query\":{\"query_string\":{\"query\":\"type:erlang_om AND _exists_:job_recv_agents AND comid:68449356970827cdfa92\",\"analyze_wildcard\":true}},\"filter\":[],\"highlight\":{\"pre_tags\":[\"@kibana-highlighted-field@\"],\"post_tags\":[\"@/kibana-highlighted-field@\"],\"fields\":{\"*\":{}},\"require_field_match\":false,\"fragment_size\":2147483647}}"
+      }
+    }
+  },
+  {
+    "_id": "ba195e00-3b95-11e7-8234-b5d5fe9ad9cc",
+    "_type": "search",
+    "_source": {
+      "title": "job_execution_jdb_68449356970827cdfa92",
+      "description": "",
+      "hits": 0,
+      "columns": [
+        "comid",
+        "job_id",
+        "job_recv_agents",
+        "job_suc_agents",
+        "message"
+      ],
+      "sort": [
+        "@timestamp",
+        "desc"
+      ],
+      "version": 1,
+      "kibanaSavedObjectMeta": {
+        "searchSourceJSON": "{\"index\":\"titan_v1-*\",\"query\":{\"query_string\":{\"query\":\"type:erlang_om AND _exists_:job_recv_agents AND comid:68449356970827cdfa92\",\"analyze_wildcard\":true}},\"filter\":[],\"highlight\":{\"pre_tags\":[\"@kibana-highlighted-field@\"],\"post_tags\":[\"@/kibana-highlighted-field@\"],\"fields\":{\"*\":{}},\"require_field_match\":false,\"fragment_size\":2147483647}}"
+      }
+    }
+  },
+  {
+    "_id": "a4cf9450-3b96-11e7-8234-b5d5fe9ad9cc",
+    "_type": "search",
+    "_source": {
+      "title": "job_execution",
+      "description": "",
+      "hits": 0,
+      "columns": [
+        "comid",
+        "job_id",
+        "job_recv_agents",
+        "job_suc_agents",
+        "job_fail_rate",
+        "message"
+      ],
+      "sort": [
+        "@timestamp",
+        "desc"
+      ],
+      "version": 1,
+      "kibanaSavedObjectMeta": {
+        "searchSourceJSON": "{\"index\":\"titan_v1-*\",\"filter\":[],\"highlight\":{\"pre_tags\":[\"@kibana-highlighted-field@\"],\"post_tags\":[\"@/kibana-highlighted-field@\"],\"fields\":{\"*\":{}},\"require_field_match\":false,\"fragment_size\":2147483647},\"query\":{\"query_string\":{\"query\":\"type:erlang_om AND _exists_:job_recv_agents\",\"analyze_wildcard\":true}}}"
+      }
+    }
+  },
+  {
+    "_id": "fc8f33b0-3ba7-11e7-b8d4-991294717f79",
+    "_type": "search",
+    "_source": {
+      "title": "job_execution_tianyiyun_1909105735a83f25e9e0",
+      "description": "",
+      "hits": 0,
+      "columns": [
+        "comid",
+        "job_id",
+        "job_recv_agents",
+        "job_suc_agents",
+        "job_fail_rate",
+        "message"
+      ],
+      "sort": [
+        "@timestamp",
+        "desc"
+      ],
+      "version": 1,
+      "kibanaSavedObjectMeta": {
+        "searchSourceJSON": "{\"index\":\"titan_v1-*\",\"query\":{\"query_string\":{\"query\":\"type:erlang_om AND _exists_:job_recv_agents AND comid:1909105735a83f25e9e0\",\"analyze_wildcard\":true}},\"filter\":[],\"highlight\":{\"pre_tags\":[\"@kibana-highlighted-field@\"],\"post_tags\":[\"@/kibana-highlighted-field@\"],\"fields\":{\"*\":{}},\"require_field_match\":false,\"fragment_size\":2147483647}}"
+      }
+    }
+  },
+  {
+    "_id": "c85a0a80-3bab-11e7-829a-79cd5bb72d6c",
+    "_type": "search",
+    "_source": {
+      "title": "job_execution_xiaoneng_5422305731b1ac2fb5b0",
+      "description": "",
+      "hits": 0,
+      "columns": [
+        "comid",
+        "job_id",
+        "job_recv_agents",
+        "job_suc_agents",
+        "job_fail_rate",
+        "message"
+      ],
+      "sort": [
+        "@timestamp",
+        "desc"
+      ],
+      "version": 1,
+      "kibanaSavedObjectMeta": {
+        "searchSourceJSON": "{\"index\":\"titan_v1-*\",\"query\":{\"query_string\":{\"query\":\"type:erlang_om AND _exists_:job_recv_agents AND comid:5422305731b1ac2fb5b0\",\"analyze_wildcard\":true}},\"filter\":[],\"highlight\":{\"pre_tags\":[\"@kibana-highlighted-field@\"],\"post_tags\":[\"@/kibana-highlighted-field@\"],\"fields\":{\"*\":{}},\"require_field_match\":false,\"fragment_size\":2147483647}}"
+      }
+    }
+  },
+  {
+    "_id": "1c2f5f00-3a0a-11e7-a519-9bf65ba6d10c",
+    "_type": "visualization",
+    "_source": {
+      "title": "agent_login_fail_2",
+      "visState": "{\"title\":\"agent_login_fail_2\",\"type\":\"line\",\"params\":{\"addTooltip\":true,\"addLegend\":true,\"legendPosition\":\"right\",\"showCircles\":true,\"interpolate\":\"linear\",\"scale\":\"linear\",\"drawLinesBetweenPoints\":true,\"radiusRatio\":9,\"times\":[],\"addTimeMarker\":false,\"defaultYExtents\":false,\"setYExtents\":false},\"aggs\":[{\"id\":\"1\",\"enabled\":true,\"type\":\"count\",\"schema\":\"metric\",\"params\":{}},{\"id\":\"2\",\"enabled\":true,\"type\":\"date_histogram\",\"schema\":\"segment\",\"params\":{\"field\":\"@timestamp\",\"interval\":\"d\",\"customInterval\":\"2h\",\"min_doc_count\":1,\"extended_bounds\":{},\"customLabel\":\"agent_login_fail_2\"}}],\"listeners\":{}}",
+      "uiStateJSON": "{}",
+      "description": "",
+      "savedSearchId": "e5e1d390-3a01-11e7-ac7f-41864715205a",
+      "version": 1,
+      "kibanaSavedObjectMeta": {
+        "searchSourceJSON": "{\"filter\":[]}"
+      }
+    }
+  },
+  {
+    "_id": "7316cc00-3a09-11e7-a810-51c06f1577a0",
+    "_type": "visualization",
+    "_source": {
+      "title": "agent_login_fail_1",
+      "visState": "{\"title\":\"agent_login_fail_1\",\"type\":\"line\",\"params\":{\"addTooltip\":true,\"addLegend\":true,\"legendPosition\":\"right\",\"showCircles\":true,\"interpolate\":\"linear\",\"scale\":\"linear\",\"drawLinesBetweenPoints\":true,\"radiusRatio\":9,\"times\":[],\"addTimeMarker\":false,\"defaultYExtents\":false,\"setYExtents\":false},\"aggs\":[{\"id\":\"1\",\"enabled\":true,\"type\":\"count\",\"schema\":\"metric\",\"params\":{}},{\"id\":\"2\",\"enabled\":true,\"type\":\"date_histogram\",\"schema\":\"segment\",\"params\":{\"field\":\"@timestamp\",\"interval\":\"d\",\"customInterval\":\"2h\",\"min_doc_count\":1,\"extended_bounds\":{},\"customLabel\":\"agent_login_fail_1\"}}],\"listeners\":{}}",
+      "uiStateJSON": "{}",
+      "description": "",
+      "savedSearchId": "d8b75000-3a01-11e7-ac7f-41864715205a",
+      "version": 1,
+      "kibanaSavedObjectMeta": {
+        "searchSourceJSON": "{\"filter\":[]}"
+      }
+    }
+  },
+  {
+    "_id": "e2cae7e0-3a07-11e7-93b6-e39ee575e1b1",
+    "_type": "visualization",
+    "_source": {
+      "title": "agent_downgrade_data",
+      "visState": "{\"title\":\"agent_downgrade_data\",\"type\":\"table\",\"params\":{\"perPage\":10,\"showPartialRows\":false,\"showMeticsAtAllLevels\":false,\"sort\":{\"columnIndex\":null,\"direction\":null},\"showTotal\":false,\"totalFunc\":\"sum\"},\"aggs\":[{\"id\":\"1\",\"enabled\":true,\"type\":\"count\",\"schema\":\"metric\",\"params\":{}},{\"id\":\"2\",\"enabled\":true,\"type\":\"terms\",\"schema\":\"bucket\",\"params\":{\"field\":\"comid.keyword\",\"size\":10,\"order\":\"desc\",\"orderBy\":\"1\"}},{\"id\":\"3\",\"enabled\":true,\"type\":\"terms\",\"schema\":\"bucket\",\"params\":{\"field\":\"agent_id.keyword\",\"size\":10,\"order\":\"desc\",\"orderBy\":\"1\"}}],\"listeners\":{}}",
+      "uiStateJSON": "{\"vis\":{\"params\":{\"sort\":{\"columnIndex\":null,\"direction\":null}}}}",
+      "description": "",
+      "savedSearchId": "a67a4a20-3a01-11e7-ac7f-41864715205a",
+      "version": 1,
+      "kibanaSavedObjectMeta": {
+        "searchSourceJSON": "{\"filter\":[]}"
+      }
+    }
+  },
+  {
+    "_id": "0d86f130-3a0e-11e7-91ef-77bde01e4170",
+    "_type": "visualization",
+    "_source": {
+      "title": "erlang_agent_flash_inactive",
+      "visState": "{\"title\":\"erlang_agent_flash_inactive\",\"type\":\"line\",\"params\":{\"addTooltip\":true,\"addLegend\":true,\"legendPosition\":\"right\",\"showCircles\":true,\"interpolate\":\"linear\",\"scale\":\"linear\",\"drawLinesBetweenPoints\":true,\"radiusRatio\":9,\"times\":[],\"addTimeMarker\":false,\"defaultYExtents\":false,\"setYExtents\":false},\"aggs\":[{\"id\":\"1\",\"enabled\":true,\"type\":\"count\",\"schema\":\"metric\",\"params\":{}},{\"id\":\"2\",\"enabled\":true,\"type\":\"date_histogram\",\"schema\":\"segment\",\"params\":{\"field\":\"@timestamp\",\"interval\":\"d\",\"customInterval\":\"2h\",\"min_doc_count\":1,\"extended_bounds\":{},\"customLabel\":\"erlang_agent_flash_inactive\"}}],\"listeners\":{}}",
+      "uiStateJSON": "{}",
+      "description": "",
+      "savedSearchId": "bfce8da0-3a02-11e7-ac7f-41864715205a",
+      "version": 1,
+      "kibanaSavedObjectMeta": {
+        "searchSourceJSON": "{\"filter\":[]}"
+      }
+    }
+  },
+  {
+    "_id": "a9170220-3a0e-11e7-858e-b96d4062cc9a",
+    "_type": "visualization",
+    "_source": {
+      "title": "erlang_agent_reply_timeout",
+      "visState": "{\"title\":\"erlang_agent_reply_timeout\",\"type\":\"line\",\"params\":{\"addTooltip\":true,\"addLegend\":true,\"legendPosition\":\"right\",\"showCircles\":true,\"interpolate\":\"linear\",\"scale\":\"linear\",\"drawLinesBetweenPoints\":true,\"radiusRatio\":9,\"times\":[],\"addTimeMarker\":false,\"defaultYExtents\":false,\"setYExtents\":false},\"aggs\":[{\"id\":\"1\",\"enabled\":true,\"type\":\"count\",\"schema\":\"metric\",\"params\":{}},{\"id\":\"2\",\"enabled\":true,\"type\":\"date_histogram\",\"schema\":\"segment\",\"params\":{\"field\":\"@timestamp\",\"interval\":\"d\",\"customInterval\":\"2h\",\"min_doc_count\":1,\"extended_bounds\":{},\"customLabel\":\"erlang_agent_reply_timeout\"}}],\"listeners\":{}}",
+      "uiStateJSON": "{}",
+      "description": "",
+      "savedSearchId": "db7a55b0-3a03-11e7-ac7f-41864715205a",
+      "version": 1,
+      "kibanaSavedObjectMeta": {
+        "searchSourceJSON": "{\"filter\":[]}"
+      }
+    }
+  },
+  {
+    "_id": "1b11c160-3a07-11e7-ac7f-41864715205a",
+    "_type": "visualization",
+    "_source": {
+      "title": "agent_heartbeat_timeout",
+      "visState": "{\"title\":\"agent_heartbeat_timeout\",\"type\":\"line\",\"params\":{\"addTooltip\":true,\"addLegend\":true,\"legendPosition\":\"right\",\"showCircles\":true,\"interpolate\":\"linear\",\"scale\":\"linear\",\"drawLinesBetweenPoints\":true,\"radiusRatio\":9,\"times\":[],\"addTimeMarker\":false,\"defaultYExtents\":false,\"setYExtents\":false},\"aggs\":[{\"id\":\"1\",\"enabled\":true,\"type\":\"count\",\"schema\":\"metric\",\"params\":{}},{\"id\":\"2\",\"enabled\":true,\"type\":\"date_histogram\",\"schema\":\"segment\",\"params\":{\"field\":\"@timestamp\",\"interval\":\"d\",\"customInterval\":\"2h\",\"min_doc_count\":1,\"extended_bounds\":{},\"customLabel\":\"agent_heartbeat_timeout\"}}],\"listeners\":{}}",
+      "uiStateJSON": "{}",
+      "description": "",
+      "savedSearchId": "c858ca90-3a01-11e7-ac7f-41864715205a",
+      "version": 1,
+      "kibanaSavedObjectMeta": {
+        "searchSourceJSON": "{\"filter\":[]}"
+      }
+    }
+  },
+  {
+    "_id": "1d0501b0-3a0e-11e7-91ef-77bde01e4170",
+    "_type": "visualization",
+    "_source": {
+      "title": "erlang_agent_offline",
+      "visState": "{\"title\":\"erlang_agent_offline\",\"type\":\"line\",\"params\":{\"addTooltip\":true,\"addLegend\":true,\"legendPosition\":\"right\",\"showCircles\":true,\"interpolate\":\"linear\",\"scale\":\"linear\",\"drawLinesBetweenPoints\":true,\"radiusRatio\":9,\"times\":[],\"addTimeMarker\":false,\"defaultYExtents\":false,\"setYExtents\":false},\"aggs\":[{\"id\":\"1\",\"enabled\":true,\"type\":\"count\",\"schema\":\"metric\",\"params\":{}},{\"id\":\"2\",\"enabled\":true,\"type\":\"date_histogram\",\"schema\":\"segment\",\"params\":{\"field\":\"@timestamp\",\"interval\":\"d\",\"customInterval\":\"2h\",\"min_doc_count\":1,\"extended_bounds\":{},\"customLabel\":\"erlang_agent_offline\"}}],\"listeners\":{}}",
+      "uiStateJSON": "{}",
+      "description": "",
+      "savedSearchId": "d5b8c090-3a02-11e7-ac7f-41864715205a",
+      "version": 1,
+      "kibanaSavedObjectMeta": {
+        "searchSourceJSON": "{\"filter\":[]}"
+      }
+    }
+  },
+  {
+    "_id": "58293c20-3a0e-11e7-91ef-77bde01e4170",
+    "_type": "visualization",
+    "_source": {
+      "title": "erlang_agent_relogin",
+      "visState": "{\"title\":\"erlang_agent_relogin\",\"type\":\"line\",\"params\":{\"addTooltip\":true,\"addLegend\":true,\"legendPosition\":\"right\",\"showCircles\":true,\"interpolate\":\"linear\",\"scale\":\"linear\",\"drawLinesBetweenPoints\":true,\"radiusRatio\":9,\"times\":[],\"addTimeMarker\":false,\"defaultYExtents\":false,\"setYExtents\":false},\"aggs\":[{\"id\":\"1\",\"enabled\":true,\"type\":\"count\",\"schema\":\"metric\",\"params\":{}},{\"id\":\"2\",\"enabled\":true,\"type\":\"date_histogram\",\"schema\":\"segment\",\"params\":{\"field\":\"@timestamp\",\"interval\":\"d\",\"customInterval\":\"2h\",\"min_doc_count\":1,\"extended_bounds\":{},\"customLabel\":\"erlang_agent_relogin\"}}],\"listeners\":{}}",
+      "uiStateJSON": "{}",
+      "description": "",
+      "savedSearchId": "dfd39320-3a02-11e7-ac7f-41864715205a",
+      "version": 1,
+      "kibanaSavedObjectMeta": {
+        "searchSourceJSON": "{\"filter\":[]}"
+      }
+    }
+  },
+  {
+    "_id": "d2bde100-3a0b-11e7-868a-a5614d9f93a7",
+    "_type": "visualization",
+    "_source": {
+      "title": "erlang_agent_errors",
+      "visState": "{\"title\":\"erlang_agent_errors\",\"type\":\"line\",\"params\":{\"addTooltip\":true,\"addLegend\":true,\"legendPosition\":\"right\",\"showCircles\":true,\"interpolate\":\"linear\",\"scale\":\"linear\",\"drawLinesBetweenPoints\":true,\"radiusRatio\":9,\"times\":[],\"addTimeMarker\":false,\"defaultYExtents\":false,\"setYExtents\":false},\"aggs\":[{\"id\":\"1\",\"enabled\":true,\"type\":\"count\",\"schema\":\"metric\",\"params\":{}},{\"id\":\"2\",\"enabled\":true,\"type\":\"date_histogram\",\"schema\":\"segment\",\"params\":{\"field\":\"@timestamp\",\"interval\":\"d\",\"customInterval\":\"2h\",\"min_doc_count\":1,\"extended_bounds\":{},\"customLabel\":\"erlang_agent_errors\"}}],\"listeners\":{}}",
+      "uiStateJSON": "{}",
+      "description": "",
+      "savedSearchId": "a4f9a820-3a02-11e7-ac7f-41864715205a",
+      "version": 1,
+      "kibanaSavedObjectMeta": {
+        "searchSourceJSON": "{\"filter\":[]}"
+      }
+    }
+  },
+  {
+    "_id": "b61489a0-3a0b-11e7-b19d-7d41f8eaedf8",
+    "_type": "visualization",
+    "_source": {
+      "title": "erlang_agent_closed",
+      "visState": "{\"title\":\"erlang_agent_closed\",\"type\":\"line\",\"params\":{\"addTooltip\":true,\"addLegend\":true,\"legendPosition\":\"right\",\"showCircles\":true,\"interpolate\":\"linear\",\"scale\":\"linear\",\"drawLinesBetweenPoints\":true,\"radiusRatio\":9,\"times\":[],\"addTimeMarker\":false,\"defaultYExtents\":false,\"setYExtents\":false},\"aggs\":[{\"id\":\"1\",\"enabled\":true,\"type\":\"count\",\"schema\":\"metric\",\"params\":{}},{\"id\":\"2\",\"enabled\":true,\"type\":\"date_histogram\",\"schema\":\"segment\",\"params\":{\"field\":\"@timestamp\",\"interval\":\"d\",\"customInterval\":\"2h\",\"min_doc_count\":1,\"extended_bounds\":{},\"customLabel\":\"erlang_agent_closed\"}}],\"listeners\":{}}",
+      "uiStateJSON": "{}",
+      "description": "",
+      "savedSearchId": "95ff6da0-3a02-11e7-ac7f-41864715205a",
+      "version": 1,
+      "kibanaSavedObjectMeta": {
+        "searchSourceJSON": "{\"filter\":[]}"
+      }
+    }
+  },
+  {
+    "_id": "58619f50-3a10-11e7-b7f3-099e91fc515b",
+    "_type": "visualization",
+    "_source": {
+      "title": "erlang_msg_response_timeout",
+      "visState": "{\"title\":\"erlang_msg_response_timeout\",\"type\":\"line\",\"params\":{\"addTooltip\":true,\"addLegend\":true,\"legendPosition\":\"right\",\"showCircles\":true,\"interpolate\":\"linear\",\"scale\":\"linear\",\"drawLinesBetweenPoints\":true,\"radiusRatio\":9,\"times\":[],\"addTimeMarker\":false,\"defaultYExtents\":false,\"setYExtents\":false},\"aggs\":[{\"id\":\"1\",\"enabled\":true,\"type\":\"count\",\"schema\":\"metric\",\"params\":{}},{\"id\":\"2\",\"enabled\":true,\"type\":\"date_histogram\",\"schema\":\"segment\",\"params\":{\"field\":\"@timestamp\",\"interval\":\"d\",\"customInterval\":\"2h\",\"min_doc_count\":1,\"extended_bounds\":{},\"customLabel\":\"erlang_msg_response_timeout\"}}],\"listeners\":{}}",
+      "uiStateJSON": "{}",
+      "description": "",
+      "savedSearchId": "05163b40-3a05-11e7-ac7f-41864715205a",
+      "version": 1,
+      "kibanaSavedObjectMeta": {
+        "searchSourceJSON": "{\"filter\":[]}"
+      }
+    }
+  },
+  {
+    "_id": "03c7b6b0-3a0f-11e7-858e-b96d4062cc9a",
+    "_type": "visualization",
+    "_source": {
+      "title": "erlang_agent_script_error",
+      "visState": "{\"title\":\"erlang_agent_script_error\",\"type\":\"line\",\"params\":{\"addTooltip\":true,\"addLegend\":true,\"legendPosition\":\"right\",\"showCircles\":true,\"interpolate\":\"linear\",\"scale\":\"linear\",\"drawLinesBetweenPoints\":true,\"radiusRatio\":9,\"times\":[],\"addTimeMarker\":false,\"defaultYExtents\":false,\"setYExtents\":false},\"aggs\":[{\"id\":\"1\",\"enabled\":true,\"type\":\"count\",\"schema\":\"metric\",\"params\":{}},{\"id\":\"2\",\"enabled\":true,\"type\":\"date_histogram\",\"schema\":\"segment\",\"params\":{\"field\":\"@timestamp\",\"interval\":\"d\",\"customInterval\":\"2h\",\"min_doc_count\":1,\"extended_bounds\":{},\"customLabel\":\"erlang_agent_script_error\"}}],\"listeners\":{}}",
+      "uiStateJSON": "{}",
+      "description": "",
+      "savedSearchId": "16873790-3a04-11e7-ac7f-41864715205a",
+      "version": 1,
+      "kibanaSavedObjectMeta": {
+        "searchSourceJSON": "{\"filter\":[]}"
+      }
+    }
+  },
+  {
+    "_id": "2b1abdb0-3a10-11e7-9bf2-2d87c3c001da",
+    "_type": "visualization",
+    "_source": {
+      "title": "erlang_login_init_error",
+      "visState": "{\"title\":\"erlang_login_init_error\",\"type\":\"line\",\"params\":{\"addTooltip\":true,\"addLegend\":true,\"legendPosition\":\"right\",\"showCircles\":true,\"interpolate\":\"linear\",\"scale\":\"linear\",\"drawLinesBetweenPoints\":true,\"radiusRatio\":9,\"times\":[],\"addTimeMarker\":false,\"defaultYExtents\":false,\"setYExtents\":false},\"aggs\":[{\"id\":\"1\",\"enabled\":true,\"type\":\"count\",\"schema\":\"metric\",\"params\":{}},{\"id\":\"2\",\"enabled\":true,\"type\":\"date_histogram\",\"schema\":\"segment\",\"params\":{\"field\":\"@timestamp\",\"interval\":\"d\",\"customInterval\":\"2h\",\"min_doc_count\":1,\"extended_bounds\":{},\"customLabel\":\"erlang_login_init_error\"}}],\"listeners\":{}}",
+      "uiStateJSON": "{}",
+      "description": "",
+      "savedSearchId": "f3d6cbb0-3a04-11e7-ac7f-41864715205a",
+      "version": 1,
+      "kibanaSavedObjectMeta": {
+        "searchSourceJSON": "{\"filter\":[]}"
+      }
+    }
+  },
+  {
+    "_id": "f0a2a1c0-3a0f-11e7-9bf2-2d87c3c001da",
+    "_type": "visualization",
+    "_source": {
+      "title": "erlang_login_auth_error",
+      "visState": "{\"title\":\"erlang_login_auth_error\",\"type\":\"line\",\"params\":{\"addTooltip\":true,\"addLegend\":true,\"legendPosition\":\"right\",\"showCircles\":true,\"interpolate\":\"linear\",\"scale\":\"linear\",\"drawLinesBetweenPoints\":true,\"radiusRatio\":9,\"times\":[],\"addTimeMarker\":false,\"defaultYExtents\":false,\"setYExtents\":false},\"aggs\":[{\"id\":\"1\",\"enabled\":true,\"type\":\"count\",\"schema\":\"metric\",\"params\":{}},{\"id\":\"2\",\"enabled\":true,\"type\":\"date_histogram\",\"schema\":\"segment\",\"params\":{\"field\":\"@timestamp\",\"interval\":\"d\",\"customInterval\":\"2h\",\"min_doc_count\":1,\"extended_bounds\":{},\"customLabel\":\"erlang_login_auth_error\"}}],\"listeners\":{}}",
+      "uiStateJSON": "{}",
+      "description": "",
+      "savedSearchId": "e328edc0-3a04-11e7-ac7f-41864715205a",
+      "version": 1,
+      "kibanaSavedObjectMeta": {
+        "searchSourceJSON": "{\"filter\":[]}"
+      }
+    }
+  },
+  {
+    "_id": "9223f540-3a0f-11e7-858e-b96d4062cc9a",
+    "_type": "visualization",
+    "_source": {
+      "title": "erlang_decrypt_failed",
+      "visState": "{\"title\":\"erlang_decrypt_failed\",\"type\":\"line\",\"params\":{\"addTooltip\":true,\"addLegend\":true,\"legendPosition\":\"right\",\"showCircles\":true,\"interpolate\":\"linear\",\"scale\":\"linear\",\"drawLinesBetweenPoints\":true,\"radiusRatio\":9,\"times\":[],\"addTimeMarker\":false,\"defaultYExtents\":false,\"setYExtents\":false},\"aggs\":[{\"id\":\"1\",\"enabled\":true,\"type\":\"count\",\"schema\":\"metric\",\"params\":{}},{\"id\":\"2\",\"enabled\":true,\"type\":\"date_histogram\",\"schema\":\"segment\",\"params\":{\"field\":\"@timestamp\",\"interval\":\"d\",\"customInterval\":\"2h\",\"min_doc_count\":1,\"extended_bounds\":{},\"customLabel\":\"erlang_decrypt_failed\"}}],\"listeners\":{}}",
+      "uiStateJSON": "{}",
+      "description": "",
+      "savedSearchId": "99e855b0-3a04-11e7-ac7f-41864715205a",
+      "version": 1,
+      "kibanaSavedObjectMeta": {
+        "searchSourceJSON": "{\"filter\":[]}"
+      }
+    }
+  },
+  {
+    "_id": "c9f33850-3a0f-11e7-9bf2-2d87c3c001da",
+    "_type": "visualization",
+    "_source": {
+      "title": "erlang_license_error",
+      "visState": "{\"title\":\"erlang_license_error\",\"type\":\"line\",\"params\":{\"addTooltip\":true,\"addLegend\":true,\"legendPosition\":\"right\",\"showCircles\":true,\"interpolate\":\"linear\",\"scale\":\"linear\",\"drawLinesBetweenPoints\":true,\"radiusRatio\":9,\"times\":[],\"addTimeMarker\":false,\"defaultYExtents\":false,\"setYExtents\":false},\"aggs\":[{\"id\":\"1\",\"enabled\":true,\"type\":\"count\",\"schema\":\"metric\",\"params\":{}},{\"id\":\"2\",\"enabled\":true,\"type\":\"date_histogram\",\"schema\":\"segment\",\"params\":{\"field\":\"@timestamp\",\"interval\":\"d\",\"customInterval\":\"2h\",\"min_doc_count\":1,\"extended_bounds\":{},\"customLabel\":\"erlang_license_error\"}}],\"listeners\":{}}",
+      "uiStateJSON": "{}",
+      "description": "",
+      "savedSearchId": "b085fa20-3a04-11e7-ac7f-41864715205a",
+      "version": 1,
+      "kibanaSavedObjectMeta": {
+        "searchSourceJSON": "{\"filter\":[]}"
+      }
+    }
+  },
+  {
+    "_id": "15b0acb0-3a0f-11e7-858e-b96d4062cc9a",
+    "_type": "visualization",
+    "_source": {
+      "title": "erlang_agent_timeout",
+      "visState": "{\"title\":\"erlang_agent_timeout\",\"type\":\"line\",\"params\":{\"addTooltip\":true,\"addLegend\":true,\"legendPosition\":\"right\",\"showCircles\":true,\"interpolate\":\"linear\",\"scale\":\"linear\",\"drawLinesBetweenPoints\":true,\"radiusRatio\":9,\"times\":[],\"addTimeMarker\":false,\"defaultYExtents\":false,\"setYExtents\":false},\"aggs\":[{\"id\":\"1\",\"enabled\":true,\"type\":\"count\",\"schema\":\"metric\",\"params\":{}},{\"id\":\"2\",\"enabled\":true,\"type\":\"date_histogram\",\"schema\":\"segment\",\"params\":{\"field\":\"@timestamp\",\"interval\":\"d\",\"customInterval\":\"2h\",\"min_doc_count\":1,\"extended_bounds\":{},\"customLabel\":\"erlang_agent_timeout\"}}],\"listeners\":{}}",
+      "uiStateJSON": "{}",
+      "description": "",
+      "savedSearchId": "7338ec40-3a04-11e7-ac7f-41864715205a",
+      "version": 1,
+      "kibanaSavedObjectMeta": {
+        "searchSourceJSON": "{\"filter\":[]}"
+      }
+    }
+  },
+  {
+    "_id": "771477c0-3a0f-11e7-858e-b96d4062cc9a",
+    "_type": "visualization",
+    "_source": {
+      "title": "erlang_bad_company",
+      "visState": "{\"title\":\"erlang_bad_company\",\"type\":\"line\",\"params\":{\"addTooltip\":true,\"addLegend\":true,\"legendPosition\":\"right\",\"showCircles\":true,\"interpolate\":\"linear\",\"scale\":\"linear\",\"drawLinesBetweenPoints\":true,\"radiusRatio\":9,\"times\":[],\"addTimeMarker\":false,\"defaultYExtents\":false,\"setYExtents\":false},\"aggs\":[{\"id\":\"1\",\"enabled\":true,\"type\":\"count\",\"schema\":\"metric\",\"params\":{}},{\"id\":\"2\",\"enabled\":true,\"type\":\"date_histogram\",\"schema\":\"segment\",\"params\":{\"field\":\"@timestamp\",\"interval\":\"d\",\"customInterval\":\"2h\",\"min_doc_count\":1,\"extended_bounds\":{},\"customLabel\":\"erlang_bad_company\"}}],\"listeners\":{}}",
+      "uiStateJSON": "{}",
+      "description": "",
+      "savedSearchId": "914aad40-3a04-11e7-ac7f-41864715205a",
+      "version": 1,
+      "kibanaSavedObjectMeta": {
+        "searchSourceJSON": "{\"filter\":[]}"
+      }
+    }
+  },
+  {
+    "_id": "f42c3810-3a9b-11e7-9cfa-a93d0a7010d5",
+    "_type": "visualization",
+    "_source": {
+      "title": "agent_proxy_error_data",
+      "visState": "{\"title\":\"agent_proxy_error_data\",\"type\":\"table\",\"params\":{\"perPage\":20,\"showPartialRows\":false,\"showMeticsAtAllLevels\":false,\"sort\":{\"columnIndex\":null,\"direction\":null},\"showTotal\":false,\"totalFunc\":\"sum\"},\"aggs\":[{\"id\":\"1\",\"enabled\":true,\"type\":\"count\",\"schema\":\"metric\",\"params\":{}},{\"id\":\"2\",\"enabled\":true,\"type\":\"terms\",\"schema\":\"bucket\",\"params\":{\"field\":\"comid.keyword\",\"size\":10,\"order\":\"desc\",\"orderBy\":\"1\",\"customLabel\":\"\"}},{\"id\":\"3\",\"enabled\":true,\"type\":\"terms\",\"schema\":\"bucket\",\"params\":{\"field\":\"agent_id.keyword\",\"size\":100,\"order\":\"desc\",\"orderBy\":\"1\"}}],\"listeners\":{}}",
+      "uiStateJSON": "{\"vis\":{\"params\":{\"sort\":{\"columnIndex\":null,\"direction\":null}}}}",
+      "description": "",
+      "savedSearchId": "01384520-3a02-11e7-ac7f-41864715205a",
+      "version": 1,
+      "kibanaSavedObjectMeta": {
+        "searchSourceJSON": "{\"filter\":[]}"
+      }
+    }
+  },
+  {
+    "_id": "74817b60-3a10-11e7-b7f3-099e91fc515b",
+    "_type": "visualization",
+    "_source": {
+      "title": "erlang_script_return_error",
+      "visState": "{\"title\":\"erlang_script_return_error\",\"type\":\"line\",\"params\":{\"addTooltip\":true,\"addLegend\":true,\"legendPosition\":\"right\",\"showCircles\":true,\"interpolate\":\"linear\",\"scale\":\"linear\",\"drawLinesBetweenPoints\":true,\"radiusRatio\":9,\"times\":[],\"addTimeMarker\":false,\"defaultYExtents\":false,\"setYExtents\":false},\"aggs\":[{\"id\":\"1\",\"enabled\":true,\"type\":\"count\",\"schema\":\"metric\",\"params\":{}},{\"id\":\"2\",\"enabled\":true,\"type\":\"date_histogram\",\"schema\":\"segment\",\"params\":{\"field\":\"@timestamp\",\"interval\":\"d\",\"customInterval\":\"2h\",\"min_doc_count\":1,\"extended_bounds\":{},\"customLabel\":\"erlang_script_return_error\"}}],\"listeners\":{}}",
+      "uiStateJSON": "{}",
+      "description": "",
+      "savedSearchId": "267e5330-3a05-11e7-ac7f-41864715205a",
+      "version": 1,
+      "kibanaSavedObjectMeta": {
+        "searchSourceJSON": "{\"filter\":[]}"
+      }
+    }
+  },
+  {
+    "_id": "669d6bd0-3a10-11e7-b7f3-099e91fc515b",
+    "_type": "visualization",
+    "_source": {
+      "title": "erlang_packet_error",
+      "visState": "{\"title\":\"erlang_packet_error\",\"type\":\"line\",\"params\":{\"addTooltip\":true,\"addLegend\":true,\"legendPosition\":\"right\",\"showCircles\":true,\"interpolate\":\"linear\",\"scale\":\"linear\",\"drawLinesBetweenPoints\":true,\"radiusRatio\":9,\"times\":[],\"addTimeMarker\":false,\"defaultYExtents\":false,\"setYExtents\":false},\"aggs\":[{\"id\":\"1\",\"enabled\":true,\"type\":\"count\",\"schema\":\"metric\",\"params\":{}},{\"id\":\"2\",\"enabled\":true,\"type\":\"date_histogram\",\"schema\":\"segment\",\"params\":{\"field\":\"@timestamp\",\"interval\":\"d\",\"customInterval\":\"2h\",\"min_doc_count\":1,\"extended_bounds\":{},\"customLabel\":\"erlang_packet_error\"}}],\"listeners\":{}}",
+      "uiStateJSON": "{}",
+      "description": "",
+      "savedSearchId": "10cd7fc0-3a05-11e7-ac7f-41864715205a",
+      "version": 1,
+      "kibanaSavedObjectMeta": {
+        "searchSourceJSON": "{\"filter\":[]}"
+      }
+    }
+  },
+  {
+    "_id": "9bb704c0-3a10-11e7-b7f3-099e91fc515b",
+    "_type": "visualization",
+    "_source": {
+      "title": "php_warning",
+      "visState": "{\"title\":\"php_warning\",\"type\":\"line\",\"params\":{\"addTooltip\":true,\"addLegend\":true,\"legendPosition\":\"right\",\"showCircles\":true,\"interpolate\":\"linear\",\"scale\":\"linear\",\"drawLinesBetweenPoints\":true,\"radiusRatio\":9,\"times\":[],\"addTimeMarker\":false,\"defaultYExtents\":false,\"setYExtents\":false},\"aggs\":[{\"id\":\"1\",\"enabled\":true,\"type\":\"count\",\"schema\":\"metric\",\"params\":{}},{\"id\":\"2\",\"enabled\":true,\"type\":\"date_histogram\",\"schema\":\"segment\",\"params\":{\"field\":\"@timestamp\",\"interval\":\"d\",\"customInterval\":\"2h\",\"min_doc_count\":1,\"extended_bounds\":{},\"customLabel\":\"php_warning\"}}],\"listeners\":{}}",
+      "uiStateJSON": "{}",
+      "description": "",
+      "savedSearchId": "8127dbd0-3a05-11e7-ac7f-41864715205a",
+      "version": 1,
+      "kibanaSavedObjectMeta": {
+        "searchSourceJSON": "{\"filter\":[]}"
+      }
+    }
+  },
+  {
+    "_id": "8e1184d0-3a10-11e7-b7f3-099e91fc515b",
+    "_type": "visualization",
+    "_source": {
+      "title": "php_error",
+      "visState": "{\"title\":\"php_error\",\"type\":\"line\",\"params\":{\"addTooltip\":true,\"addLegend\":true,\"legendPosition\":\"right\",\"showCircles\":true,\"interpolate\":\"linear\",\"scale\":\"linear\",\"drawLinesBetweenPoints\":true,\"radiusRatio\":9,\"times\":[],\"addTimeMarker\":false,\"defaultYExtents\":false,\"setYExtents\":false},\"aggs\":[{\"id\":\"1\",\"enabled\":true,\"type\":\"count\",\"schema\":\"metric\",\"params\":{}},{\"id\":\"2\",\"enabled\":true,\"type\":\"date_histogram\",\"schema\":\"segment\",\"params\":{\"field\":\"@timestamp\",\"interval\":\"d\",\"customInterval\":\"2h\",\"min_doc_count\":1,\"extended_bounds\":{},\"customLabel\":\"php_error\"}}],\"listeners\":{}}",
+      "uiStateJSON": "{}",
+      "description": "",
+      "savedSearchId": "5fa58520-3a05-11e7-ac7f-41864715205a",
+      "version": 1,
+      "kibanaSavedObjectMeta": {
+        "searchSourceJSON": "{\"filter\":[]}"
+      }
+    }
+  },
+  {
+    "_id": "518434a0-3ba9-11e7-8f86-d5021d1e3b49",
+    "_type": "visualization",
+    "_source": {
+      "title": "job_fail_rate_ehousechina_781794833955847c1bb9",
+      "visState": "{\"title\":\"job_fail_rate_ehousechina_781794833955847c1bb9\",\"type\":\"line\",\"params\":{\"addTooltip\":true,\"addLegend\":true,\"legendPosition\":\"right\",\"showCircles\":true,\"interpolate\":\"linear\",\"scale\":\"linear\",\"drawLinesBetweenPoints\":true,\"radiusRatio\":9,\"times\":[],\"addTimeMarker\":false,\"defaultYExtents\":false,\"setYExtents\":false},\"aggs\":[{\"id\":\"1\",\"enabled\":true,\"type\":\"avg\",\"schema\":\"metric\",\"params\":{\"field\":\"job_fail_rate\"}},{\"id\":\"2\",\"enabled\":true,\"type\":\"max\",\"schema\":\"metric\",\"params\":{\"field\":\"job_fail_rate\"}},{\"id\":\"3\",\"enabled\":true,\"type\":\"min\",\"schema\":\"metric\",\"params\":{\"field\":\"job_fail_rate\"}},{\"id\":\"4\",\"enabled\":true,\"type\":\"date_histogram\",\"schema\":\"segment\",\"params\":{\"field\":\"@timestamp\",\"interval\":\"d\",\"customInterval\":\"2h\",\"min_doc_count\":1,\"extended_bounds\":{},\"customLabel\":\"易居中国daily job执行失败率(‱)\"}}],\"listeners\":{}}",
+      "uiStateJSON": "{}",
+      "description": "",
+      "savedSearchId": "16007510-3ba9-11e7-829a-79cd5bb72d6c",
+      "version": 1,
+      "kibanaSavedObjectMeta": {
+        "searchSourceJSON": "{\"filter\":[]}"
+      }
+    }
+  },
+  {
+    "_id": "4340d190-3baa-11e7-8f86-d5021d1e3b49",
+    "_type": "visualization",
+    "_source": {
+      "title": "job_fail_rate_9fbank_31006996054590be52a6",
+      "visState": "{\"title\":\"job_fail_rate_9fbank_31006996054590be52a6\",\"type\":\"line\",\"params\":{\"addTooltip\":true,\"addLegend\":true,\"legendPosition\":\"right\",\"showCircles\":true,\"interpolate\":\"linear\",\"scale\":\"linear\",\"drawLinesBetweenPoints\":true,\"radiusRatio\":9,\"times\":[],\"addTimeMarker\":false,\"defaultYExtents\":false,\"setYExtents\":false},\"aggs\":[{\"id\":\"1\",\"enabled\":true,\"type\":\"avg\",\"schema\":\"metric\",\"params\":{\"field\":\"job_fail_rate\"}},{\"id\":\"2\",\"enabled\":true,\"type\":\"max\",\"schema\":\"metric\",\"params\":{\"field\":\"job_fail_rate\"}},{\"id\":\"3\",\"enabled\":true,\"type\":\"min\",\"schema\":\"metric\",\"params\":{\"field\":\"job_fail_rate\"}},{\"id\":\"4\",\"enabled\":true,\"type\":\"date_histogram\",\"schema\":\"segment\",\"params\":{\"field\":\"@timestamp\",\"interval\":\"d\",\"customInterval\":\"2h\",\"min_doc_count\":1,\"extended_bounds\":{},\"customLabel\":\"玖富网daily job执行失败率(‱)\"}}],\"listeners\":{}}",
+      "uiStateJSON": "{}",
+      "description": "",
+      "savedSearchId": "129c9420-3baa-11e7-829a-79cd5bb72d6c",
+      "version": 1,
+      "kibanaSavedObjectMeta": {
+        "searchSourceJSON": "{\"filter\":[]}"
+      }
+    }
+  },
+  {
+    "_id": "113f8810-3b9d-11e7-a247-f9ccbbc24445",
+    "_type": "visualization",
+    "_source": {
+      "title": "job_fail_rate_jdb_68449356970827cdfa92",
+      "visState": "{\"title\":\"job_fail_rate_jdb_68449356970827cdfa92\",\"type\":\"line\",\"params\":{\"addTooltip\":true,\"addLegend\":true,\"legendPosition\":\"right\",\"showCircles\":true,\"interpolate\":\"linear\",\"scale\":\"linear\",\"drawLinesBetweenPoints\":true,\"radiusRatio\":9,\"times\":[],\"addTimeMarker\":false,\"defaultYExtents\":false,\"setYExtents\":false},\"aggs\":[{\"id\":\"1\",\"enabled\":true,\"type\":\"avg\",\"schema\":\"metric\",\"params\":{\"field\":\"job_fail_rate\"}},{\"id\":\"2\",\"enabled\":true,\"type\":\"date_histogram\",\"schema\":\"segment\",\"params\":{\"field\":\"@timestamp\",\"interval\":\"d\",\"customInterval\":\"2h\",\"min_doc_count\":1,\"extended_bounds\":{},\"customLabel\":\"借贷宝daily job执行失败率(‱)\"}},{\"id\":\"3\",\"enabled\":true,\"type\":\"max\",\"schema\":\"metric\",\"params\":{\"field\":\"job_fail_rate\"}},{\"id\":\"4\",\"enabled\":true,\"type\":\"min\",\"schema\":\"metric\",\"params\":{\"field\":\"job_fail_rate\"}}],\"listeners\":{}}",
+      "uiStateJSON": "{}",
+      "description": "",
+      "savedSearchId": "ba195e00-3b95-11e7-8234-b5d5fe9ad9cc",
+      "version": 1,
+      "kibanaSavedObjectMeta": {
+        "searchSourceJSON": "{\"filter\":[]}"
+      }
+    }
+  },
+  {
+    "_id": "3db31320-3ba8-11e7-aa7d-c34056b28e63",
+    "_type": "visualization",
+    "_source": {
+      "title": "job_fail_rate_tianyiyun_1909105735a83f25e9e0",
+      "visState": "{\"title\":\"job_fail_rate_tianyiyun_1909105735a83f25e9e0\",\"type\":\"line\",\"params\":{\"addTooltip\":true,\"addLegend\":true,\"legendPosition\":\"right\",\"showCircles\":true,\"interpolate\":\"linear\",\"scale\":\"linear\",\"drawLinesBetweenPoints\":true,\"radiusRatio\":9,\"times\":[],\"addTimeMarker\":false,\"defaultYExtents\":false,\"setYExtents\":false},\"aggs\":[{\"id\":\"1\",\"enabled\":true,\"type\":\"avg\",\"schema\":\"metric\",\"params\":{\"field\":\"job_fail_rate\"}},{\"id\":\"2\",\"enabled\":true,\"type\":\"date_histogram\",\"schema\":\"segment\",\"params\":{\"field\":\"@timestamp\",\"interval\":\"d\",\"customInterval\":\"2h\",\"min_doc_count\":1,\"extended_bounds\":{},\"customLabel\":\"天翼云daily job执行失败率(‱)\"}},{\"id\":\"3\",\"enabled\":true,\"type\":\"max\",\"schema\":\"metric\",\"params\":{\"field\":\"job_fail_rate\"}},{\"id\":\"4\",\"enabled\":true,\"type\":\"min\",\"schema\":\"metric\",\"params\":{\"field\":\"job_fail_rate\"}}],\"listeners\":{}}",
+      "uiStateJSON": "{\"spy\":{\"mode\":{\"name\":null,\"fill\":false}}}",
+      "description": "",
+      "savedSearchId": "fc8f33b0-3ba7-11e7-b8d4-991294717f79",
+      "version": 1,
+      "kibanaSavedObjectMeta": {
+        "searchSourceJSON": "{\"filter\":[]}"
+      }
+    }
+  },
+  {
+    "_id": "147f9a10-3bac-11e7-8f86-d5021d1e3b49",
+    "_type": "visualization",
+    "_source": {
+      "title": "job_fail_rate_xiaoneng_5422305731b1ac2fb5b0",
+      "visState": "{\"title\":\"job_fail_rate_xiaoneng_5422305731b1ac2fb5b0\",\"type\":\"line\",\"params\":{\"addTooltip\":true,\"addLegend\":true,\"legendPosition\":\"right\",\"showCircles\":true,\"interpolate\":\"linear\",\"scale\":\"linear\",\"drawLinesBetweenPoints\":true,\"radiusRatio\":9,\"times\":[],\"addTimeMarker\":false,\"defaultYExtents\":false,\"setYExtents\":false},\"aggs\":[{\"id\":\"1\",\"enabled\":true,\"type\":\"avg\",\"schema\":\"metric\",\"params\":{\"field\":\"job_fail_rate\"}},{\"id\":\"2\",\"enabled\":true,\"type\":\"min\",\"schema\":\"metric\",\"params\":{\"field\":\"job_fail_rate\"}},{\"id\":\"3\",\"enabled\":true,\"type\":\"max\",\"schema\":\"metric\",\"params\":{\"field\":\"job_fail_rate\"}},{\"id\":\"4\",\"enabled\":true,\"type\":\"date_histogram\",\"schema\":\"segment\",\"params\":{\"field\":\"@timestamp\",\"interval\":\"d\",\"customInterval\":\"2h\",\"min_doc_count\":1,\"extended_bounds\":{},\"customLabel\":\"小能科技daily job执行失败率(‱)\"}}],\"listeners\":{}}",
+      "uiStateJSON": "{}",
+      "description": "",
+      "savedSearchId": "c85a0a80-3bab-11e7-829a-79cd5bb72d6c",
+      "version": 1,
+      "kibanaSavedObjectMeta": {
+        "searchSourceJSON": "{\"filter\":[]}"
+      }
+    }
+  },
+  {
+    "_id": "992aeb70-3bac-11e7-b2e0-efcccaef70e7",
+    "_type": "visualization",
+    "_source": {
+      "title": "job_fail_rate_cnlive_31154355e69a96ae1092",
+      "visState": "{\"title\":\"job_fail_rate_cnlive_31154355e69a96ae1092\",\"type\":\"line\",\"params\":{\"addTooltip\":true,\"addLegend\":true,\"legendPosition\":\"right\",\"showCircles\":true,\"interpolate\":\"linear\",\"scale\":\"linear\",\"drawLinesBetweenPoints\":true,\"radiusRatio\":9,\"times\":[],\"addTimeMarker\":false,\"defaultYExtents\":false,\"setYExtents\":false},\"aggs\":[{\"id\":\"1\",\"enabled\":true,\"type\":\"avg\",\"schema\":\"metric\",\"params\":{\"field\":\"job_fail_rate\"}},{\"id\":\"2\",\"enabled\":true,\"type\":\"max\",\"schema\":\"metric\",\"params\":{\"field\":\"job_fail_rate\"}},{\"id\":\"3\",\"enabled\":true,\"type\":\"min\",\"schema\":\"metric\",\"params\":{\"field\":\"job_fail_rate\"}},{\"id\":\"4\",\"enabled\":true,\"type\":\"date_histogram\",\"schema\":\"segment\",\"params\":{\"field\":\"@timestamp\",\"interval\":\"d\",\"customInterval\":\"2h\",\"min_doc_count\":1,\"extended_bounds\":{},\"customLabel\":\"中投视讯daily job执行失败率(‱)\"}}],\"listeners\":{}}",
+      "uiStateJSON": "{}",
+      "description": "",
+      "savedSearchId": "5c36abf0-3bac-11e7-829a-79cd5bb72d6c",
+      "version": 1,
+      "kibanaSavedObjectMeta": {
+        "searchSourceJSON": "{\"filter\":[]}"
+      }
+    }
+  },
+  {
+    "_id": "8ea69390-3baa-11e7-aa7d-c34056b28e63",
+    "_type": "visualization",
+    "_source": {
+      "title": "job_fail_rate_yiducloud_3978515652f94c7b5a04",
+      "visState": "{\"title\":\"job_fail_rate_yiducloud_3978515652f94c7b5a04\",\"type\":\"line\",\"params\":{\"addTooltip\":true,\"addLegend\":true,\"legendPosition\":\"right\",\"showCircles\":true,\"interpolate\":\"linear\",\"scale\":\"linear\",\"drawLinesBetweenPoints\":true,\"radiusRatio\":9,\"times\":[],\"addTimeMarker\":false,\"defaultYExtents\":false,\"setYExtents\":false},\"aggs\":[{\"id\":\"1\",\"enabled\":true,\"type\":\"avg\",\"schema\":\"metric\",\"params\":{\"field\":\"job_fail_rate\"}},{\"id\":\"2\",\"enabled\":true,\"type\":\"max\",\"schema\":\"metric\",\"params\":{\"field\":\"job_fail_rate\"}},{\"id\":\"3\",\"enabled\":true,\"type\":\"min\",\"schema\":\"metric\",\"params\":{\"field\":\"job_fail_rate\"}},{\"id\":\"4\",\"enabled\":true,\"type\":\"date_histogram\",\"schema\":\"segment\",\"params\":{\"field\":\"@timestamp\",\"interval\":\"d\",\"customInterval\":\"2h\",\"min_doc_count\":1,\"extended_bounds\":{},\"customLabel\":\"医渡云daily job执行失败率(‱)\"}}],\"listeners\":{}}",
+      "uiStateJSON": "{}",
+      "description": "",
+      "savedSearchId": "76490c20-3ba9-11e7-829a-79cd5bb72d6c",
+      "version": 1,
+      "kibanaSavedObjectMeta": {
+        "searchSourceJSON": "{\"filter\":[]}"
+      }
+    }
+  },
+  {
+    "_id": "759b1b00-3a0b-11e7-868a-a5614d9f93a7",
+    "_type": "visualization",
+    "_source": {
+      "title": "agent_proxy_error",
+      "visState": "{\"title\":\"agent_proxy_error\",\"type\":\"line\",\"params\":{\"addTooltip\":true,\"addLegend\":true,\"legendPosition\":\"right\",\"showCircles\":true,\"interpolate\":\"linear\",\"scale\":\"linear\",\"drawLinesBetweenPoints\":true,\"radiusRatio\":9,\"times\":[],\"addTimeMarker\":false,\"defaultYExtents\":false,\"setYExtents\":false},\"aggs\":[{\"id\":\"1\",\"enabled\":true,\"type\":\"count\",\"schema\":\"metric\",\"params\":{}},{\"id\":\"2\",\"enabled\":true,\"type\":\"date_histogram\",\"schema\":\"segment\",\"params\":{\"field\":\"@timestamp\",\"interval\":\"d\",\"customInterval\":\"2h\",\"min_doc_count\":1,\"extended_bounds\":{},\"customLabel\":\"Agent代理服务器出错\"}}],\"listeners\":{}}",
+      "uiStateJSON": "{}",
+      "description": "",
+      "savedSearchId": "01384520-3a02-11e7-ac7f-41864715205a",
+      "version": 1,
+      "kibanaSavedObjectMeta": {
+        "searchSourceJSON": "{\"filter\":[]}"
+      }
+    }
+  },
+  {
+    "_id": "c9865bd0-3a06-11e7-ac7f-41864715205a",
+    "_type": "visualization",
+    "_source": {
+      "title": "agent_disk_full",
+      "visState": "{\"title\":\"agent_disk_full\",\"type\":\"line\",\"params\":{\"addTooltip\":true,\"addLegend\":true,\"legendPosition\":\"right\",\"showCircles\":true,\"interpolate\":\"linear\",\"scale\":\"linear\",\"drawLinesBetweenPoints\":true,\"radiusRatio\":9,\"times\":[],\"addTimeMarker\":false,\"defaultYExtents\":false,\"setYExtents\":false},\"aggs\":[{\"id\":\"1\",\"enabled\":true,\"type\":\"count\",\"schema\":\"metric\",\"params\":{}},{\"id\":\"2\",\"enabled\":true,\"type\":\"date_histogram\",\"schema\":\"segment\",\"params\":{\"field\":\"@timestamp\",\"interval\":\"d\",\"customInterval\":\"2h\",\"min_doc_count\":1,\"extended_bounds\":{},\"customLabel\":\"Agent磁盘满\"}}],\"listeners\":{}}",
+      "uiStateJSON": "{}",
+      "description": "",
+      "savedSearchId": "2e816620-3a01-11e7-ac7f-41864715205a",
+      "version": 1,
+      "kibanaSavedObjectMeta": {
+        "searchSourceJSON": "{\"filter\":[]}"
+      }
+    }
+  },
+  {
+    "_id": "b5b9ffd0-3a06-11e7-ac7f-41864715205a",
+    "_type": "visualization",
+    "_source": {
+      "title": "agent_downgrade",
+      "visState": "{\"title\":\"agent_downgrade\",\"type\":\"line\",\"params\":{\"addLegend\":true,\"addTimeMarker\":false,\"addTooltip\":true,\"defaultYExtents\":false,\"drawLinesBetweenPoints\":true,\"interpolate\":\"linear\",\"legendPosition\":\"right\",\"radiusRatio\":9,\"scale\":\"linear\",\"setYExtents\":false,\"showCircles\":true,\"times\":[]},\"aggs\":[{\"id\":\"1\",\"enabled\":true,\"type\":\"count\",\"schema\":\"metric\",\"params\":{}},{\"id\":\"2\",\"enabled\":true,\"type\":\"date_histogram\",\"schema\":\"segment\",\"params\":{\"field\":\"@timestamp\",\"interval\":\"d\",\"customInterval\":\"2h\",\"min_doc_count\":1,\"extended_bounds\":{},\"customLabel\":\"Agent降级\"}}],\"listeners\":{}}",
+      "uiStateJSON": "{}",
+      "description": "",
+      "savedSearchId": "a67a4a20-3a01-11e7-ac7f-41864715205a",
+      "version": 1,
+      "kibanaSavedObjectMeta": {
+        "searchSourceJSON": "{\"filter\":[]}"
+      }
+    }
+  },
+  {
+    "_id": "51492cc0-3a0f-11e7-858e-b96d4062cc9a",
+    "_type": "visualization",
+    "_source": {
+      "title": "erlang_agent_update_fail",
+      "visState": "{\"title\":\"erlang_agent_update_fail\",\"type\":\"line\",\"params\":{\"addTooltip\":true,\"addLegend\":true,\"legendPosition\":\"right\",\"showCircles\":true,\"interpolate\":\"linear\",\"scale\":\"linear\",\"drawLinesBetweenPoints\":true,\"radiusRatio\":9,\"times\":[],\"addTimeMarker\":false,\"defaultYExtents\":false,\"setYExtents\":false},\"aggs\":[{\"id\":\"1\",\"enabled\":true,\"type\":\"count\",\"schema\":\"metric\",\"params\":{}},{\"id\":\"2\",\"enabled\":true,\"type\":\"date_histogram\",\"schema\":\"segment\",\"params\":{\"field\":\"@timestamp\",\"interval\":\"d\",\"customInterval\":\"2h\",\"min_doc_count\":1,\"extended_bounds\":{},\"customLabel\":\"Agent升级失败\"}}],\"listeners\":{}}",
+      "uiStateJSON": "{}",
+      "description": "",
+      "savedSearchId": "7f507930-3a04-11e7-ac7f-41864715205a",
+      "version": 1,
+      "kibanaSavedObjectMeta": {
+        "searchSourceJSON": "{\"filter\":[]}"
+      }
+    }
+  },
+  {
+    "_id": "9e729490-3a0b-11e7-868a-a5614d9f93a7",
+    "_type": "visualization",
+    "_source": {
+      "title": "agent_suicide_mem",
+      "visState": "{\"title\":\"agent_suicide_mem\",\"type\":\"line\",\"params\":{\"addTooltip\":true,\"addLegend\":true,\"legendPosition\":\"right\",\"showCircles\":true,\"interpolate\":\"linear\",\"scale\":\"linear\",\"drawLinesBetweenPoints\":true,\"radiusRatio\":9,\"times\":[],\"addTimeMarker\":false,\"defaultYExtents\":false,\"setYExtents\":false},\"aggs\":[{\"id\":\"1\",\"enabled\":true,\"type\":\"count\",\"schema\":\"metric\",\"params\":{}},{\"id\":\"2\",\"enabled\":true,\"type\":\"date_histogram\",\"schema\":\"segment\",\"params\":{\"field\":\"@timestamp\",\"interval\":\"d\",\"customInterval\":\"2h\",\"min_doc_count\":1,\"extended_bounds\":{},\"customLabel\":\"Agent自杀(内存>500M)\"}}],\"listeners\":{}}",
+      "uiStateJSON": "{}",
+      "description": "",
+      "savedSearchId": "87535320-3a02-11e7-ac7f-41864715205a",
+      "version": 1,
+      "kibanaSavedObjectMeta": {
+        "searchSourceJSON": "{\"filter\":[]}"
+      }
+    }
+  },
+  {
+    "_id": "86e7f810-3a0b-11e7-b19d-7d41f8eaedf8",
+    "_type": "visualization",
+    "_source": {
+      "title": "agent_suicide_cpu",
+      "visState": "{\"title\":\"agent_suicide_cpu\",\"type\":\"line\",\"params\":{\"addTooltip\":true,\"addLegend\":true,\"legendPosition\":\"right\",\"showCircles\":true,\"interpolate\":\"linear\",\"scale\":\"linear\",\"drawLinesBetweenPoints\":true,\"radiusRatio\":9,\"times\":[],\"addTimeMarker\":false,\"defaultYExtents\":false,\"setYExtents\":false},\"aggs\":[{\"id\":\"1\",\"enabled\":true,\"type\":\"count\",\"schema\":\"metric\",\"params\":{}},{\"id\":\"2\",\"enabled\":true,\"type\":\"date_histogram\",\"schema\":\"segment\",\"params\":{\"field\":\"@timestamp\",\"interval\":\"d\",\"customInterval\":\"2h\",\"min_doc_count\":1,\"extended_bounds\":{},\"customLabel\":\"Agent自杀(CPU > 150%)\"}}],\"listeners\":{}}",
+      "uiStateJSON": "{}",
+      "description": "",
+      "savedSearchId": "58738200-3a02-11e7-ac7f-41864715205a",
+      "version": 1,
+      "kibanaSavedObjectMeta": {
+        "searchSourceJSON": "{\"filter\":[]}"
+      }
+    }
+  },
+  {
+    "_id": "8b2aa640-3c39-11e7-8443-d3b1646206b0",
+    "_type": "visualization",
+    "_source": {
+      "title": "job_error_reason",
+      "visState": "{\"title\":\"job_error_reason\",\"type\":\"table\",\"params\":{\"perPage\":20,\"showPartialRows\":false,\"showMeticsAtAllLevels\":false,\"sort\":{\"columnIndex\":null,\"direction\":null},\"showTotal\":false,\"totalFunc\":\"sum\"},\"aggs\":[{\"id\":\"1\",\"enabled\":true,\"type\":\"count\",\"schema\":\"metric\",\"params\":{}},{\"id\":\"2\",\"enabled\":true,\"type\":\"terms\",\"schema\":\"bucket\",\"params\":{\"field\":\"error_reason.keyword\",\"size\":40,\"order\":\"desc\",\"orderBy\":\"1\",\"customLabel\":\"job出错原因汇总\"}}],\"listeners\":{}}",
+      "uiStateJSON": "{\"vis\":{\"params\":{\"sort\":{\"columnIndex\":null,\"direction\":null}}}}",
+      "description": "",
+      "savedSearchId": "81570b50-3c38-11e7-8443-d3b1646206b0",
+      "version": 1,
+      "kibanaSavedObjectMeta": {
+        "searchSourceJSON": "{\"filter\":[]}"
+      }
+    }
+  },
+  {
+    "_id": "141ac4d0-3d0c-11e7-9383-277f9cea470a",
+    "_type": "visualization",
+    "_source": {
+      "title": "job_exec_time_ehousechina_781794833955847c1bb9",
+      "visState": "{\"title\":\"job_exec_time_ehousechina_781794833955847c1bb9\",\"type\":\"line\",\"params\":{\"addTooltip\":true,\"addLegend\":true,\"legendPosition\":\"right\",\"showCircles\":true,\"interpolate\":\"linear\",\"scale\":\"linear\",\"drawLinesBetweenPoints\":true,\"radiusRatio\":9,\"times\":[],\"addTimeMarker\":false,\"defaultYExtents\":false,\"setYExtents\":false},\"aggs\":[{\"id\":\"1\",\"enabled\":true,\"type\":\"avg\",\"schema\":\"metric\",\"params\":{\"field\":\"job_exec_time\"}},{\"id\":\"2\",\"enabled\":true,\"type\":\"min\",\"schema\":\"metric\",\"params\":{\"field\":\"job_exec_time\"}},{\"id\":\"3\",\"enabled\":true,\"type\":\"max\",\"schema\":\"metric\",\"params\":{\"field\":\"job_exec_time\"}},{\"id\":\"4\",\"enabled\":true,\"type\":\"date_histogram\",\"schema\":\"segment\",\"params\":{\"field\":\"@timestamp\",\"interval\":\"d\",\"customInterval\":\"2h\",\"min_doc_count\":1,\"extended_bounds\":{},\"customLabel\":\"易居中国daily job执行时长\"}}],\"listeners\":{}}",
+      "uiStateJSON": "{}",
+      "description": "",
+      "savedSearchId": "16007510-3ba9-11e7-829a-79cd5bb72d6c",
+      "version": 1,
+      "kibanaSavedObjectMeta": {
+        "searchSourceJSON": "{\"filter\":[]}"
+      }
+    }
+  },
+  {
+    "_id": "e90e42d0-3d0b-11e7-99e9-b5d0781b2e3c",
+    "_type": "visualization",
+    "_source": {
+      "title": "job_exec_time_tianyiyun_1909105735a83f25e9e0",
+      "visState": "{\"title\":\"job_exec_time_tianyiyun_1909105735a83f25e9e0\",\"type\":\"line\",\"params\":{\"addTooltip\":true,\"addLegend\":true,\"legendPosition\":\"right\",\"showCircles\":true,\"interpolate\":\"linear\",\"scale\":\"linear\",\"drawLinesBetweenPoints\":true,\"radiusRatio\":9,\"times\":[],\"addTimeMarker\":false,\"defaultYExtents\":false,\"setYExtents\":false},\"aggs\":[{\"id\":\"1\",\"enabled\":true,\"type\":\"avg\",\"schema\":\"metric\",\"params\":{\"field\":\"job_exec_time\"}},{\"id\":\"2\",\"enabled\":true,\"type\":\"min\",\"schema\":\"metric\",\"params\":{\"field\":\"job_exec_time\"}},{\"id\":\"3\",\"enabled\":true,\"type\":\"max\",\"schema\":\"metric\",\"params\":{\"field\":\"job_exec_time\"}},{\"id\":\"4\",\"enabled\":true,\"type\":\"date_histogram\",\"schema\":\"segment\",\"params\":{\"field\":\"@timestamp\",\"interval\":\"d\",\"customInterval\":\"2h\",\"min_doc_count\":1,\"extended_bounds\":{},\"customLabel\":\"天翼云daily job执行时长\"}}],\"listeners\":{}}",
+      "uiStateJSON": "{}",
+      "description": "",
+      "savedSearchId": "fc8f33b0-3ba7-11e7-b8d4-991294717f79",
+      "version": 1,
+      "kibanaSavedObjectMeta": {
+        "searchSourceJSON": "{\"filter\":[]}"
+      }
+    }
+  },
+  {
+    "_id": "fbf8add0-3d0c-11e7-9383-277f9cea470a",
+    "_type": "visualization",
+    "_source": {
+      "title": "job_exec_time_yiducloud_3978515652f94c7b5a04",
+      "visState": "{\"title\":\"job_exec_time_yiducloud_3978515652f94c7b5a04\",\"type\":\"line\",\"params\":{\"addTooltip\":true,\"addLegend\":true,\"legendPosition\":\"right\",\"showCircles\":true,\"interpolate\":\"linear\",\"scale\":\"linear\",\"drawLinesBetweenPoints\":true,\"radiusRatio\":9,\"times\":[],\"addTimeMarker\":false,\"defaultYExtents\":false,\"setYExtents\":false},\"aggs\":[{\"id\":\"1\",\"enabled\":true,\"type\":\"avg\",\"schema\":\"metric\",\"params\":{\"field\":\"job_exec_time\"}},{\"id\":\"2\",\"enabled\":true,\"type\":\"min\",\"schema\":\"metric\",\"params\":{\"field\":\"job_exec_time\"}},{\"id\":\"3\",\"enabled\":true,\"type\":\"max\",\"schema\":\"metric\",\"params\":{\"field\":\"job_exec_time\"}},{\"id\":\"4\",\"enabled\":true,\"type\":\"date_histogram\",\"schema\":\"segment\",\"params\":{\"field\":\"@timestamp\",\"interval\":\"d\",\"customInterval\":\"2h\",\"min_doc_count\":1,\"extended_bounds\":{},\"customLabel\":\"医渡云daily job执行时长\"}}],\"listeners\":{}}",
+      "uiStateJSON": "{}",
+      "description": "",
+      "savedSearchId": "76490c20-3ba9-11e7-829a-79cd5bb72d6c",
+      "version": 1,
+      "kibanaSavedObjectMeta": {
+        "searchSourceJSON": "{\"filter\":[]}"
+      }
+    }
+  },
+  {
+    "_id": "b8eba3b0-3ba6-11e7-b9bf-876b5fd48a2b",
+    "_type": "visualization",
+    "_source": {
+      "title": "job_fail_rate_inke_68449356970827cdfa92",
+      "visState": "{\"title\":\"job_fail_rate_inke_68449356970827cdfa92\",\"type\":\"line\",\"params\":{\"addTooltip\":true,\"addLegend\":true,\"legendPosition\":\"right\",\"showCircles\":true,\"interpolate\":\"linear\",\"scale\":\"linear\",\"drawLinesBetweenPoints\":true,\"radiusRatio\":9,\"times\":[],\"addTimeMarker\":false,\"defaultYExtents\":false,\"setYExtents\":false},\"aggs\":[{\"id\":\"1\",\"enabled\":true,\"type\":\"avg\",\"schema\":\"metric\",\"params\":{\"field\":\"job_fail_rate\"}},{\"id\":\"2\",\"enabled\":true,\"type\":\"date_histogram\",\"schema\":\"segment\",\"params\":{\"field\":\"@timestamp\",\"interval\":\"d\",\"customInterval\":\"2h\",\"min_doc_count\":1,\"extended_bounds\":{},\"customLabel\":\"映客daily job执行失败率(‱)\"}},{\"id\":\"3\",\"enabled\":true,\"type\":\"max\",\"schema\":\"metric\",\"params\":{\"field\":\"job_fail_rate\"}},{\"id\":\"4\",\"enabled\":true,\"type\":\"min\",\"schema\":\"metric\",\"params\":{\"field\":\"job_fail_rate\",\"customLabel\":\"\"}}],\"listeners\":{}}",
+      "uiStateJSON": "{}",
+      "description": "",
+      "savedSearchId": "ff796d40-3ba5-11e7-829a-79cd5bb72d6c",
+      "version": 1,
+      "kibanaSavedObjectMeta": {
+        "searchSourceJSON": "{\"filter\":[]}"
+      }
+    }
+  },
+  {
+    "_id": "11f70c60-3d0a-11e7-99e9-b5d0781b2e3c",
+    "_type": "visualization",
+    "_source": {
+      "title": "job_exec_time_jdb_68449356970827cdfa92",
+      "visState": "{\"title\":\"job_exec_time_jdb_68449356970827cdfa92\",\"type\":\"line\",\"params\":{\"addTooltip\":true,\"addLegend\":true,\"legendPosition\":\"right\",\"showCircles\":true,\"interpolate\":\"linear\",\"scale\":\"linear\",\"drawLinesBetweenPoints\":true,\"radiusRatio\":9,\"times\":[],\"addTimeMarker\":false,\"defaultYExtents\":false,\"setYExtents\":false},\"aggs\":[{\"id\":\"1\",\"enabled\":true,\"type\":\"avg\",\"schema\":\"metric\",\"params\":{\"field\":\"job_exec_time\"}},{\"id\":\"2\",\"enabled\":true,\"type\":\"date_histogram\",\"schema\":\"segment\",\"params\":{\"field\":\"@timestamp\",\"interval\":\"d\",\"customInterval\":\"2h\",\"min_doc_count\":1,\"extended_bounds\":{},\"customLabel\":\"借贷宝daily job执行时长\"}},{\"id\":\"3\",\"enabled\":true,\"type\":\"min\",\"schema\":\"metric\",\"params\":{\"field\":\"job_exec_time\"}},{\"id\":\"4\",\"enabled\":true,\"type\":\"max\",\"schema\":\"metric\",\"params\":{\"field\":\"job_exec_time\"}}],\"listeners\":{}}",
+      "uiStateJSON": "{}",
+      "description": "",
+      "savedSearchId": "ba195e00-3b95-11e7-8234-b5d5fe9ad9cc",
+      "version": 1,
+      "kibanaSavedObjectMeta": {
+        "searchSourceJSON": "{\"filter\":[]}"
+      }
+    }
+  },
+  {
+    "_id": "9b1db740-3d0b-11e7-9383-277f9cea470a",
+    "_type": "visualization",
+    "_source": {
+      "title": "job_exec_time_inke_68449356970827cdfa92",
+      "visState": "{\"title\":\"job_exec_time_inke_68449356970827cdfa92\",\"type\":\"line\",\"params\":{\"addTooltip\":true,\"addLegend\":true,\"legendPosition\":\"right\",\"showCircles\":true,\"interpolate\":\"linear\",\"scale\":\"linear\",\"drawLinesBetweenPoints\":true,\"radiusRatio\":9,\"times\":[],\"addTimeMarker\":false,\"defaultYExtents\":false,\"setYExtents\":false},\"aggs\":[{\"id\":\"1\",\"enabled\":true,\"type\":\"avg\",\"schema\":\"metric\",\"params\":{\"field\":\"job_exec_time\"}},{\"id\":\"2\",\"enabled\":true,\"type\":\"min\",\"schema\":\"metric\",\"params\":{\"field\":\"job_exec_time\"}},{\"id\":\"3\",\"enabled\":true,\"type\":\"max\",\"schema\":\"metric\",\"params\":{\"field\":\"job_exec_time\"}},{\"id\":\"4\",\"enabled\":true,\"type\":\"date_histogram\",\"schema\":\"segment\",\"params\":{\"field\":\"@timestamp\",\"interval\":\"d\",\"customInterval\":\"2h\",\"min_doc_count\":1,\"extended_bounds\":{},\"customLabel\":\"映客daily job执行时长\"}}],\"listeners\":{}}",
+      "uiStateJSON": "{}",
+      "description": "",
+      "savedSearchId": "ff796d40-3ba5-11e7-829a-79cd5bb72d6c",
+      "version": 1,
+      "kibanaSavedObjectMeta": {
+        "searchSourceJSON": "{\"filter\":[]}"
+      }
+    }
+  },
+  {
+    "_id": "67a8e2c0-3d0d-11e7-86ed-2fc91a18eda8",
+    "_type": "visualization",
+    "_source": {
+      "title": "job_exec_time_9fbank_31006996054590be52a6",
+      "visState": "{\"title\":\"job_exec_time_9fbank_31006996054590be52a6\",\"type\":\"line\",\"params\":{\"addTooltip\":true,\"addLegend\":true,\"legendPosition\":\"right\",\"showCircles\":true,\"interpolate\":\"linear\",\"scale\":\"linear\",\"drawLinesBetweenPoints\":true,\"radiusRatio\":9,\"times\":[],\"addTimeMarker\":false,\"defaultYExtents\":false,\"setYExtents\":false},\"aggs\":[{\"id\":\"1\",\"enabled\":true,\"type\":\"avg\",\"schema\":\"metric\",\"params\":{\"field\":\"job_exec_time\"}},{\"id\":\"2\",\"enabled\":true,\"type\":\"min\",\"schema\":\"metric\",\"params\":{\"field\":\"job_exec_time\"}},{\"id\":\"3\",\"enabled\":true,\"type\":\"max\",\"schema\":\"metric\",\"params\":{\"field\":\"job_exec_time\"}},{\"id\":\"4\",\"enabled\":true,\"type\":\"date_histogram\",\"schema\":\"segment\",\"params\":{\"field\":\"@timestamp\",\"interval\":\"d\",\"customInterval\":\"2h\",\"min_doc_count\":1,\"extended_bounds\":{},\"customLabel\":\"玖富网daily job执行时长\"}}],\"listeners\":{}}",
+      "uiStateJSON": "{}",
+      "description": "",
+      "savedSearchId": "129c9420-3baa-11e7-829a-79cd5bb72d6c",
+      "version": 1,
+      "kibanaSavedObjectMeta": {
+        "searchSourceJSON": "{\"filter\":[]}"
+      }
+    }
+  },
+  {
+    "_id": "9e9da450-3d0d-11e7-9383-277f9cea470a",
+    "_type": "visualization",
+    "_source": {
+      "title": "job_exec_time_xiaoneng_5422305731b1ac2fb5b0",
+      "visState": "{\"title\":\"job_exec_time_xiaoneng_5422305731b1ac2fb5b0\",\"type\":\"line\",\"params\":{\"addTooltip\":true,\"addLegend\":true,\"legendPosition\":\"right\",\"showCircles\":true,\"interpolate\":\"linear\",\"scale\":\"linear\",\"drawLinesBetweenPoints\":true,\"radiusRatio\":9,\"times\":[],\"addTimeMarker\":false,\"defaultYExtents\":false,\"setYExtents\":false},\"aggs\":[{\"id\":\"1\",\"enabled\":true,\"type\":\"avg\",\"schema\":\"metric\",\"params\":{\"field\":\"job_exec_time\"}},{\"id\":\"2\",\"enabled\":true,\"type\":\"min\",\"schema\":\"metric\",\"params\":{\"field\":\"job_exec_time\"}},{\"id\":\"3\",\"enabled\":true,\"type\":\"max\",\"schema\":\"metric\",\"params\":{\"field\":\"job_exec_time\"}},{\"id\":\"4\",\"enabled\":true,\"type\":\"date_histogram\",\"schema\":\"segment\",\"params\":{\"field\":\"@timestamp\",\"interval\":\"d\",\"customInterval\":\"2h\",\"min_doc_count\":1,\"extended_bounds\":{},\"customLabel\":\"小能科技daily job执行时长\"}}],\"listeners\":{}}",
+      "uiStateJSON": "{}",
+      "description": "",
+      "savedSearchId": "c85a0a80-3bab-11e7-829a-79cd5bb72d6c",
+      "version": 1,
+      "kibanaSavedObjectMeta": {
+        "searchSourceJSON": "{\"filter\":[]}"
+      }
+    }
+  },
+  {
+    "_id": "f3c877c0-3d0d-11e7-9383-277f9cea470a",
+    "_type": "visualization",
+    "_source": {
+      "title": "job_exec_time_cnlive_31154355e69a96ae1092",
+      "visState": "{\"title\":\"job_exec_time_cnlive_31154355e69a96ae1092\",\"type\":\"line\",\"params\":{\"addTooltip\":true,\"addLegend\":true,\"legendPosition\":\"right\",\"showCircles\":true,\"interpolate\":\"linear\",\"scale\":\"linear\",\"drawLinesBetweenPoints\":true,\"radiusRatio\":9,\"times\":[],\"addTimeMarker\":false,\"defaultYExtents\":false,\"setYExtents\":false},\"aggs\":[{\"id\":\"1\",\"enabled\":true,\"type\":\"avg\",\"schema\":\"metric\",\"params\":{\"field\":\"job_exec_time\"}},{\"id\":\"2\",\"enabled\":true,\"type\":\"min\",\"schema\":\"metric\",\"params\":{\"field\":\"job_exec_time\"}},{\"id\":\"3\",\"enabled\":true,\"type\":\"max\",\"schema\":\"metric\",\"params\":{\"field\":\"job_exec_time\"}},{\"id\":\"4\",\"enabled\":true,\"type\":\"date_histogram\",\"schema\":\"segment\",\"params\":{\"field\":\"@timestamp\",\"interval\":\"d\",\"customInterval\":\"2h\",\"min_doc_count\":1,\"extended_bounds\":{},\"customLabel\":\"中投视讯daily job执行时长\"}}],\"listeners\":{}}",
+      "uiStateJSON": "{}",
+      "description": "",
+      "savedSearchId": "5c36abf0-3bac-11e7-829a-79cd5bb72d6c",
+      "version": 1,
+      "kibanaSavedObjectMeta": {
+        "searchSourceJSON": "{\"filter\":[]}"
+      }
+    }
+  }
+]

@@ -1,0 +1,155 @@
+---
+- name: init k3s cluster
+  block:
+  - name: Clean previous runs of k3s-init
+    systemd:
+      name: k3s-init
+      state: stopped
+    failed_when: false
+
+  - name: Clean previous runs of k3s-init
+    command: systemctl reset-failed k3s-init
+    failed_when: false
+    changed_when: false
+    args:
+      warn: false  # The ansible systemd module does not support reset-failed
+
+  - name: Check that the devnet.md exists
+    stat:
+      path: "{{ systemd_dir }}/k3s.service"
+    register: file_status
+
+  - name: Copy K3s-init service file
+    register: k3s_service
+    template:
+      src: "k3s-init.service.j2"
+      dest: "{{ systemd_dir }}/k3s-init.service"
+      owner: root
+      group: root
+      mode: 0755
+    when: file_status.stat.exists == False
+
+  - name: Enable and check K3s service
+    systemd:
+      name: k3s-init
+      daemon_reload: yes
+      state: restarted
+      enabled: no
+    ignore_errors: yes
+    when: file_status.stat.exists == False
+  when: groups['master'] | length > 1 and cluster_extend is not defined
+
+- name: Verification
+  block:
+    - name: Verify that all nodes actually joined (check k3s-init.service if this fails)
+      command:
+        cmd: k3s kubectl get nodes -l "node-role.kubernetes.io/master=true" -o=jsonpath="{.items[*].metadata.name}"
+      register: nodes
+      until: nodes.rc == 0 and (nodes.stdout.split() | length) == (groups['master'] | length)
+      retries: 20
+      delay: 10
+      changed_when: false
+  always:
+    - name: Kill the temporary service used for initialization
+      systemd:
+        name: k3s-init
+        state: stopped
+      failed_when: false
+    - name: Remove k3s-init service files
+      file:
+        name: "{{ systemd_dir }}/k3s-init.service"
+        state: absent
+      failed_when: false
+  when: groups['master'] | length > 1 and cluster_extend is not defined
+
+- name: Copy K3s service file
+  register: k3s_service
+  template:
+    src: "k3s.service.j2"
+    dest: "{{ systemd_dir }}/k3s.service"
+    owner: root
+    group: root
+    mode: 0755
+
+- name: Enable and check K3s service
+  systemd:
+    name: k3s
+    daemon_reload: yes
+    state: restarted
+    enabled: yes
+
+
+##检查文件是否存在
+- name: Wait for node-token
+  wait_for:
+    path: /data/k3s/server/node-token
+
+- name: Register node-token file access mode
+  stat:
+    path: /data/k3s/server
+  register: p
+
+- name: Change file access node-token
+  file:
+    path: /data/k3s/server
+    mode: "g+rx,o+rx"
+
+- name: Read node-token from master
+  slurp:
+    src: /data/k3s/server/node-token
+  register: node_token
+
+- name: Store Master node-token
+  set_fact:
+    token: "{{ node_token.content | b64decode | regex_replace('\n', '') }}"
+
+- name: Restore node-token file access
+  file:
+    path: /data/k3s/server
+    mode: "{{ p.stat.mode }}"
+
+- name: Create directory .kube
+  file:
+    path: ~{{ ansible_user }}/.kube
+    state: directory
+    owner: "{{ ansible_user }}"
+
+- name: Copy config file to user home directory
+  copy:
+    src: /etc/rancher/k3s/k3s.yaml
+    dest: ~{{ ansible_user }}/.kube/config
+    remote_src: yes
+    owner: "{{ ansible_user }}"
+
+- name: Configure kubectl cluster to https://{{ apiserver_endpoint }}:6443
+  command: >-
+    k3s kubectl config set-cluster default
+      --server=https://{{ apiserver_endpoint }}:6443
+      --kubeconfig ~{{ ansible_user }}/.kube/config
+  changed_when: true
+
+- name: Create kubectl symlink
+  file:
+    src: /usr/local/bin/k3s
+    dest: /usr/local/bin/kubectl
+    state: link
+
+- name: Create crictl symlink
+  file:
+    src: /usr/local/bin/k3s
+    dest: /usr/local/bin/crictl
+    state: link
+
+- name: Add crictl config to env
+  lineinfile:
+    dest: ~/.bashrc
+    line: "export CRI_CONFIG_FILE=/data/k3s/agent/etc/crictl.yaml"
+  ignore_errors: True
+
+- set_fact:
+      file_contents_lines: "{{ lookup('file', '../../../registery/files/k3s-images.txt').splitlines() }}"
+
+- name: pull images in container
+  shell: >-
+          export CRI_CONFIG_FILE=/data/k3s/agent/etc/crictl.yaml && k3s crictl  pull {{ item }}
+  with_items: "{{ file_contents_lines }}"

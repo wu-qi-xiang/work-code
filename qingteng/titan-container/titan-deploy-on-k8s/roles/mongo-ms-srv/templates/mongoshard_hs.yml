@@ -1,0 +1,15 @@
+# 创建mongocs headless服务
+apiVersion: v1
+kind: Service
+metadata:
+  name: msmongoshard{{shardseq}}-hs
+  namespace: {{ namespace }}
+  labels:
+    app: msmongoshard{{shardseq}}
+spec:
+  ports:
+  - port: 27019
+    name: msmongoshard{{shardseq}}
+  clusterIP: None
+  selector:
+    app: msmongoshard{{shardseq}}

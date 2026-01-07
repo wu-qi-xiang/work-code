@@ -1,0 +1,12 @@
+- name: get rediserl statefulset 
+  kubernetes.core.k8s_info:
+    kind: StatefulSet
+    name: "rediserl"
+    namespace: "{{ namespace }}"
+  register: rediserl_setobj
+- set_fact:
+    rediserl_ok: "{{rediserl_setobj | statefulset_check}}"
+
+- set_fact:
+    ok_base_roles: "{{ok_base_roles | union(['rediserl']) }}" 
+  when: rediserl_ok    

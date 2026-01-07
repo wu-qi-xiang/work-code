@@ -1,0 +1,3 @@
+---
+- name: update job-srv image
+  shell: "kubectl -n {{ namespace }} set image statefulset titan-job-srv titan-job-srv={{jobsrv_image}}"

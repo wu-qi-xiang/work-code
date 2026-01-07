@@ -1,0 +1,97 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: titan-scan-srv
+  namespace: "{{namespace}}"
+  labels:
+    app: titan-scan-srv
+spec:
+  replicas: {{scansrv_replicas}}
+  selector:
+    matchLabels:
+      app: titan-scan-srv
+  strategy:
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 1
+    type: RollingUpdate
+  progressDeadlineSeconds: 120
+  minReadySeconds: 30
+  revisionHistoryLimit: 3
+  template:
+    metadata:
+      name: titan-scan-srv
+      labels:
+        app: titan-scan-srv
+    spec:
+      nodeSelector:
+        "{{scansrv_nodelabel}}": "true"
+      serviceAccountName: "{{service_account}}"
+      containers:
+        - image: "{{scansrv_image}}"
+          imagePullPolicy: "{{ scansrv_pullPolicy }}"
+          name: titan-scan-srv
+          resources:
+            limits:
+              cpu: "{{ scansrv_limit_cpu }}"
+              memory: "{{ scansrv_limit_memory }}"
+            requests:
+              cpu: "{{cpu_req}}"
+              memory: "{{scansrv_req_memory}}"
+          readinessProbe:
+            httpGet:
+              path: /api/ping
+              port: {{scansrv_port}}
+            initialDelaySeconds: 20
+            periodSeconds: 10
+            timeoutSeconds: 3
+            failureThreshold: 6
+          livenessProbe:
+            exec:
+              command:
+                - "/bin/bash"
+                - "-c"
+                - result=`curl -k -sS http://127.0.0.1:{{scansrv_port}}/api/checkall 2>&1`; if [[ $result =~ 'abnormal_service":[]' ]]; then echo ok; else echo $result && exit 1; fi;
+            initialDelaySeconds: 45
+            periodSeconds: 30
+            timeoutSeconds: 15
+            failureThreshold: 3
+          command: ['/bin/sh', '-c', 'dockerize -secretdir /var/secrets/ -yaml-env /titan-env/titan-env.yml -template /titan-java-config/jaas_zk_client.conf:/data/app/titan-config/jaas_zk_client.conf -mergeToJson /titan-java-config/java.properties:/data/app/titan-config/java.json; chown -R titan:titan /data/app/titan-config; /data/app/titan-scan-srv/init.d/scan-srv start']
+          ports:
+            - containerPort: {{scansrv_port}}
+              protocol: TCP
+          volumeMounts:
+            - name: var-secrets
+              mountPath: /var/secrets/
+            - name: titan-env
+              mountPath: /titan-env
+            - name: titan-java-config
+              mountPath: /titan-java-config
+            - mountPath: /data/titan-logs/java/scan-srv
+              subPath: scan-srv
+              name: titan-logs
+            - mountPath: /data/app/titan-scan-srv/tomcat
+              subPath: tomcat
+              name: tmp
+            - mountPath: /tmp
+              name: tmp
+            - mountPath: /data/titan-dfs
+              name: dfs-volume
+          securityContext:
+            fsGroup: {{scansrv_gid}}
+            allowPrivilegeEscalation: false
+      volumes:
+        - name: var-secrets
+          secret:
+            secretName: titan-all-secrets
+        - name: titan-env
+          configMap:
+            name: titan-env
+        - name: titan-java-config
+          configMap:
+            name: titan-java-config
+        - emptyDir: {}
+          name: tmp
+        - name: dfs-volume
+          persistentVolumeClaim:
+            claimName: titan-dfs

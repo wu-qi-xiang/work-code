@@ -1,0 +1,9 @@
+---
+# defaults file for gateway
+gateway_pullPolicy: IfNotPresent
+gateway_uid: 2020
+gateway_gid: 2020
+gateway_port: 6000
+
+gateway_limit_memory: 1024Mi
+gateway_limit_cpu: 8

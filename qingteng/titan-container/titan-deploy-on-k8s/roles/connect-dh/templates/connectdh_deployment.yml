@@ -1,0 +1,92 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: titan-connect-dh
+  namespace: "{{namespace}}"
+  labels:
+    app: titan-connect-dh
+spec:
+  replicas: {{connectdh_replicas}}
+  selector:
+    matchLabels:
+      app: titan-connect-dh
+  strategy:
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 1
+    type: RollingUpdate
+  progressDeadlineSeconds: 120
+  minReadySeconds: 30
+  revisionHistoryLimit: 3
+  template:
+    metadata:
+      name: titan-connect-dh
+      labels:
+        app: titan-connect-dh
+    spec:
+      nodeSelector:
+        "{{connectdh_nodelabel}}": "true"
+      serviceAccountName: "{{service_account}}"
+      containers:
+        - image: "{{connectdh_image}}"
+          imagePullPolicy: "{{ connectdh_pullPolicy }}"
+          name: titan-connect-dh
+          resources:
+            limits:
+              cpu: "{{ connectdh_limit_cpu }}"
+              memory: "{{ connectdh_limit_memory }}"
+            requests:
+              cpu: "{{cpu_req}}"
+              memory: "{{connectdh_req_memory}}"
+          readinessProbe:
+            httpGet:
+              path: /api/ping
+              port: {{connectdh_port}}
+            initialDelaySeconds: 20
+            periodSeconds: 10
+            timeoutSeconds: 15
+            failureThreshold: 6
+          livenessProbe:
+            exec:
+              command:
+                - "/bin/bash"
+                - "-c"
+                - result=`curl -k -sS http://127.0.0.1:{{connectdh_port}}/api/checkall 2>&1`; if [[ $result =~ 'abnormal_service":[]' ]]; then echo ok; else echo $result && exit 1; fi
+            initialDelaySeconds: 45
+            periodSeconds: 30
+            timeoutSeconds: 3
+            failureThreshold: 3
+          command: ['/bin/sh', '-c', 'dockerize -secretdir /var/secrets/ -yaml-env /titan-env/titan-env.yml -template /titan-java-config/jaas_zk_client.conf:/data/app/titan-config/jaas_zk_client.conf -mergeToJson /titan-java-config/java.properties:/data/app/titan-config/java.json; chown -R titan:titan /data/app/titan-config; /data/app/titan-connect-dh/init.d/connect-dh start']
+          ports:
+            - containerPort: {{connectdh_port}}
+              protocol: TCP
+          volumeMounts:
+            - name: var-secrets
+              mountPath: /var/secrets/
+            - name: titan-env
+              mountPath: /titan-env
+            - name: titan-java-config
+              mountPath: /titan-java-config
+            - mountPath: /data/titan-logs/java/connect-dh
+              subPath: connect-dh
+              name: titan-logs
+            - mountPath: /data/app/titan-connect-dh/tomcat
+              subPath: tomcat
+              name: tmp
+            - mountPath: /tmp
+              name: tmp
+          securityContext:
+            readOnlyRootFilesystem: true
+            allowPrivilegeEscalation: false
+      volumes:
+        - name: var-secrets
+          secret:
+            secretName: titan-all-secrets
+        - name: titan-env
+          configMap:
+            name: titan-env
+        - name: titan-java-config
+          configMap:
+            name: titan-java-config
+        - emptyDir: {}
+          name: tmp

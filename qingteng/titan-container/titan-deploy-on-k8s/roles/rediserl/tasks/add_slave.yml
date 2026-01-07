@@ -1,0 +1,21 @@
+---
+- name: get redis master nodeid
+  kubernetes.core.k8s_exec:
+    validate_certs: no
+    namespace: "{{ namespace }}"
+    pod: "rediserl-{{ master }}"
+    command: sh -c  "cat /data/redis/nodes.conf | grep myself | awk '{print $1}' "
+  register: masterid_result
+
+- set_fact:
+    master_id: "{{ masterid_result['stdout_lines'][0] }}"
+
+- name: add slave node to master
+  kubernetes.core.k8s_exec:
+    validate_certs: no
+    namespace: "{{ namespace }}"
+    pod: "rediserl-{{ master }}"
+    command: "redis-cli --cluster add-node {{ pod_ip_map['rediserl-'+(slave|string)] + ':6379' }} {{ pod_ip_map['rediserl-'+(master|string)] + ':6379' }} --cluster-slave --cluster-master-id {{ master_id }} --cluster-yes -a {{rediserl_passwd}}"
+  loop: "{{ slaves }}"
+  loop_control:
+    loop_var: slave

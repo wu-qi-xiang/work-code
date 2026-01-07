@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: titan-clusterlink-srv
+  namespace: "{{namespace}}"
+spec:
+  selector:
+    app: titan-clusterlink-srv
+  ports:
+    - protocol: TCP
+      port: {{clusterlinksrv_port}}

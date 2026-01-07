@@ -1,0 +1,10 @@
+node.name: node-172.16.23.22
+path.data: /data/logstash
+pipeline.workers: 12
+pipeline.batch.size: 2500
+pipeline.batch.delay: 1000
+path.config: /usr/local/qingteng/logstash/conf.d/*.conf
+http.host: "0.0.0.0"
+http.port: 9600
+log.level: info
+path.logs: /data/titan-logs/logstash

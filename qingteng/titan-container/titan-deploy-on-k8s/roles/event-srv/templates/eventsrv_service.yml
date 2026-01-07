@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: titan-event-srv
+  namespace: "{{namespace}}"
+spec:
+  selector:
+    app: titan-event-srv
+  ports:
+    - protocol: TCP
+      port: {{eventsrv_port}}

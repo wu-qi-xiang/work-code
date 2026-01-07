@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: titan-user-srv
+  namespace: "{{namespace}}"
+spec:
+  selector:
+    app: titan-user-srv
+  ports:
+    - protocol: TCP
+      port: {{usersrv_port}}

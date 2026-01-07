@@ -1,0 +1,10 @@
+.vscode/
+build/*
+license/*
+titan-rule-*.zip
+titan-license-*.zip
+custom_var.yml
+test.yml
+titan-config/titan.env
+deploy/titan-env.yml
+titan-env.yml

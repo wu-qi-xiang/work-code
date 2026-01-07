@@ -1,0 +1,32 @@
+---
+- block:
+  - set_fact:
+      work_nodes: "{{ label_nodes[keepalived_nodelabel] }}"
+  
+  - name: Print result
+    debug:
+      msg: "{{ work_nodes }}"
+  
+  - fail:
+      msg: "have no available node for keepalived"
+    when: work_nodes|length <= 0
+  
+  - name: create keepalived configmap
+    kubernetes.core.k8s:
+      definition: "{{ lookup('template', 'keepalived_configmap.yml') | from_yaml }}"
+  
+  - name: Remove keepalived DaemonSet
+    kubernetes.core.k8s:
+      state: absent
+      api_version: apps/v1
+      kind: DaemonSet
+      namespace: "{{ namespace }}"
+      name: "titan-keepalived"
+  
+  - name: create keepalived DaemonSet
+    kubernetes.core.k8s:
+      definition: "{{ lookup('template', 'keepalived_daemonset.yml' ) | from_yaml | titan_combine(common_patch) }}"
+      apply: yes
+
+  when: vip is defined and vip and vip.strip() != ''
+

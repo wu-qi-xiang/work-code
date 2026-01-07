@@ -1,0 +1,12 @@
+- name: get rabbitmq statefulset 
+  kubernetes.core.k8s_info:
+    kind: StatefulSet
+    name: "rabbitmq"
+    namespace: "{{ namespace }}"
+  register: rabbitmq_setobj
+- set_fact:
+    rabbitmq_ok: "{{rabbitmq_setobj | statefulset_check}}"
+    
+- set_fact:
+    ok_base_roles: "{{ok_base_roles | union(['rabbitmq']) }}" 
+  when: rabbitmq_ok

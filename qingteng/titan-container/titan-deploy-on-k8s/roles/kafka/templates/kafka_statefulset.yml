@@ -1,0 +1,124 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: kafka
+  namespace: "{{ namespace }}"
+spec:
+  serviceName: kafka-hs
+  podManagementPolicy: Parallel
+  replicas: {{ kafka_replicas }}
+  selector:
+    matchLabels:
+      app: kafka
+  template:
+    metadata:
+      labels:
+        app: kafka
+    spec:
+      affinity:
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            - topologyKey: "kubernetes.io/hostname"
+              labelSelector:
+                matchLabels:
+                  app: kafka
+      nodeSelector:
+        "{{kafka_nodelabel}}": "true"
+      serviceAccountName: "{{service_account}}"
+      containers:
+        - name: k8s-kafka
+          imagePullPolicy: "{{ kafka_pullPolicy }}"
+          image: "{{ kafka_image }}"
+          resources:
+            limits:
+              cpu: "{{ kafka_limit_cpu }}"
+              memory: "{{ kafka_limit_memory }}"
+            requests:
+              cpu: "{{cpu_req}}"
+              memory: "1024Mi"
+          ports:
+            - containerPort: 9092
+              name: server
+          env:
+            - name: ZK_PASSWORD_FILE
+              value: /var/secrets/zk_passwd
+            - name: KAFKA_QTPASSWD_FILE
+              value: /var/secrets/kafka_passwd
+            - name: KAFKA_HEAP_OPTS
+              value: "-Xmx{{kafka_xmx}}M -Xms1G"
+            - name: EXTERNAL_KAFKA_SERVERS
+              value: "{{ external_kafka_servers }}"
+          command: 
+            - "sh"
+            - "-c"
+            - "start-kafka.sh --override zookeeper.connect={{ zk_connect }} --override default.replication.factor={{replica_factor}} --override offsets.topic.replication.factor={{kafka_replicas}}"
+          readinessProbe:
+            tcpSocket:
+              port: 9092
+            initialDelaySeconds: 60
+            periodSeconds: 30
+            timeoutSeconds: 5
+            failureThreshold: 4
+          livenessProbe:
+            exec:
+              command:
+                - "sh"
+                - "-c" 
+                - "kafka-broker-api-versions.sh --bootstrap-server=localhost:9092 --command-config=/usr/local/qingteng/kafka/config/consumer.properties"
+            initialDelaySeconds: 15
+            periodSeconds: 30
+            timeoutSeconds: 5
+            failureThreshold: 5
+          volumeMounts:
+            - name: tmp-secrets
+              mountPath: /var/secrets/
+            - name: kafkadir
+              mountPath: /data/kafka-data
+            - name: kafkalog
+              mountPath: /data/titan-logs/kafka
+          securityContext:
+            allowPrivilegeEscalation: false
+      initContainers:
+        - name: titan-init
+          image: "{{ init_image }}"
+          imagePullPolicy: IfNotPresent
+          command: ['/bin/sh', '-c', 'dockerize -secretdir /var/secrets/ -encSecret /var/secrets/zk_passwd:/tmp/secrets/zk_passwd -encSecret /var/secrets/kafka_passwd:/tmp/secrets/kafka_passwd']
+          volumeMounts:
+            - name: var-secrets
+              mountPath: /var/secrets
+            - name: tmp-secrets
+              mountPath: /tmp/secrets
+      securityContext:
+        runAsUser: {{kafka_uid}}
+        fsGroup: {{kafka_gid}}
+      volumes:
+        - name: var-secrets
+          secret:
+            secretName: titan-all-secrets
+        - name: tmp-secrets
+          emptyDir: {}
+  volumeClaimTemplates:
+    - metadata:
+        name: kafkadir
+        labels:
+          qtsa_perm: "{{kafka_uid}}-{{kafka_gid}}"
+          qtsa_path: "kafka"
+          qtsa_delete_data: "Y"
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        storageClassName: "{{storageName}}"
+        resources:
+          requests:
+            storage: "{{ kafka_storage_capacity }}"
+    - metadata:
+        name: kafkalog
+        labels:
+          qtsa_perm: "{{kafka_uid}}-{{kafka_gid}}"
+          qtsa_path: "logs.kafka"
+          qtsa_delete_data: "Y"
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        storageClassName: "{{storageName}}"
+        resources:
+          requests:
+            storage: "{{ kafka_storage_capacity }}"

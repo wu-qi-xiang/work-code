@@ -1,0 +1,30 @@
+---
+# tasks file for job-srv
+- set_fact:
+    work_nodes: "{{ label_nodes[jobsrv_nodelabel] }}"
+
+- name: Print result
+  debug:
+    msg: "{{ work_nodes }}"
+
+- fail:
+    msg: "have no available node for job-srv"
+  when: work_nodes|length <= 0
+
+- name: Remove job-srv StatefulSet
+  kubernetes.core.k8s:
+    state: absent
+    api_version: apps/v1
+    kind: StatefulSet
+    namespace: "{{ namespace }}"
+    name: "titan-job-srv"
+
+- name: create job-srv StatefulSet
+  kubernetes.core.k8s:
+    definition: "{{ lookup('template', 'jobsrv_statefulset.yml' ) | from_yaml | titan_combine(common_patch,titanlogs_patch) }}"
+    apply: yes
+
+- name: create jobsrv Service
+  kubernetes.core.k8s:
+    definition: "{{ lookup('template', 'jobsrv_service.yml' ) | from_yaml }}"
+    apply: yes

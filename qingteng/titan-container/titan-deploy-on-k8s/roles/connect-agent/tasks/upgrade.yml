@@ -1,0 +1,3 @@
+---
+- name: update connectagent image
+  shell: "kubectl -n {{ namespace }} set image deployment titan-connect-agent titan-connect-agent={{connectagent_image}}"

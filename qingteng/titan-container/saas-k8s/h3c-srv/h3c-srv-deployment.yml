@@ -1,0 +1,86 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: h3c-config
+  namespace: "qtsa"
+data:
+  h3c-srv.json: |
+    {
+      "host.ruleplatform.url": "http://api-rulebase.qingteng.cn"
+    }
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: titan-h3c
+  namespace: "qtsa"
+  labels:
+    app: titan-h3c
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: titan-h3c
+  strategy:
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 1
+    type: RollingUpdate
+  progressDeadlineSeconds: 120
+  minReadySeconds: 30
+  revisionHistoryLimit: 3
+  template:
+    metadata:
+      name: titan-h3c
+      labels:
+        app: titan-h3c
+    spec:
+      nodeSelector:
+        "qtsa-java": "true"
+        "qtsa-h3c": "true"
+      serviceAccountName: "titan-sa"
+      hostAliases:            
+        - ip: "10.10.106.226"
+          hostnames:
+            - "api-rulebase.qingteng.cn"
+      containers:
+        - image: "registry.qingteng.cn/titan-container/titan-java-h3c-srv:3.4.0-root_201011154300"
+          name: titan-h3c
+          command: ["sh","-c","mkdir -p /data/app/titan-h3c && chown -R titan:titan /data/app/titan-h3c && /data/app/titan-h3c-srv/init.d/h3c-srv start"]
+          resources:
+            limits:
+              cpu: "1"
+              memory: "512Mi"
+            requests:
+              cpu: "0.2"
+              memory: 512Mi
+          livenessProbe:
+            tcpSocket:
+              port: 6300
+            initialDelaySeconds: 20
+            timeoutSeconds: 5
+            failureThreshold: 3
+          ports:
+            - containerPort: 6300
+              protocol: TCP
+          volumeMounts:
+            - mountPath: /data/app/titan-config/
+              name: titan-config-volume
+            - mountPath: /data/app/titan-h3c-srv/h3c-srv.json
+              subPath: h3c-srv.json
+              name: h3c-config-volume
+            - mountPath: /data/titan-logs/java/h3c-srv
+              name: titan-logs-volume
+      volumes:
+        - name: titan-config-volume
+          configMap:
+            name: titan-config
+        - name: h3c-config-volume
+          configMap:
+            name: h3c-config
+        - name: titan-logs-volume
+          hostPath:
+            path: /data/titan-dfs/titan-logs/java/h3c-srv
+            type: DirectoryOrCreate

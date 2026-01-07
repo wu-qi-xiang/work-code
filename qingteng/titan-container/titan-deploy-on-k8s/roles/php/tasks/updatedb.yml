@@ -1,0 +1,2 @@
+- name: execute updatedb
+  shell: kubectl -n {{namespace}} exec -i {{web_pod}} -c titan-web -- php /data/app/www/titan-web/script/updatedb.php auto

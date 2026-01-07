@@ -1,0 +1,8 @@
+apiVersion: "{{CSIDriverVersion | default('storage.k8s.io/v1') }}"
+kind: CSIDriver
+metadata:
+  name: glusterfs.csi.qingteng.cn
+spec:
+  attachRequired: false
+  volumeLifecycleModes:
+    - Persistent

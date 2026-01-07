@@ -1,0 +1,14 @@
+---
+# defaults file for redisjava
+# 例如 redis_java_master_num为3,redis_java_slave_num为1时，master有3个实例，每个master有1个slave，共有 3+ 3×1 = 6个实例
+# 所需最少节点数量 max(redis_java_master_num,redis_java_slave_num+1)
+redis_java_master_num: 3
+redis_java_slave_num: 2
+redisjava_storage_capacity: "10Gi"
+redisjava_hostpath: "/data/titan-container/redisjava/{0}"
+redis_uid: 1000
+redis_gid: 1000
+redis_pullPolicy: IfNotPresent
+
+redisjava_limit_memory: 4Gi
+redisjava_req_memory: 128Mi

@@ -1,0 +1,51 @@
+---
+# tasks file for gateway
+- set_fact:
+    work_nodes: "{{ label_nodes[patrol_nodelabel] }}"
+
+- name: Print result
+  debug:
+    msg: "{{ work_nodes }}"
+
+- fail:
+    msg: "have no available node for patrol"
+  when: work_nodes|length <= 0
+
+
+- name: Remove patrol Deployment
+  kubernetes.core.k8s:
+    state: absent
+    api_version: apps/v1
+    kind: Deployment
+    namespace: "{{ namespace }}"
+    name: "titan-patrol"
+
+- name: create patrol ConfigMap
+  kubernetes.core.k8s:
+    definition: "{{ lookup('template', 'patrol_configmap.yml', variable_start_string='[%', variable_end_string='%]' ) | from_yaml }}"
+    apply: yes
+
+- name: create go-patrol service account
+  kubernetes.core.k8s:
+    definition: "{{ lookup('template', 'patrol_account.yml') | from_yaml }}"
+
+- name: Template rbac file
+  ansible.builtin.template:
+    src: templates/patrol_rbac_tpl.yml
+    dest: /tmp/patrol_rbac.yml
+
+- name: set titan-patrol account's rbac config
+  shell: kubectl apply -f /tmp/patrol_rbac.yml
+
+- name: create qt-patrol database in msyql
+  shell: kubectl -n {{namespace}} exec -ti mysql-0 -- mysql -uroot -p"{{mysql_passwd}}" -e "CREATE DATABASE IF NOT EXISTS qt_patrol DEFAULT CHARSET utf8 COLLATE utf8_general_ci;"
+
+- name: create patrol Deployment
+  kubernetes.core.k8s:
+    definition: "{{ lookup('template', 'patrol_deployment.yml' ) | from_yaml | titan_combine(common_patch,titanlogs_patch) }}"
+    apply: yes
+
+- name: create patrol Service
+  kubernetes.core.k8s:
+    definition: "{{ lookup('template', 'patrol_service.yml' ) | from_yaml }}"
+    apply: yes

@@ -1,0 +1,13 @@
+---
+# fluentbit server and fluentbit client
+fluentbit_hostpath: "/data/titan-logs/all/"
+fluentbit_pullPolicy: IfNotPresent
+
+fluentbit_server_limit_memory: 2Gi
+fluentbit_server_req_memory: 128Mi
+fluentbit_client_limit_memory: 256Mi
+fluentbit_client_req_memory: 64Mi
+
+fluentbit_client_storage_capacity: 1Gi
+
+cri_runtime: cri

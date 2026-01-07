@@ -1,0 +1,14 @@
+# titan-dfs 使用客户存储， 提供了storageClassName时，在此创建 titan-dfs 这个pvc
+---
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  name: titan-logs-all
+  namespace: "{{ namespace }}"
+spec:
+  accessModes:
+    - ReadWriteMany
+  resources:
+    requests:
+      storage: "{{logsall_storage_capacity}}"
+  storageClassName: "{{logsall_storageclass}}"      

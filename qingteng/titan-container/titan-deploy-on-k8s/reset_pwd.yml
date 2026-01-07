@@ -1,0 +1,252 @@
+---
+  - hosts: localhost
+    name: reset password config
+    gather_facts: false
+    vars_files: 
+      - var_file.yml
+    vars:
+      all_passwd_services: ["mongo","mongo-ms-srv","mysql","redis_java","redis_php","redis_erlang","kafka","rabbitmq","zookeeper"]
+    module_defaults:
+      kubernetes.core.k8s_info:
+        validate_certs: no
+        namespace: "{{ namespace }}"
+      kubernetes.core.k8s:
+        validate_certs: no
+        namespace: "{{ namespace }}"
+      kubernetes.core.k8s_exec:
+        validate_certs: no
+        namespace: "{{ namespace }}"
+
+    pre_tasks:
+      - name: include pre_titan_env
+        include_tasks: pre_titan_env.yml
+
+    tasks:
+      # 获取之前的secrets 
+      - name: Get titan-secrets
+        kubernetes.core.k8s_info:
+          kind: Secret
+          name: titan-all-secrets
+          namespace: "{{ namespace }}"
+        register: titan_secrets_result
+        no_log: True
+
+      - set_fact:
+          titan_secret_data: "{{ titan_secrets_result['resources'][0]['data'] }}"
+        no_log: True
+            
+      - set_fact:
+          pbeconfig: "{{ titan_secret_data['pbeconfig'] | b64decode }}"
+        no_log: True
+      
+      # 确定哪些服务的密码需要重置
+      - set_fact:
+          reset_passwd_roles: "{{ reset_roles.split(',') | intersect(all_passwd_services) }}"
+        when: reset_roles is defined
+      
+      - block:
+        - name: print usage
+          debug:
+            msg: 
+            - "输入错误，请看下面的使用说明"
+            - "usage: ansible-playbook reset_pwd.yml -e reset_roles=xxx" 
+            - "可重置密码的服务有: mongo,mysql,redis_java,redis_php,redis_erlang,kafka,rabbitmq,zookeeper" 
+            - "如果没输入特定的密码，将会随机生成一个 "
+            - "example1: ansible-playbook reset_pwd.yml -e reset_roles=zookeeper,kafka" 
+            - "example2: ansible-playbook reset_pwd.yml -e reset_roles=kafka -e new_kafka_passwd=your_passwd"
+
+        - name: 失败终止
+          fail:
+            msg: "输入有误"
+
+        when: reset_roles is not defined or reset_passwd_roles|length == 0
+
+      # 密码值如果不是命令行等外部传入，则随机生成. 命令行方式传入例子: ansible-playbook reset_pwd.yml -v -e new_kafka_passwd=liangtest
+      - set_fact:
+          new_kafka_passwd: "{{ new_kafka_passwd | default(16|randomString, true) }}"
+        when: '"kafka" in reset_passwd_roles'
+
+      - set_fact:
+          new_zk_passwd: "{{ new_zk_passwd | default(16|randomString, true) }}"
+        when: '"zookeeper" in reset_passwd_roles'
+      
+      - set_fact:
+          new_redisjava_passwd: "{{ new_redisjava_passwd | default(16|randomString, true) }}"
+        when: '"redis_java" in reset_passwd_roles'
+      
+      - set_fact:
+          new_redisphp_passwd: "{{ new_redisphp_passwd | default(16|randomString, true) }}"
+        when: '"redis_php" in reset_passwd_roles'
+      
+      - set_fact:
+          new_rediserl_passwd: "{{ new_rediserl_passwd | default(16|randomString, true) }}"
+        when: '"redis_erlang" in reset_passwd_roles'
+      
+      - set_fact:
+          new_rabbitmq_passwd: "{{ new_rabbitmq_passwd | default(16|randomString, true) }}"
+        when: '"rabbitmq" in reset_passwd_roles'
+      
+      - set_fact:
+          new_mongo_passwd: "{{ new_mongo_passwd | default(16|randomString, true) }}"
+        when: '"mongo" in reset_passwd_roles'
+      
+      - set_fact:
+          new_msmongo_passwd: "{{ new_msmongo_passwd | default(16|randomString, true) }}"
+        when: '"mongo-ms-srv" in reset_passwd_roles'
+
+      - set_fact:
+          new_mysql_passwd: "{{ new_mysql_passwd | default(16|randomString, true) }}"
+        when: '"mysql" in reset_passwd_roles'
+
+      # 更新 titan-all-secrets --- start
+      - set_fact:
+          titan_secrets_patch: |
+            data: 
+              {% if new_kafka_passwd is defined %}kafka_passwd: {{new_kafka_passwd | encrypt_string(pbeconfig) | b64encode}}{% endif +%}
+              {% if new_zk_passwd is defined %}zk_passwd: {{new_zk_passwd | encrypt_string(pbeconfig) | b64encode}}{% endif +%}
+              {% if new_redisjava_passwd is defined %}redisjava_passwd: {{new_redisjava_passwd | encrypt_string(pbeconfig) | b64encode}}{% endif +%}
+              {% if new_redisphp_passwd is defined %}redisphp_passwd: {{new_redisphp_passwd | encrypt_string(pbeconfig) | b64encode}}{% endif +%}
+              {% if new_rediserl_passwd is defined %}rediserl_passwd: {{new_rediserl_passwd | encrypt_string(pbeconfig) | b64encode}}{% endif +%}
+              {% if new_rabbitmq_passwd is defined %}rabbitmq_passwd: {{new_rabbitmq_passwd | encrypt_string(pbeconfig) | b64encode}}{% endif +%}
+              {% if new_mongo_passwd is defined %}mongo_passwd: {{new_mongo_passwd | encrypt_string(pbeconfig) | b64encode}}{% endif +%}
+              {% if new_msmongo_passwd is defined %}msmongo_passwd: {{new_msmongo_passwd | encrypt_string(pbeconfig) | b64encode}}{% endif +%}
+              {% if new_mysql_passwd is defined %}mysql_passwd: {{new_mysql_passwd | encrypt_string(pbeconfig) | b64encode}}{% endif +%}
+
+      - name: set kafka_passwd in titan-all-secrets
+        shell: kubectl -n {{namespace}} patch Secret titan-all-secrets --patch '{{titan_secrets_patch}}'
+        vars:
+          screen_only: true
+      # 更新 titan-all-secrets --- end
+      
+      - block:
+        - include_role:
+            name: "redisjava"
+            tasks_from: uninstall.yml
+
+        - name: get redisjava server pods
+          shell: kubectl -n {{ namespace }} get po | grep redisjava || echo none
+          register: redisjava_podobj
+          until: redisjava_podobj['stdout'] == 'none' 
+          retries: 60
+          delay: 5
+        
+        - include_role:
+            name: "redisjava"
+            tasks_from: main.yml
+          vars:
+            redisjava_passwd: "{{new_redisjava_passwd}}"
+        when: '"redis_java" in reset_passwd_roles'
+      
+      - block:
+        - include_role:
+            name: "redisphp"
+            tasks_from: uninstall.yml
+        
+        - name: get redisphp server pods
+          shell: kubectl -n {{ namespace }} get po | grep redisphp || echo none
+          register: redisphp_podobj
+          until: redisphp_podobj['stdout'] == 'none' 
+          retries: 60
+          delay: 5
+
+        - include_role:
+            name: "redisphp"
+            tasks_from: main.yml
+          vars:
+            redisphp_passwd: "{{new_redisphp_passwd}}"
+        when: '"redis_php" in reset_passwd_roles'
+      
+      - block:
+        - include_role:
+            name: "rediserl"
+            tasks_from: uninstall.yml
+        
+        - name: get rediserl server pods
+          shell: kubectl -n {{ namespace }} get po | grep rediserl || echo none
+          register: rediserl_podobj
+          until: rediserl_podobj['stdout'] == 'none' 
+          retries: 60
+          delay: 5
+
+        - include_role:
+            name: "rediserl"
+            tasks_from: main.yml
+          vars:
+            rediserl_passwd: "{{new_rediserl_passwd}}"
+        when: '"redis_erlang" in reset_passwd_roles'
+      
+      - block:
+        - name: set rabbitmq password
+          kubernetes.core.k8s_exec: 
+            validate_certs: no
+            namespace: "{{ namespace }}"
+            pod: "rabbitmq-0"
+            command: bash -c 'rabbitmqctl change_password guest {{new_rabbitmq_passwd}}'
+
+        when: '"rabbitmq" in reset_passwd_roles'
+      
+      - block:
+        # zookeeper的将所有 Pod重启即可
+        - name: delete old kafka pod
+          shell: kubectl -n {{namespace}} get po |grep zk- | awk '{print $1}' | xargs kubectl delete po  
+
+        when: '"zookeeper" in reset_passwd_roles'
+
+      - block:
+        # kafka的将所有kafka Pod重启即可, zookeeper的密码变了也需要重启kafka，因此 kafka在zookeeper之后
+        - name: delete old kafka pod
+          shell: kubectl -n {{namespace}} get po |grep kafka- | awk '{print $1}' | xargs kubectl delete po  
+
+        when: '"kafka" in reset_passwd_roles or "zookeeper" in reset_passwd_roles'
+      
+      - name: restart mysql to reset password
+        shell: kubectl -n {{namespace}} rollout restart statefulset mysql
+        when: '"mysql" in reset_passwd_roles'
+      
+      - block:
+        - name: reset mongo passwd
+          include_role:
+            name: mongo
+            tasks_from: reset_mongo_passwd.yml
+          vars:
+            mongo_passwd: "{{ new_mongo_passwd }}"
+
+        when: '"mongo" in reset_passwd_roles'
+      
+      - block:
+        - name: reset mongo passwd
+          include_role:
+            name: mongo
+            tasks_from: reset_mongo_passwd.yml
+          vars:
+            mongo_passwd: "{{ new_mongo_passwd }}"
+
+        when: '"mongo" in reset_passwd_roles'
+      
+      - block:
+        - name: reset mongo passwd
+          include_role:
+            name: mongo-ms-srv
+            tasks_from: reset_mongo_passwd.yml
+          vars:
+            mongo_passwd: "{{ new_mongo_passwd }}"
+
+        when: '"mongo-ms-srv" in reset_passwd_roles'
+      
+      # 不太好区分哪些服务具体依赖哪些基础服务，Java直接全部重建吧
+      - name: restart java pod
+        shell: kubectl -n {{namespace}} get po | grep -E 'titan-(connect|detect|gateway|job-srv|upload-srv|user-srv|wisteria|scan-srv|clusterlink|event-srv|ms-srv)' | awk '{print $1}' | xargs kubectl delete po
+        when: ' (["mysql","mongo","mongo-ms-srv","kafka","zookeeper","rabbitmq","redis_java","redis_erlang"] | intersect(reset_passwd_roles) | length)  != 0 '
+      
+      - name: restart titan-backup
+        shell: kubectl -n {{namespace}} rollout restart deployment titan-backup
+        when: ' (["mysql","mongo"] | intersect(reset_passwd_roles) | length)  != 0 '
+
+      - name: restart patrol
+        shell: kubectl -n {{namespace}} rollout restart deployment titan-patrol
+        when: ' (["mysql","kafka","redis_java","redis_php","redis_erlang"] | intersect(reset_passwd_roles) | length)  != 0 '
+
+      # 当重置 mysql rabbitmq redis_php redis_erlang 密码时，重启php
+      - name: restart php
+        shell: kubectl -n {{namespace}} rollout restart daemonset titan-web
+        when: ' (["mysql","rabbitmq","redis_php","redis_erlang"] | intersect(reset_passwd_roles) | length)  != 0 '

@@ -1,0 +1,92 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: redisjava
+  namespace: "{{ namespace }}"
+spec:
+  serviceName: redisjava-hs
+  podManagementPolicy: Parallel
+  replicas: 1
+  selector:
+    matchLabels:
+      app: redisjava
+  template:
+    metadata:
+      labels:
+        app: redisjava
+    spec:
+      nodeSelector:
+        "{{redisjava_nodelabel}}": "true"
+      serviceAccountName: "{{service_account}}"
+      containers:
+        - name: k8s-redis
+          imagePullPolicy: "{{ redis_pullPolicy }}"
+          image: "{{ redisjava_image }}"
+          ports:
+            - containerPort: 6379
+              name: client
+            - containerPort: 16379
+              name: server
+          command: ["redis-server", "/tmp/redis.conf"]
+          resources:
+            limits:
+              memory: {{redisjava_limit_memory}}
+            requests:
+              cpu: "{{cpu_req}}"
+              memory: {{redisjava_req_memory}}
+          readinessProbe:
+            exec:
+              command:
+              - sh
+              - -c
+              - "redis-cli -h 127.0.0.1 ping"
+            initialDelaySeconds: 10
+            timeoutSeconds: 5
+          livenessProbe:
+            exec:
+              command:
+              - sh
+              - -c
+              - "redis-cli -h 127.0.0.1 ping"
+            initialDelaySeconds: 10
+            periodSeconds: 3
+          volumeMounts:
+            - name: datadir
+              mountPath: /data/redis
+            - mountPath: /tmp
+              name: tmp
+          securityContext:
+            readOnlyRootFilesystem: true
+            allowPrivilegeEscalation: false
+      initContainers:
+        - name: titan-init
+          image: "{{ init_image }}"
+          imagePullPolicy: IfNotPresent
+          command: ["sh", "-c", "dockerize -secretdir /var/secrets/ -template /etc/redis/redis.conf:/tmp/redis.conf "]
+          volumeMounts:
+            - name: redisjava-configmap
+              subPath: redis.conf
+              mountPath: /etc/redis/redis.conf
+            - name: var-secrets
+              mountPath: /var/secrets/
+            - name: tmp
+              mountPath: /tmp
+      volumes:
+        - name: var-secrets
+          secret:
+            secretName: titan-all-secrets
+        - name: redisjava-configmap
+          configMap:
+            defaultMode: 0755
+            name: redisjava-configmap
+            items:
+            - key: redis.conf
+              path: redis.conf
+        - dataDir:
+            sizeLimit: "2Gi"
+          name: datadir
+        - emptyDir: {}
+          name: tmp
+      securityContext:
+        runAsUser: {{redis_uid}}
+        fsGroup: {{redis_gid}}

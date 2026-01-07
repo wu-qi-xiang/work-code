@@ -1,0 +1,33 @@
+---
+- name: Template rbac file
+  ansible.builtin.template:
+    src: templates/localpv_provisioner_rbac_tpl.yml
+    dest: /tmp/localpv_provisioner_rbac.yml
+
+- name: create localpv_provisioner rbac 
+  shell: "kubectl -n {{ namespace }} apply -f /tmp/localpv_provisioner_rbac.yml"
+
+- name: create localpv provisioner configmap
+  kubernetes.core.k8s:
+    definition: "{{ lookup('template', 'localpv_configmap.yml') | from_yaml }}"
+
+- name: create localpv storage class 
+  kubernetes.core.k8s:
+    definition: "{{ lookup('template', 'localpv_storage_class.yml') | from_yaml }}"
+
+- name: create localpv provisioner deployment
+  kubernetes.core.k8s:
+    definition: "{{ lookup('template', 'localpv_provisioner_deployment.yml') | from_yaml | titan_combine(common_patch) }}"
+    apply: yes
+
+
+# 等待 local-path-provisioner ready
+- name: get local-path-provisioner deployment 
+  kubernetes.core.k8s_info:
+    kind: Deployment
+    name: "local-path-provisioner"
+    namespace: "{{ namespace }}"
+    wait: yes
+    wait_sleep: 10
+    wait_timeout: 150
+  register: localpv_provisioner_setobj

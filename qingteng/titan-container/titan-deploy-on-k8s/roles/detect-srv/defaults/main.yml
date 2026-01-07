@@ -1,0 +1,10 @@
+---
+# defaults file for detect-srv
+detectsrv_pullPolicy: IfNotPresent
+detectsrv_uid: 2020
+detectsrv_gid: 2020
+detectsrv_port: 6140
+
+detectsrv_limit_memory: 3572Mi
+detectsrv_limit_cpu: 8
+detectsrv_req_memory: 3Gi

@@ -1,0 +1,24 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: mongo-configmap
+  namespace: {{ namespace }}
+data:
+  keyfile: |+
+    {{random_key|indent}}
+  mongod.conf: |+
+    storage:
+      dbPath: /data/db
+      journal:
+          enabled: true
+      wiredTiger:
+          engineConfig:
+                cacheSizeGB: {{mongod_cacheSizeGB}}
+      # network interfaces
+    net:
+      port: 27017
+      bindIp: 0.0.0.0
+      unixDomainSocket:
+        enabled: false
+    security:
+      authorization: enabled

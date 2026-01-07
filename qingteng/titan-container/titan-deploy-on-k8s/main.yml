@@ -1,0 +1,93 @@
+---
+  - hosts: localhost
+    name: deploy titan-standalone
+    gather_facts: false
+    vars_files: 
+      - var_file.yml
+    module_defaults:
+      kubernetes.core.k8s_info:
+        validate_certs: no
+        namespace: "{{ namespace }}"
+      kubernetes.core.k8s:
+        validate_certs: no
+        namespace: "{{ namespace }}"
+      kubernetes.core.k8s_exec:
+        validate_certs: no
+        namespace: "{{ namespace }}"
+
+    pre_tasks:
+      - name: include pre_titan_env
+        include_tasks: pre_titan_env.yml
+
+      - name: include common pre_tasks
+        include_tasks: pre_tasks.yml
+
+    tasks:
+      #- debug: msg="install_roles======={{install_roles}}"
+      - name: install {{item}}
+        include_role:
+          name: "{{item}}"
+        loop: "{{install_roles}}"
+
+      # 当传入了 install_role 时 到这里结束
+      - meta: end_play
+        when: install_role is defined
+
+      # wait and update db
+      - import_role:
+          name: php
+          tasks_from: wait_web_and_get.yml
+
+      - import_role:
+          name: php
+          tasks_from: updatedb.yml
+
+      # k8s容器化安装允许通过6110来进行下面的步骤，6110 patrol在更新规则时，会判断如果还没加载过agent，将会执行一次加载agent的操作
+      # 当存在 license 文件时，更新 license
+      - name: get license file
+        shell: ls -t *-license-*.zip | head -1
+        register: license_file_result
+
+      - set_fact:
+          license_file: "{{license_file_result['stdout']}}"
+      
+      - name: get rules file
+        shell: ls -t *-rule-*.zip | head -1
+        register: rules_file_result
+
+      - set_fact:
+          rules_file: "{{rules_file_result['stdout']}}"
+
+      # update license
+      - name: execute license_update tasks
+        include_role:
+          name: common
+          tasks_from: license_update.yml
+        when: license_file != ""
+
+      # 当存在license文件和规则文件时，进行 sync_rules ， 仅存在规则文件，不执行，sync_rules 依赖于license授权成功
+      - include_role:
+          name: php
+          tasks_from: sync_rules.yml
+        when: license_file != "" and rules_file != ""
+
+      # 当存在license文件时, 进行 update_agent_config 操作， 依赖于license授权成功
+      - name: execute update_agent_config tasks
+        include_role:
+          name: php
+          tasks_from: update_agent_config.yml
+        when: license_file != ""
+
+    post_tasks:
+
+      # 预拉取java镜像到所有java节点，避免自带仓库的单点故障
+      - name: prepull java images
+        import_role:
+          name: common
+          tasks_from: prepull_images.yml
+
+      # 安装完成后就对配置做一次备份
+      - name: backup old titan-config
+        include_role:
+          name: common
+          tasks_from: backup_config.yml

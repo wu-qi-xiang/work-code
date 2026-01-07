@@ -1,0 +1,14 @@
+---
+# defaults file for wisteria
+uploadsrv_pullPolicy: IfNotPresent
+uploadsrv_uid: 2020
+uploadsrv_gid: 2020
+uploadsrv_port: 6130
+
+uploadsrv_limit_memory: 6Gi
+uploadsrv_limit_cpu: 8
+uploadsrv_req_memory: 1Gi
+arm64: false
+
+# 小红伞目录
+ave_dfs_dir: /data/titan-dfs/upload-srv/titan_ave

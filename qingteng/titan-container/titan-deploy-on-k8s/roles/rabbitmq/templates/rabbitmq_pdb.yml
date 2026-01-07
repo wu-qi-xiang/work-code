@@ -1,0 +1,10 @@
+apiVersion: policy/v1beta1
+kind: PodDisruptionBudget
+metadata:
+  name: rabbitmq-pdb
+  namespace: {{ namespace }}
+spec:
+  selector:
+    matchLabels:
+      app: rabbitmq
+  minAvailable: 50%

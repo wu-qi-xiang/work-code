@@ -1,0 +1,30 @@
+---
+# tasks file for wisteria
+- set_fact:
+    work_nodes: "{{ label_nodes[wisteria_nodelabel] }}"
+
+- name: Print result
+  debug:
+    msg: "{{ work_nodes }}"
+
+- fail:
+    msg: "have no available node for wisteria"
+  when: work_nodes|length <= 0
+
+- name: Remove wisteria Deployment
+  kubernetes.core.k8s:
+    state: absent
+    api_version: apps/v1
+    kind: Deployment
+    namespace: "{{ namespace }}"
+    name: "titan-wisteria"
+
+- name: create wisteria Deployment
+  kubernetes.core.k8s:
+    definition: "{{ lookup('template', 'wisteria_deployment.yml' ) | from_yaml | titan_combine(common_patch,titanlogs_patch)  }}"
+    apply: yes
+
+- name: create wisteria Service
+  kubernetes.core.k8s:
+    definition: "{{ lookup('template', 'wisteria_service.yml' ) | from_yaml }}"
+    apply: yes

@@ -1,0 +1,10 @@
+apiVersion: v1
+data:
+  created_at: "20220308120627"
+  install_done: "20220308125201"
+  install_retry: "3"
+  register_done: "true"
+kind: ConfigMap
+metadata:
+  name: titan-system-status
+  namespace: qtsa

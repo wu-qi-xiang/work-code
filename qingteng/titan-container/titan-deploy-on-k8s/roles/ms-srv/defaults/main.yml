@@ -1,0 +1,9 @@
+---
+# defaults file for ms-srv
+mssrv_pullPolicy: IfNotPresent
+mssrv_uid: 2020
+mssrv_gid: 2020
+mssrv_port: 6400
+
+mssrv_limit_memory: 10Gi
+mssrv_limit_cpu: 8

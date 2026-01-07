@@ -1,0 +1,34 @@
+---
+# defaults file for mongo
+#
+mongocs_replicas: 3
+mongos_replicas: 3
+#每个分片包含多少副本，默认3个，为1主2从或者1主1从1仲裁.  这个值目前不支持修改
+mongoshard_replicas: 3
+# shard_num 分片数量，例如 shard0,shard1,shard2，将在安装时根据base节点数量来判断
+#每个分片的3个节点是否包含一个仲裁节点
+use_arbiter: true
+mongo_uid: 999
+mongo_gid: 999
+
+mongocs_storage_capacity: 5Gi
+mongoshard_storage_capacity: 500Gi
+mongod_storage_capacity: 100Gi
+
+mongocs_hostpath: /data/titan-container/mongocs
+# 分片下成员会在此目录下创建对应的子目录
+mongoshard_hostpath: /data/titan-container/mongoshard/shard{0}/{1}
+mongod_hostpath: /data/titan-container/mongod/
+
+mongo_pullPolicy: IfNotPresent
+
+shard_cacheSizeGB: 6
+mongod_cacheSizeGB: 1
+cs_cacheSizeGB: 2
+mongocs_limit_memory: 2148Mi
+mongos_limit_memory: 2048Mi
+mongoshard_limit_cpu: 8
+mongoshard_limit_memory: 16Gi
+mongod_limit_cpu: 8
+mongod_limit_memory: 16Gi
+arm64: false

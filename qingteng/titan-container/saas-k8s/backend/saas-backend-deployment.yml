@@ -1,0 +1,94 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: "saas-backend"
+  namespace: "qtsa"
+  labels:
+    app: saas-backend
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: saas-backend
+  strategy:
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 1
+    type: RollingUpdate
+  progressDeadlineSeconds: 60
+  minReadySeconds: 10
+  revisionHistoryLimit: 3
+  template:
+    metadata:
+      name: saas-backend
+      labels:
+        app: saas-backend
+    spec:
+      affinity:
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            - labelSelector:
+                matchExpressions:
+                  - key: "app"
+                    operator: In
+                    values: 
+                    - saas-backend
+              topologyKey: "kubernetes.io/hostname"
+      nodeSelector:
+        "saas-backend": "true"
+      hostNetwork: true
+      dnsPolicy: ClusterFirstWithHostNet
+      serviceAccountName: "titan-sa"
+      containers:
+        - image: "registry.qingteng.cn/titan-container/saas-backend:3.4.0-20201010154206"
+          name: saas-backend
+          resources:
+            limits:
+              memory: "2048Mi"
+            requests:
+              cpu: "0.2"
+              memory: "1024Mi"
+          readinessProbe:
+            tcpSocket:
+              port: 81
+            initialDelaySeconds: 10
+            periodSeconds: 5
+            timeoutSeconds: 3
+            failureThreshold: 30
+          livenessProbe:
+            tcpSocket:
+              port: 81
+            periodSeconds: 20
+            timeoutSeconds: 3
+            failureThreshold: 3
+          ports:
+            - containerPort: 81
+              protocol: TCP
+          command: ["sh","-c","/docker-run.sh start"]
+          volumeMounts:
+            - mountPath: /data/app/conf
+              subPath: conf-nginx
+              name: php-data-volume
+            - mountPath: /data/titan-logs/php
+              subPath: php
+              name: php-logs-volume
+            - mountPath: /data/titan-logs/php-fpm
+              subPath: php-fpm
+              name: php-logs-volume
+            - mountPath: /data/app/log/nginx
+              subPath: nginx
+              name: php-logs-volume
+            - mountPath: /var/log/nginx
+              subPath: var-nginx
+              name: php-logs-volume
+      volumes:
+        # php日志按照{{ hostname }}隔离
+        - name: php-logs-volume
+          hostPath:
+            path: "/data/titan-dfs/titan-logs/saas-backend-node6"
+            type: DirectoryOrCreate
+        # php-data-volume是公共的
+        - name: php-data-volume
+          hostPath:
+            path: "/data/titan-dfs/titan-data/saas-backend"
+            type: DirectoryOrCreate

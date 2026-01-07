@@ -1,0 +1,15 @@
+# 创建kafka headless服务
+apiVersion: v1
+kind: Service
+metadata:
+  name: kafka-hs
+  namespace: {{ namespace }}
+  labels:
+    app: kafka-hs
+spec:
+  ports:
+  - port: 9092
+    name: server
+  clusterIP: None
+  selector:
+    app: kafka

@@ -1,0 +1,42 @@
+---
+- name: update patrol image
+  shell: "kubectl -n {{ namespace }} set image deployment titan-patrol titan-patrol={{patrol_image}}"
+# - name: get patrol deployment 
+#   kubernetes.core.k8s_info:
+#     kind: Deployment
+#     name: "titan-patrol"
+#   register: patrol_obj
+
+# - set_fact:
+#     patrol_info: "{{ patrol_obj['resources'] | get_deploy_info }}"
+
+# # 获取老的nodelabel，避免升级后调度到了其他节点上
+# - set_fact:
+#     patrol_nodelabel: "{{ patrol_info['nodelabel'] }}"
+#     patrol_replicas: "{{ patrol_info['replicas'] }}"
+
+# - name: Remove patrol Deployment
+#   kubernetes.core.k8s:
+#     state: absent
+#     api_version: apps/v1
+#     kind: Deployment
+#     namespace: "{{ namespace }}"
+#     name: "titan-patrol"
+
+# - name: create patrol ConfigMap
+#   kubernetes.core.k8s:
+#     definition: "{{ lookup('template', 'patrol_configmap.yml', variable_start_string='[%', variable_end_string='%]' ) | from_yaml }}"
+#     apply: yes
+
+# - name: Template rbac file
+#   ansible.builtin.template:
+#     src: templates/patrol_rbac_tpl.yml
+#     dest: /tmp/patrol_rbac.yml
+
+# - name: create titan-patrol account
+#   shell: kubectl apply -f /tmp/patrol_rbac.yml
+
+# - name: create patrol Deployment
+#   kubernetes.core.k8s:
+#     definition: "{{ lookup('template', 'patrol_deployment.yml' ) | from_yaml | titan_combine(common_patch,titanlogs_patch) }}"
+#     apply: yes

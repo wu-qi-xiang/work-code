@@ -1,0 +1,5 @@
+---
+- set_fact:
+    localpv_replicas: 1
+# 与集群版除了数量为1外并无区别
+- include_tasks: main.yml

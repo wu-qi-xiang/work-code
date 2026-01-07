@@ -1,0 +1,35 @@
+- name: Remove rediserl StatefulSet
+  kubernetes.core.k8s:
+    state: absent
+    api_version: apps/v1
+    kind: StatefulSet
+    namespace: "{{ namespace }}"
+    name: "rediserl"
+
+- name: Remove rediserl Service
+  kubernetes.core.k8s:
+    state: absent
+    api_version: v1
+    kind: Service
+    namespace: "{{ namespace }}"
+    name: "rediserl-hs"
+
+# - name: Remove rediserl Service
+#   kubernetes.core.k8s:
+#     state: absent
+#     api_version: v1
+#     kind: Service
+#     namespace: "{{ namespace }}"
+#     name: "rediserl"
+
+- name: Remove rediserl pvc
+  kubernetes.core.k8s:
+    state: absent
+    api_version: v1
+    kind: PersistentVolumeClaim
+    namespace: "{{ namespace }}"
+    name: "datadir-rediserl-{{index}}"
+  loop: "{{ range(redis_erl_master_num + redis_erl_master_num * redis_erl_slave_num) | list }}"
+  loop_control:
+    loop_var: index
+

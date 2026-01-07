@@ -1,0 +1,8 @@
+
+v3.0.2
+
+- Nginx configurations
+
+  File Path: /data/app/conf/nginx.servers.conf
+  WebSite: agent-sec.qingteng.cn download-sec.qingteng.cn
+  Change: location ^~ /plugins/ ----------> location ^~ /update/

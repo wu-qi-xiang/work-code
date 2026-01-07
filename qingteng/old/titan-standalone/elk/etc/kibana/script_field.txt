@@ -1,0 +1,19 @@
+job_fail_rate
+--------------
+if (!doc.containsKey('job_recv_agents')) {
+    return null;
+}
+
+float total_agents = doc['job_recv_agents'].value;
+float suc_agents = doc['job_suc_agents'].value;
+float job_fail_rate = (total_agents - suc_agents) * 10000 / total_agents;
+return job_fail_rate;
+
+job_exec_time
+--------------
+if (!doc.containsKey('start_time')) {
+    return null;
+}
+
+float seconds = doc['@timestamp'].date.secondOfDay - doc['start_time'].date.secondOfDay;
+return seconds;

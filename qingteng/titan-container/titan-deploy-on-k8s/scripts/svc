@@ -1,0 +1,5 @@
+#!/bin/bash
+
+source $(dirname $0)/utils.sh
+
+kubectl -n $NS get svc | grep ${1:-""}

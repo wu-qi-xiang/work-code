@@ -1,0 +1,32 @@
+---
+  - hosts: localhost
+    name: tail live output demo
+    gather_facts: false
+    vars_files: 
+      - var_file.yml
+
+    tasks:
+      - name: Run an async task
+        shell: 'for i in $(seq 1 10); do echo "this is $i in loop 1" >> /tmp/test.log && sleep 1;  done'
+        vars:
+          live_output: "/tmp/test.log"
+
+      - name: Run an async task
+        shell: 'for i in $(seq 1 10); do echo "this is $i in loop 2" >> /tmp/test.log && sleep 1;  done'
+        async: 10
+        poll: 0
+        register: sleeper2
+
+      - name: Check on an async task
+        async_status:
+          jid: "{{ sleeper2.ansible_job_id }}"
+        register: job_result
+        until: job_result.finished
+        retries: 10
+        delay: 5
+        vars:
+          live_output: "/tmp/test.log"
+
+      
+
+

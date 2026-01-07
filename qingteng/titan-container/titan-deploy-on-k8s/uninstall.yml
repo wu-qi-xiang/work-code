@@ -1,0 +1,40 @@
+---
+  - hosts: localhost
+    name: uninstall deploy titan-standalone
+    gather_facts: false
+    vars_files: 
+      - var_file.yml
+    module_defaults:
+      kubernetes.core.k8s_info:
+        validate_certs: no
+        namespace: "{{ namespace }}"
+      kubernetes.core.k8s:
+        validate_certs: no
+        namespace: "{{ namespace }}"
+      kubernetes.core.k8s_exec:
+        validate_certs: no
+        namespace: "{{ namespace }}"
+    
+    # 每次运行前先启动daemonset，保证可以用于在data下创建目录,修改权限,或者删除目录
+    pre_tasks:
+      - name: include pre_titan_env
+        include_tasks: pre_titan_env.yml
+      
+      # 确定需要卸载的role，例如传入 -e uninstall_role=php,gateway 
+      - fail:
+          msg: "uninstall_role parameter must exists"
+        when: uninstall_role is not defined
+
+      - set_fact:
+          input_uninstall_roles: "{{ uninstall_role.split(',') }}"
+        when: uninstall_role is defined
+      
+      - set_fact:
+          uninstall_roles: "{{ uninstall_sort_roles | intersect(input_uninstall_roles) }}"
+      
+    tasks:
+      - include_role:
+          name: "{{item}}"
+          tasks_from: uninstall.yml
+        loop: "{{uninstall_roles}}"
+

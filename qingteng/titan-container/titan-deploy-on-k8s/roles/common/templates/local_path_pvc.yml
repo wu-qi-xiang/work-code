@@ -1,0 +1,19 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: "{{pvc_name}}"
+  namespace: "{{ namespace }}"
+  annotations:
+    volume.kubernetes.io/selected-node: "{{selectedNode}}"
+  labels:
+    app: "{{app}}"
+    qtsa_path: "{{pv_path}}"
+    qtsa_perm: "{{qtsa_perm}}"
+    qtsa_delete_data: "{{qtsa_delete_data}}"
+spec:
+  accessModes:
+  - ReadWriteOnce
+  resources:
+    requests:
+      storage: "{{ pvc_storage_capacity }}"
+  storageClassName: "{{storageName}}"

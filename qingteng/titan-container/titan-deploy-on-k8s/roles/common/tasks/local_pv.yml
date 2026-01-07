@@ -1,0 +1,19 @@
+---
+- block:
+  - name: create local storage
+    kubernetes.core.k8s:
+      definition: "{{ lookup('template', 'local_storage.yml') | from_yaml }}"
+
+  - set_fact:
+      local_storage_created: true
+
+  when: local_storage_created is not defined
+
+- include_tasks: daemonset_cmd.yml
+  vars:
+    podname: "{{ alpine_pod_dict[hostname] }}"
+    cmd_in_daemon: "{{ inner_cmd }}"
+
+- name: create local pv
+  kubernetes.core.k8s:
+    definition: "{{ lookup('template', 'local_storage_pv.yml') | from_yaml }}"

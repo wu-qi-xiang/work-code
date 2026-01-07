@@ -1,0 +1,5 @@
+---
+localpv_limit_memory: 256Mi
+localpv_req_memory: 128Mi
+localpv_limit_cpu: 1
+localpv_replicas: 2

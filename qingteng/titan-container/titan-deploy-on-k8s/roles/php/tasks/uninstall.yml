@@ -1,0 +1,15 @@
+- name: Remove php DaemonSet
+  kubernetes.core.k8s:
+    state: absent
+    api_version: apps/v1
+    kind: DaemonSet
+    namespace: "{{ namespace }}"
+    name: "titan-web"
+
+- name: remove php web service
+  kubernetes.core.k8s:
+    state: absent
+    api_version: v1
+    kind: Service
+    namespace: "{{ namespace }}"
+    name: "titan-web"

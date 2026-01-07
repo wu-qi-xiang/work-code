@@ -1,0 +1,29 @@
+{
+    "mysql":{
+        "port": 3306,
+        "user": "root",
+        "password": ""
+    },
+    "mongo":{
+        "port": 27017,
+        "user": "qingteng",
+        "password": ""
+    },
+    "ms_mongo":{
+        "port": 27017,
+        "user": "qingteng",
+        "password": ""
+    },
+    "redis_erlang":{
+        "port": 6379,
+        "password": ""
+    },
+    "redis_php":{
+        "port": 6380,
+        "password": ""
+    },
+    "redis_java":{
+        "port": 6381,
+        "password": ""
+    }
+}

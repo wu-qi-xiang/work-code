@@ -1,0 +1,19 @@
+- set_fact:
+    localpv_ok: true
+  when: storageName != "qt-local-path"
+
+- block:
+  - name: get localpv provisioner deployment 
+    kubernetes.core.k8s_info:
+      kind: Deployment
+      name: "local-path-provisioner"
+      namespace: "{{ namespace }}"
+    register: localpv_setobj
+  - set_fact:
+      localpv_ok: "{{localpv_setobj | deployment_check}}"
+
+  when: storageName == "qt-local-path"
+
+- set_fact:
+    ok_base_roles: "{{ok_base_roles | union(['localpv']) }}" 
+  when: localpv_ok

@@ -1,0 +1,10 @@
+rabbitmq默认不开起ssl
+开启ssl步骤：
+1,将如下文件拷贝到响应目录
+cacert.pem                  /data/servers/rabbitmq_root/etc/rabbitmq/
+www.qingteng.cn.cert.pem    /data/servers/rabbitmq_root/etc/rabbitmq/
+www.qingteng.cn.key.pem     /data/servers/rabbitmq_root/etc/rabbitmq/
+2,合并rabbitmq_ssl.config中的配置到rabbitmq.config中
+2,重启rabbitmq服务
+3,修改java.json将rabbitmq.ssl改为true，重启所有java服务
+4,修改php配置文件application.ini文件 rabbit.enable_ssl  0表示关闭  1表示开启。修改完成后重启supervisor.

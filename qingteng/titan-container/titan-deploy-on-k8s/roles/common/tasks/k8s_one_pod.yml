@@ -1,0 +1,10 @@
+# 获取statefulset/deploy/daemonset中的一个pod
+- name: get one pod of controller 
+  kubernetes.core.k8s_info:
+    kind: Pod
+    label_selectors:
+      - "{{label_selector}}"
+  register: pods_obj
+
+- set_fact:
+    "{{ result_key }}": "{{ pods_obj['resources'] | get_one_pod }}"

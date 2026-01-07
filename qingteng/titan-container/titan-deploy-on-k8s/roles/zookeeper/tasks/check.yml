@@ -1,0 +1,12 @@
+- name: get zookeeper statefulset 
+  kubernetes.core.k8s_info:
+    kind: StatefulSet
+    name: "zk"
+    namespace: "{{ namespace }}"
+  register: zk_setobj
+- set_fact:
+    zookeeper_ok: "{{zk_setobj | statefulset_check}}"
+
+- set_fact:
+    ok_base_roles: "{{ok_base_roles | union(['zookeeper']) }}"
+  when: zookeeper_ok    

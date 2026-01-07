@@ -1,0 +1,9 @@
+- name: get mongo shard statefulset 
+  shell: kubectl -n qtsa get po | grep mongoshard | grep Running || echo "notok"
+  register: mongo_running_status
+- set_fact:
+    mongo_ok: "{{'Running' in mongo_running_status['stdout']}}"
+
+- set_fact:
+    ok_base_roles: "{{ok_base_roles | union(['mongo']) }}" 
+  when: mongo_ok    

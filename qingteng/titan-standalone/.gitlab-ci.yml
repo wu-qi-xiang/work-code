@@ -1,0 +1,122 @@
+stages:
+  - check_out
+  - build
+  - notify
+#test1111
+variables:
+  #包类型
+  buildVariant: "test"
+  #包版本
+  version: "v3.4.0.15"
+  #基准包版本
+  basic_version: "v3.4.0.11"
+  
+workflow:
+  rules:
+    - if: $CI_PIPELINE_SOURCE == 'merge_request_event'
+      changes:
+        - titan-base/*
+        - titan-base/**/*
+        - diff_scripts/build_package.sh
+        - rpms_scripts/*/repolists.txt
+        - .gitlab-ci.yml
+    - when: never    
+    # 提交信息
+    # - if: $CI_COMMIT_MESSAGE !~ /into \'$CI_COMMIT_BRANCH\'&/
+    #   when: never
+    #所有不是以v3开头的分支不运行流水线
+    # - if: $CI_COMMIT_REF_NAME !~ /^v3/ or $CI_COMMIT_REF_NAME =~ /^v3/
+    #   when: never
+    # - if: $CI_COMMIT_REF_NAME =~ /^v3/
+    #   changes:
+    #     - titan-base/*
+    #     - titan-base/**/*
+    #     - diff_scripts/build_package.sh
+    #     - rpms_scripts/repolists.txt
+    #     - .gitlab-ci.yml
+    #不运行merge request创建的分支
+    # - if: $CI_PIPELINE_SOURCE == 'merge_request_event'
+    # - if: $CI_COMMIT_REF_NAME !~ /^"$version"/
+    #   when: never
+    #不是以test为结尾的分支打rlease包
+    
+    # - if: "$CI_MERGE_REQUEST_IID"
+    # - if: "$CI_COMMIT_TAG"
+    # - if: "$CI_COMMIT_BRANCH != $CI_DEFAULT_BRANCH"
+      
+
+default:
+  tags:
+    - k8s-runner
+  # 自动取消冗余job
+  interruptible: true
+# 失败重试次数据
+  retry: 2
+
+
+.BuildPackage: &BuildPackage
+  - cd ${CI_PROJECT_DIR} && bash -x diff_scripts/build_package.sh
+
+.Send_mail: &Sendmail
+  - bash ${CI_PROJECT_DIR}/msg/scripts/lark-cli.sh send-msg --webhook=${TITAN_THUNERFIRE_WEBHOOK} --msg=${CI_PROJECT_DIR}/msg/template/success_msg.json
+
+
+check_out_varibales:
+  stage: check_out
+  image: registry.qingteng.cn/k8s/x86/gitlab/centos7:7.9-20220831
+  before_script:
+    - BUILD_TIME=$(date -d "$CI_PIPELINE_CREATED_AT" +%Y%m%d%H%M%S)
+  script:
+    - echo "BUILD_TIME=$BUILD_TIME" >> build.env
+    - |
+      if  [[ "$buildVariant" == "release" ]];then 
+        echo "name=titan-base-release" >> build.env
+        echo "basic_version=$basic_version" >> build.env
+      elif [[ "$buildVariant" == "test" ]];then
+        echo "name=titan-base-test" >> build.env
+        echo "basic_version=" >> build.env
+      fi
+    - cat build.env
+  artifacts:
+    expire_in: '1 day'
+    reports:
+      dotenv: build.env
+
+build_el7:
+  stage: build
+  image: registry.qingteng.cn/k8s/x86/gitlab/centos7:7.9-20220920
+  variables:
+    os: "el7"
+  script:
+    - echo $BUILD_TIME
+    - env
+    - *BuildPackage
+
+
+build_el6:
+  stage: build
+  image: registry.qingteng.cn/k8s/x86/gitlab/centos6:6.10-20220920
+  variables:
+    os: "el6"
+  script:
+    - echo $BUILD_TIME
+    - env
+    - *BuildPackage
+
+# 构建成功时的通知消息
+notifySuccessFeiShu:
+  stage: notify
+  image: registry.qingteng.cn/k8s/x86/gitlab/centos7:7.9-20220920
+  script:
+    - bash ${CI_PROJECT_DIR}/msg/scripts/lark-cli.sh send-msg --webhook=${TITAN_THUNERFIRE_WEBHOOK} --msg=${CI_PROJECT_DIR}/msg/template/success_msg.json  
+  when: on_success
+
+# 构建失败时的通知消息
+notifyFailFeiShu:
+  stage: notify
+  image: registry.qingteng.cn/k8s/x86/gitlab/centos7:7.9-20220920
+  script:
+    - bash ${CI_PROJECT_DIR}/msg/scripts/lark-cli.sh send-msg --webhook=${TITAN_THUNERFIRE_WEBHOOK} --msg=${CI_PROJECT_DIR}/msg/template/unsuccess_msg.json  
+  when: on_failure
+
+

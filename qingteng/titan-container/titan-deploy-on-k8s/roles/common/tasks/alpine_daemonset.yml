@@ -1,0 +1,36 @@
+---
+# tasks file for mkdir
+# 启动用于设置/data下localpv的daemonset，并返回daemonset信息
+- name: create daemonset on nodes for execute command
+  kubernetes.core.k8s:
+    state: present
+    definition: "{{ lookup('template', 'alpine_daemonset.yml') | from_yaml | titan_combine(common_patch) }}"
+
+- name: get alpine-cmd-daemon   
+  kubernetes.core.k8s_info:
+    kind: DaemonSet
+    name: alpine-cmd-daemon
+    namespace: "{{ namespace }}"
+    wait: yes
+    wait_sleep: 10
+    wait_timeout: 150
+  register: daemonsetObj
+
+- name: get alpine-cmd-daemon pods
+  kubernetes.core.k8s_info:
+    kind: Pod
+    label_selectors:
+      - "app = alpine-cmd-daemon"
+    namespace: "{{ namespace }}"
+    wait: yes
+    wait_sleep: 10
+    wait_timeout: 150
+  register: temp_podobj
+
+- name: Print alpine-cmd-daemon hostname and podname
+  debug:
+    msg: "alpine_pods: {{ temp_podobj | json_query('resources[*].{name:metadata.name,hostname:spec.nodeName}') }} "
+
+- name: set alpine-cmd-daemon_pods
+  set_fact:
+    "alpine_pod_dict": "{{ temp_podobj | json_query('resources[*].{name:metadata.name,hostname:spec.nodeName}') | items2dict(key_name='hostname', value_name='name') }}"

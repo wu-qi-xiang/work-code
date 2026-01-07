@@ -1,0 +1,22 @@
+#!/bin/bash
+set -o pipefail
+
+source $(dirname $0)/utils.sh
+
+cd /data/; 
+
+# 检查ansible-playbook是否仍在运行中
+(ps -ef|grep ansible-playbook | grep -v grep) && echo "ansible-playbook process still running" && exit 1
+
+# 打标签
+ansible-playbook label.yml -v
+
+mode_result=`kubectl -n $NS get cm titan-env -o jsonpath='{.data.titan-env\.yml}' | grep ^mini_mode | grep true || echo 'ha_mode'`
+
+if [[ "$mode_result" =~ "mini_mode" ]]; then
+    # 安装售前迷你版本
+    ansible-playbook mini.yml -v $@
+else
+    # 安装正常生产版本
+    ansible-playbook main.yml -v $@
+fi

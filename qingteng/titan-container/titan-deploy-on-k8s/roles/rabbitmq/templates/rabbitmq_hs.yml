@@ -1,0 +1,18 @@
+# 创建rabbitmq headless服务
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ rabbitmq_svc_name }}
+  namespace: {{ namespace }}
+  labels:
+    app: rabbitmq
+spec:
+  ports:
+    - name: http
+      port: 15672
+    - name: amqp
+      port: 5672
+  clusterIP: None
+  publishNotReadyAddresses: true
+  selector:
+    app: rabbitmq

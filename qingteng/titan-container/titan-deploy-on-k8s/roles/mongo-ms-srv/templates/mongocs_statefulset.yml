@@ -1,0 +1,106 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: msmongocs
+  namespace: "{{ namespace }}"
+spec:
+  serviceName: msmongocs-hs
+  podManagementPolicy: Parallel
+  replicas: {{ mongocs_replicas }}
+  selector:
+    matchLabels:
+      app: msmongocs
+  template:
+    metadata:
+      labels:
+        app: msmongocs
+    spec:
+      terminationGracePeriodSeconds: 10
+      affinity:
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            - topologyKey: "kubernetes.io/hostname"
+              labelSelector:
+                matchLabels:
+                  app: msmongocs
+      nodeSelector:
+        "{{msmongocs_nodelabel}}": "true"
+      serviceAccountName: "{{service_account}}"
+      containers:
+        - name: k8s-mongocs
+          imagePullPolicy: "{{ mongo_pullPolicy }}"
+          image: "{{ mongo_image }}"
+          resources:
+            limits:
+              memory: "{{ mongocs_limit_memory }}"
+            requests:
+              cpu: "{{cpu_req}}"
+              memory: "1024Mi"
+          ports:
+            - name: msmongocs
+              protocol: TCP
+              containerPort: 27018
+          args: ["--config", "/etc/mongo/configsvr.conf", "--keyFile", "/etc/mongo/keyfile"]
+          readinessProbe:
+            tcpSocket:
+              port: 27018
+            initialDelaySeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 5
+          livenessProbe:
+            tcpSocket:
+              port: 27018
+            timeoutSeconds: 5
+          volumeMounts:
+            - name: msmongocsdir
+              mountPath: /data/db
+            - name: config
+              mountPath: /etc/mongo
+            - name: tmp
+              mountPath: /tmp
+          securityContext:
+            runAsUser: {{mongo_uid}}
+            fsGroup: {{mongo_gid}}
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+      initContainers:
+        - name: msconfigmap-copy
+          image: "{{ alpine_image }}"
+          imagePullPolicy: IfNotPresent
+          command:
+          - sh
+          - -c
+          - cp -f /etc/mongo-temp/* /etc/mongo/ && chmod 600 /etc/mongo/keyfile
+          volumeMounts:
+            - name: msmongo-config
+              mountPath: /etc/mongo-temp/
+            - name: config
+              mountPath: /etc/mongo
+      securityContext:
+        runAsUser: {{mongo_uid}}
+        fsGroup: {{mongo_gid}}
+      volumes:
+        - name: msmongo-config
+          configMap:
+            name: msmongo-configmap
+            items:
+            - key: keyfile
+              path: keyfile
+            - key: configsvr.conf
+              path: configsvr.conf
+        - name: config
+          emptyDir: {}
+        - emptyDir: {}
+          name: tmp
+  volumeClaimTemplates:
+    - metadata:
+        name: msmongocsdir
+        labels:
+          qtsa_perm: "{{mongo_uid}}-{{mongo_gid}}"
+          qtsa_path: "mongocs-ms"
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        storageClassName: "{{storageName}}"
+        resources:
+          requests:
+            storage: "{{ mongocs_storage_capacity }}"

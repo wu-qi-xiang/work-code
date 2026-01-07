@@ -1,0 +1,50 @@
+# 重置某个分片副本集的本地密码， shardstateful 由外面传入，为 statefulset的名字，例如 mongoshard0
+# 原理就是启动参数加上 --transitionToAuth
+- set_fact:
+    transitionToAuth_patch: |
+      {"spec": {"template": {"spec": {"containers": [{"name": "k8s-mongoshard","args":["--config", "/etc/mongo/shard.conf", "--keyFile", "/etc/mongo/keyfile","--replSet","shard{{shardstateful|replace("mongoshard","")}}","--transitionToAuth"] }]}}}}
+
+- name: execute transitionToAuth_patch
+  shell: kubectl -n {{namespace}} patch statefulset {{shardstateful}} --patch '{{transitionToAuth_patch|to_json}}'
+
+- name: Pause for 3 seconds to wait statefulset begin restart
+  pause:
+    seconds: 3
+
+# 等待所有已Ready
+- name: get mongoshard statefulset 
+  kubernetes.core.k8s_info:
+    kind: StatefulSet
+    name: "{{shardstateful}}"
+    namespace: "{{ namespace }}"
+    wait: yes
+    wait_sleep: 10
+    wait_timeout: 600
+  register: shard_setobj
+
+# 获取 primary节点
+- name: get shard rs nodes and wait primary ok
+  kubernetes.core.k8s_exec:
+    validate_certs: no
+    namespace: "{{ namespace }}"
+    pod: "{{shardstateful}}-0"
+    command: mongo --quiet --port 27019 --eval 'db.isMaster().primary'
+  register: mongoshard_pri
+  until: ( mongoshard_pri['stdout']|trim != '' )
+  retries: 10
+  delay: 5
+
+- name: set mongo shard rs username and password
+  kubernetes.core.k8s_exec:
+    validate_certs: no
+    namespace: "{{ namespace }}"
+    pod: "{{ mongoshard_pri['stdout'].strip().split('.')[0] }}"
+    command: mongo --port 27019 admin --eval 'db.system.users.remove({user:"qingteng"}), db.createUser({user:"qingteng", pwd:"{{mongo_passwd}}", roles:["root"]})'
+
+# 去掉 --transitionToAuth
+- set_fact:
+    toAuth_patch: |
+      {"spec": {"template": {"spec": {"containers": [{"name": "k8s-mongoshard","args":["--config", "/etc/mongo/shard.conf", "--keyFile", "/etc/mongo/keyfile","--replSet","shard{{shardstateful|replace("mongoshard","")}}"] }]}}}}
+
+- name: execute toAuth_patch
+  shell: kubectl -n {{namespace}} patch statefulset {{shardstateful}} --patch '{{toAuth_patch|to_json}}'

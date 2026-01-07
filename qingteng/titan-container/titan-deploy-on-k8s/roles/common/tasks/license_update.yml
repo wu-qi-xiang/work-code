@@ -1,0 +1,87 @@
+---
+# get license file and unzip and create configmap
+- block:
+  - name: get license file
+    shell: sh -c "ls -t *-license-*.zip | head -1"
+    register: license_file_result
+
+  - debug:
+      msg: "{{license_file_result['stdout_lines'][0]}}"
+
+  - set_fact:
+      license_file: "{{license_file_result['stdout_lines'][0]}}"
+
+  - name: unzip license file to license_dir
+    shell: sh -c "rm -rf license && mkdir -p license && unzip {{license_file}} -d license"
+
+  - name: delete license config map
+    shell: kubectl delete configmap titan-license -n {{namespace}} || echo notexist
+    ignore_errors: yes
+
+  - name: create license config map
+    shell: kubectl create configmap titan-license --from-file=/data/license -n {{namespace}}
+
+- name: get license config map
+  kubernetes.core.k8s_info:
+    kind: ConfigMap
+    name: titan-license
+    namespace: "{{ namespace }}"
+  register: licenseinfo
+
+- set_fact: 
+    license_key: "{{  licenseinfo['resources'][0]['data']['license.key'] | to_json(ensure_ascii=False) }}"
+
+- debug: 
+    msg: "{{ license_key }}"
+
+- name: update license.key to zk node
+  kubernetes.core.k8s_exec:
+    validate_certs: no
+    namespace: "{{ namespace }}"
+    pod: "zk-0"
+    command: sh -c "zkCli.sh -server 127.0.0.1:2181 create /license null;zkCli.sh -server 127.0.0.1:2181 create /license/license.key null; zkCli.sh -server 127.0.0.1:2181 set /license/license.key '{{license_key}}' "
+
+- name: restart Pod of connect-agent
+  shell: kubectl -n {{namespace}} rollout restart deployment titan-connect-agent && sleep 5
+
+# 先等待 connect-agent OK
+- name: get connectagent Deployment to wait connect-agent OK
+  kubernetes.core.k8s_info:
+    kind: Deployment
+    name: "titan-connect-agent"
+    namespace: "{{ namespace }}"
+    wait: yes
+    wait_sleep: 10
+    wait_timeout: 300
+  register: connectagent_obj
+
+# connect-agent等待ok后，php这里的等待应该很快就ok了
+- name: wait to ensure php daemonset OK 
+  kubernetes.core.k8s_info:
+    kind: DaemonSet
+    name: "titan-web"
+    namespace: "{{ namespace }}"
+    wait: yes
+    wait_sleep: 10
+    wait_timeout: 150
+  register: php_setobj
+
+- include_role:
+    name: common
+    tasks_from: k8s_one_pod.yml
+  vars:
+    label_selector: "app=titan-web"
+    result_key: "php_pod"
+
+- name: rm old license file in php
+  shell: kubectl -n {{namespace}} exec -i {{php_pod}} -c titan-web -- rm -rf /data/app/www/titan-web/license/*
+
+- name: cp license file to titan-web
+  shell: kubectl -n {{namespace}} -c titan-web cp license/ {{php_pod}}:/data/app/www/titan-web/ 
+
+- name: update license in php
+  kubernetes.core.k8s_exec:
+    namespace: "{{ namespace }}"
+    pod: "{{ php_pod }}"
+    container: "titan-web"
+    command: sh -c "/usr/local/php/bin/php /data/app/www/titan-web/update/cli/license.php /data/app/www/titan-web/license"

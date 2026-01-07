@@ -1,0 +1,250 @@
+{
+    "base": {
+        "app_dir": "/data/app",
+        "log_dir": "/data/titan-logs/java",
+        "frontendUrl": "",
+        "enable_redis_script_cache": true,
+        "pbeconfig": "6cB3xF8JE5Gy3WnAVBvtM2eUWPdcxUTC"
+    },
+    "zookeeper": {
+        "cluster": true,
+        "clusterNodes": "10.10.2.109:2181,10.10.4.175:2181,10.10.138.252:2181",
+        "ip": "10.10.218.57",
+        "port": 2181
+    },
+    "kafka": {
+        "cluster": true,
+        "clusterNodes": "10.10.2.109:9092,10.10.4.175:9092,10.10.138.252:9092",
+        "ip": "10.10.214.21",
+        "port": 9092,
+        "auth_enable": true,
+        "password": "ENC(skVmAcOgDzZCLR2deSdk5LG0d1Yp8AIELTuAaTcFXL4=)",
+        "properties": {
+            "sasl.mechanism": "PLAIN",
+            "security.protocol": "SASL_PLAINTEXT",
+            "sasl.jaas.config": "org.apache.kafka.common.security.scram.ScramLoginModule required \n username=\"qingteng\" \n password=\"${kafka.password}\";"
+        }
+    },
+    "mysql": {
+        "ip": "10.10.85.161",
+        "port": 3306,
+        "username": "wisteria",
+        "password": "ENC(IRtZwugA4Q1ggRq8HwRKlEt/tPFS7VMNgmCNtFGrmQI=)"
+    },
+    "mongodb": {
+        "ip": "10.10.32.45",
+        "port": 27017,
+        "username": "qingteng",
+        "password": "ENC(qwEtZ3EDLKuAfisMruc2W54vE4lglicHLuD5wlZfV9Q=)"
+    },
+    "rabbitmq": {
+        "cluster": true,
+        "clusterNodes": "10.10.2.109:5672,10.10.4.175:5672,10.10.138.252:5672",
+        "ip": "10.10.235.243",
+        "port": 5672,
+        "username": "guest",
+        "password": "ENC(6TgcOzu4PdXFmF9X9OFtHpp4FWKJG4Vs3X4Np9kDb+I=)"
+    },
+    "syslog": {
+        "ip": "",
+        "port": 0
+    },
+    "redis": {
+        "java": {
+            "cluster": true,
+            "clusterNodes": "10.10.57.23:6379,10.10.39.233:6379,10.10.112.126:6379",
+            "ip": "10.10.63.165",
+            "port": 6379,
+            "password": "ENC(zwOTC1Uc5JR4bpHXeXbsnqAYqLDvp+ZjK+FmSdZ7eGk=)"
+        },
+        "php": {
+            "ip": "10.10.199.113",
+            "port": 6379,
+            "password": "ENC(rqnv+eDgtBCtrtd0NfMYqtVzbK6o8RaZ97kfI9DowqM=)"
+        },
+        "erl": {
+            "cluster": true,
+            "clusterNodes": "10.10.57.23:6381,10.10.39.233:6381,10.10.112.126:6381",
+            "ip": "10.10.86.140",
+            "port": 6379,
+            "password": "ENC(zwOTC1Uc5JR4bpHXeXbsnqAYqLDvp+ZjK+FmSdZ7eGk=)"
+        }
+    },
+    "python": {
+        "path": "/opt/wisteria/venv/bin/python",
+        "env": "LD_LIBRARY_PATH=/opt/rh/python27/root/usr/lib64/"
+    },
+    "host": {
+        "frontend": {
+            "privateip": "10.10.94.73",
+            "publicip": "123.59.41.42",
+            "domain": "console.qingteng.cn",
+            "port": 443,
+            "ssl": true,
+            "resolved": true
+        },
+        "backend": {
+            "privateip": "10.10.96.160",
+            "publicip": "123.59.54.71",
+            "domain": "",
+            "port": 80,
+            "ssl": false,
+            "resolved": false
+        },
+        "api": {
+            "privateip": "10.10.81.43",
+            "publicip": "123.59.40.169",
+            "domain": "",
+            "port": 80,
+            "ssl": false,
+            "resolved": false
+        },
+        "agent": {
+            "privateip": "10.10.91.47",
+            "publicip": "123.59.41.43",
+            "domain": "dump.qingteng.cn",
+            "port": 80,
+            "ssl": false,
+            "resolved": true
+        },
+        "download": {
+            "privateip": "",
+            "publicip": "123.59.41.43",
+            "domain": "download.qingteng.cn",
+            "port": 80,
+            "ssl": false,
+            "resolved": true,
+            "path": "plugins"
+        },
+        "upload": {
+            "privateip": "",
+            "publicip": "123.59.87.121",
+            "domain": "",
+            "port": 8443,
+            "ssl": true,
+            "resolved": false
+        },
+        "selector": {
+            "privateip": "",
+            "publicip": "106.75.104.108",
+            "domain": "",
+            "port": 6677,
+            "resolved": false
+        },
+        "connect": {
+            "privateip": "",
+            "publicip": "106.75.37.57",
+            "domain": "",
+            "port": 7788,
+            "resolved": false
+        },
+        "innerapi": {
+            "privateip": "10.10.57.48",
+            "port": 8000
+        },
+        "erlapi": {
+            "privateip": "10.10.83.183",
+            "port": 8080,
+            "token": "?Il$fxO0q^o+_-bnk*z3#34,s.!"
+        },
+        "vine": {
+            "privateip": "10.10.91.105",
+            "port": 8989,
+            "required": false
+        },
+        "gateway": {
+            "privateip": "10.10.218.57",
+            "port": 6000
+        },
+        "flask": {
+            "privateip": "10.10.6.31",
+            "port": 7000
+        }
+    },
+    "app": {
+        "wisteria": {
+            "file_service_file_dir": "/data/app/titan-wisteria/files",
+            "bigdata": {
+                "enable": true
+            },
+            "docker_scan": {
+                "enable": true
+            },
+            "public_key": "MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQDYuURg9ZWeTKpdQMbR0MIB4yLk+7yz+OVlrwOzDApRmxxXIxfRNouvjElugmwbofACNIEvkP3y2P8IAIyrW4LJsp1ltbliEVhmmusOklR9vPOGsn4BeC8S2RFgtGbnmgxV3hgW+7NWehsYnO3ryTgTrvM0yAqlA2EhAhd5z+E81QIDAQAB"
+        },
+        "gateway": {
+            "refer_domains": "https://console.qingteng.cn,http://pre-console.qingteng.cn,https://fwqaq.ctyun.cn,http://fwqaq.ctyun.cn,https://asset.cloudguarder.com,http://asset.cloudguarder.com,http://qcloud.qingteng.cn,https://qcloud.qingteng.cn,http://demo.ispower.com.cn,http://test.etiir.com",
+            "refer_check": true,
+            "session_inactive_interval": 30,
+            "api_sign_key_keep_days": 10,
+            "login_time_stamp_limit": 2,
+            "login_rsa_private_key": "MIICdgIBADANBgkqhkiG9w0BAQEFAASCAmAwggJcAgEAAoGBAMR7MfjIPPh25A0zhbB4wE1V/QlhROLLoAW1cfPVfxNB1ZNd1n/0tYu2PW4iyZsrtAj8fv9GtH5VdHREArei0AVykoorCccbrmvPEeZwREyPxmhXpa2SGyQo6SF4akgmlnLPxqBrx03nLa7mg3qKQdexuUGWY4Mcrq2KnYCrg8DpAgMBAAECgYEAxGc9ialnwRrfVg7lmYTq/aNyADlaKbdQa8R3dz03/KD3hIrtyxRrkZAHEhv2GYVzPvRfYoBkFlEHytzdNoGqm7TsE78fSVuk7BiomGa5XhI9bcnnR0i5QIroDNfS2KkaiVumdndiZfS7XuoNxMupjnEFv4RhbzKBb71JqjegGgECQQD3PDnuOO1jo8Jv7UzLug/nEpDYdAi55JueVCkOORRxtijtmzQI3IAqRK6oL4ohvyHZH/bM/Q5x80pgmg6ZqwPBAkEAy3JaTpmN1rNgG2hLMY89Wimr+ZyIGGdECLuycnxSjvBi/m9c547ka/7FuTBBEvUA51mLBYtgsddyqM1sSf3nKQJAd9+btwWjFEyyWdKVCbKNQ1ydHlYkZP2S9pGX1m2WnAvWjF5UPHetLNFgXeuu7e3eW4hEAeAwwM9VoMERkzB4AQJATHV/hwaijcwAFIzPpaKFljsPDNJNO46jvPx9hhU/GcUyDxlfOw8yvXuUZ5LBAhTd8BRw8PZ+speb2eDKD8zCcQJAAaBwHXk+oTOfu+IfLJLy+74GGcDZGn431A8qQkmrPsh7vgNCgvfE2LDEE8M4Vh0+kqB20AFoumC84OrmyGlhvg==",
+            "login_rsa_public_key": "MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQDEezH4yDz4duQNM4WweMBNVf0JYUTiy6AFtXHz1X8TQdWTXdZ/9LWLtj1uIsmbK7QI/H7/RrR+VXR0RAK3otAFcpKKKwnHG65rzxHmcERMj8ZoV6WtkhskKOkheGpIJpZyz8aga8dN5y2u5oN6ikHXsblBlmODHK6tip2Aq4PA6QIDAQAB",
+            "upload": {
+                "maxFileSize": "500MB",
+                "maxRequestSize": "1000MB"
+            }
+        },
+        "upload": {
+            "root": "/data/titan-upload",
+            "max_upload_size": 31457280,
+            "max_concurrency": 100,
+            "task_timeout_seconds": 600,
+            "rate_limit": 512000,
+            "avira_bin_path": "/data/app/titan_ave/dist",
+            "yara_bin_path": "/data/app/yara/",
+            "yde_bin_path": "/data/app/yde",
+            "tav_bin_path": "/data/app/tav_file/tav",
+            "cdc_bin_path": "/data/app/cdc/webshell_engine",
+            "cdc_php_consumer_size": 2,
+            "cdc_php_normal_timeout": 40,
+            "cdc_php_deep_timeout": 120,
+            "cdc_php_normal_memory": 400,
+            "cdc_php_deep_memory": 1024,
+            "cdc_jsp_consumer_size": 1,
+            "cdc_jsp_normal_timeout": 5,
+            "cdc_jsp_deep_timeout": 60,
+            "cdc_jsp_normal_memory": 200,
+            "cdc_jsp_deep_memory": 512
+        },
+        "detect": {
+            "avira_schedule_period_seconds": 2,
+            "tav_schedule_period_seconds": 2,
+            "yara_schedule_period_seconds": 2,
+            "avira_active": true,
+            "avira_engine_version": "8.3.54.42",
+            "avira_lib_version": "8.16.16.152",
+            "avira_lib_update_time": "2019-06-06 11:21:00",
+            "yara_engine_version": 1.0,
+            "yde_active": true,
+            "yde_engine_version": 2.0,
+            "yde_lib_version": 2.0,
+            "yde_lib_update_time": "2019-08-21 00:00:00",
+            "malware_hash_schedule_workers": 50,
+            "malware_hash_schedule_per_tasks": 2000,
+            "mysql": {
+                "pool_init_active": 10,
+                "pool_max_active": 30
+            },
+            "cdc_jsp_version": "0.8",
+            "cdc_php_version": "0.8",
+            "cdc_clean_size": 100000,
+            "webshell_file_min_size": 2048,
+            "webshell_file_size_limit": 2097152,
+            "webshell_deep_monitor": 0
+        },
+        "scan": {
+            "image_scan_layer_dir": "/data/app/titan-scan-srv/layer"
+        },
+        "connect": {
+            "online_update_rate": 120,
+            "log_sync_period": "05:00-09:00",
+            "log_sync_type": 7,
+            "log_sync_url": "/api/v2/upload/log"
+        },
+        "job": {
+            "max_client_task": 1024,
+            "max_server_task": 128
+        }
+    }
+}

@@ -1,0 +1,93 @@
+{
+    "mongo": {
+        "basic_data": {
+            "basic_data": {
+                "limit": "all"
+            },
+            "_COMMON_": {
+                "method": "mongodump",
+                "limit": "10000"
+            }
+        },
+        "wisteria_assets": {
+            "vul2_patch_result": {
+                "limit": "all"
+            },
+            "vul2_job": {
+                "limit": "3000"
+            },
+            "linux_pkg": {
+                "limit": "5000000"
+            },
+            "kb_info": {
+                "limit": "1000000"
+            },
+            "linux_jar_pkg": {
+                "limit": "1000000"
+            },
+            "win_boot_item": {
+                "limit": "2000000"
+            },
+            "win_service": {
+                "limit": "1000000"
+            },
+            "win_installed_patch": {
+                "limit": "1200000"
+            },
+            "_COMMON_": {
+                "method": "mongodump",
+                "limit": "500000"
+            }
+        },
+        "wisteria_notif": {
+            "notif_send_record": {
+                "limit": "1000"
+            },
+            "notif_web": {
+                "limit": "10000"
+            },
+            "_COMMON_": {
+                "method": "mongodump",
+                "limit": "100000"
+            }
+        },
+        "databases": [
+            "basic_data",
+            "wisteria_assets",
+            "wisteria_notif",
+            "wisteria_detect",
+            "wisteria_upload",
+            "wisteria_scan"
+        ],
+        "_COMMON_": {
+            "method": "mongodump",
+            "limit": "500000",
+            "mode": 1
+        }
+    },
+    "mysql": {
+        "databases": [
+            "qt_titan",
+            "qt_titan_user",
+            "qt_titan_back",
+            "qt_titan_connect",
+            "qt_titan_monitor",
+            "agent_monitor_db"
+        ],
+        "qt_titan": {
+            "ignore-tables": [
+                "t_inform3_failed",
+                "t_update2_pack"
+            ]
+        },
+        "qt_titan_monitor": {
+            "ext": "--no-data"
+        },
+        "agent_monitor_db": {
+            "ext": "--no-data"
+        },
+        "_COMMON_": {
+            "mode": 1
+        }
+    }
+}

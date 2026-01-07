@@ -1,0 +1,5 @@
+[qingteng]
+name=qingteng
+baseurl=file:///usr/local/src/titan-base/base/qingteng
+enabled=1
+gpgcheck=0

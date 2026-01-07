@@ -1,0 +1,53 @@
+- name: Remove kafka StatefulSet
+  kubernetes.core.k8s:
+    state: absent
+    api_version: apps/v1
+    kind: StatefulSet
+    namespace: "{{ namespace }}"
+    name: "kafka"
+
+- name: Remove kafka Service
+  kubernetes.core.k8s:
+    state: absent
+    api_version: v1
+    kind: Service
+    namespace: "{{ namespace }}"
+    name: "kafka-hs"
+
+- name: Remove kafka Service
+  kubernetes.core.k8s:
+    state: absent
+    api_version: v1
+    kind: Service
+    namespace: "{{ namespace }}"
+    name: "kafka-svc"
+
+- name: Remove kafka PodDisruptionBudget
+  kubernetes.core.k8s:
+    state: absent
+    api_version: policy/v1beta1
+    kind: PodDisruptionBudget
+    namespace: "{{ namespace }}"
+    name: "kafka-pdb"
+
+- name: Remove kafka pvc
+  kubernetes.core.k8s:
+    state: absent
+    api_version: v1
+    kind: PersistentVolumeClaim
+    namespace: "{{ namespace }}"
+    name: "kafkadir-kafka-{{index}}"
+  loop: "{{ range(kafka_replicas) | list }}"
+  loop_control:
+    loop_var: index
+
+- name: Remove kafka pvc
+  kubernetes.core.k8s:
+    state: absent
+    api_version: v1
+    kind: PersistentVolumeClaim
+    namespace: "{{ namespace }}"
+    name: "kafkalog-kafka-{{index}}"
+  loop: "{{ range(kafka_replicas) | list }}"
+  loop_control:
+    loop_var: index

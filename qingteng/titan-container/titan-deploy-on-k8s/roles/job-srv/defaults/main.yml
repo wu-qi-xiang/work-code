@@ -1,0 +1,10 @@
+---
+# defaults file for job-srv
+jobsrv_pullPolicy: IfNotPresent
+jobsrv_uid: 2020
+jobsrv_gid: 2020
+jobsrv_port: 6170
+
+jobsrv_limit_memory: 4096Mi
+jobsrv_limit_cpu: 8
+jobsrv_req_memory: 2Gi

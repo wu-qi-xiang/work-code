@@ -1,0 +1,16 @@
+- name: Remove titan-backup Deployment
+  kubernetes.core.k8s:
+    state: absent
+    api_version: apps/v1
+    kind: Deployment
+    namespace: "{{ namespace }}"
+    name: "titan-backup"
+
+- name: Remove titan-backup configmap
+  kubernetes.core.k8s:
+    state: absent
+    api_version: v1
+    kind: ConfigMap
+    namespace: "{{ namespace }}"
+    name: "dbbackup-config"
+    

@@ -1,0 +1,3 @@
+---
+- name: update connectselector image
+  shell: "kubectl -n {{ namespace }} set image deployment titan-connect-selector titan-connect-selector={{connectselector_image}}"

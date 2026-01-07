@@ -1,0 +1,211 @@
+---
+  - hosts: localhost
+    name: titan migration from normal to k8s
+    gather_facts: false
+    vars_files: 
+      - var_file.yml
+    module_defaults:
+      kubernetes.core.k8s_info:
+        validate_certs: no
+        namespace: "{{ namespace }}"
+      kubernetes.core.k8s:
+        validate_certs: no
+        namespace: "{{ namespace }}"
+      kubernetes.core.k8s_exec:
+        validate_certs: no
+        namespace: "{{ namespace }}"
+
+    # 获取java.json 获取 java.json的过程中正好会测试ssh连通性
+    tasks:
+      - name: get java.json
+        delegate_to: php
+        ansible.builtin.fetch:
+          src: /data/app/titan-config/java.json
+          dest: old_data/java.json
+          flat: yes
+
+      - set_fact:
+          oldjavajson: "{{ lookup('template', 'old_data/java.json') | from_json }}"
+
+      - set_fact:
+          oldpbe: "{{ oldjavajson['base']['pbeconfig'] }}"
+          old_mysql : "{{ oldjavajson['mysql'] }}"
+          old_mongo : "{{ oldjavajson['mongodb'] }}"
+
+      - set_fact:
+          old_mysql_host: "{% if old_mysql.get('cluster', False) %} {{ old_mysql['clusterNodes'].split(',')[0].split(':')[0] }}{% else %}{{ old_mysql['ip'] }}{% endif %}"
+          old_mongo_host: "{% if old_mongo.get('cluster', False) %} {{ old_mongo['clusterNodes'].split(',')[0].split(':')[0] }}{% else %}{{ old_mongo['ip'] }}{% endif %}"
+          old_mysql_passwd: "{{ oldjavajson['mysql']['password']  }}"
+          old_mongo_passwd: "{{ oldjavajson['mongodb']['password'] }}"
+
+      # 测试能否通过获取到的密码在 dbbackup 容器内联通 mongo/mysql
+      - include_role:
+          name: common
+          tasks_from: k8s_one_pod.yml
+        vars:
+          label_selector: "app=titan-backup"
+          result_key: "titan_backup_pod"
+
+      - name: create /tmp/old_config dir
+        shell: rm -rf /tmp/old_config && mkdir -p /tmp/old_config
+
+      - name: create old envconfig.json 
+        copy:
+          content: |
+            {
+              "BACKUP_CONFIG": "/export_config.json",
+              "MONGOS_HOST": "{{old_mongo_host}}",
+              "MYSQL_HOST": "{{old_mysql_host}}",
+              "mongo_outdir": "/data/titan-backup/old_mongo",
+              "mysql_outdir": "/data/titan-backup/old_mysql",
+              "pbe_path": "/tmp/old_config/pbeconfig",
+              "mongos_password_file": "/tmp/old_config/mongo_passwd",
+              "mysql_password_file": "/tmp/old_config/mysql_passwd"
+            }
+          dest: /tmp/old_config/envconfig.json
+      - name: create oldpbe 
+        copy:
+          content: "{{oldpbe}}"
+          dest: /tmp/old_config/pbeconfig
+      - name: create mongo_passwd
+        copy:
+          content: "{{old_mongo_passwd}}"
+          dest: /tmp/old_config/mongo_passwd
+      - name: create mysql_passwd
+        copy:
+          content: "{{old_mysql_passwd}}"
+          dest: /tmp/old_config/mysql_passwd
+
+      # copy old config file to titan-backup pod
+      - name: clean /tmp/old_config dir
+        shell: kubectl -n {{namespace}} exec {{titan_backup_pod}} -- rm -rf /tmp/old_config
+      - name: copy old config file 
+        shell: kubectl -n {{namespace}} cp /tmp/old_config {{titan_backup_pod}}:/tmp/
+
+      # 检查到老环境的 mongo和mysql的连通性
+      - name: check mongo connection
+        shell: kubectl -n {{namespace}} exec {{titan_backup_pod}} -- python /db_tool.py --env_config /tmp/old_config/envconfig.json --test_mongo_connection
+        register: mongo_conn_result
+
+      - fail:
+          msg: "test mongo connection failed"
+        when: '"connect mongo success" not in mongo_conn_result["stdout"]'
+
+      - name: check mysql connection
+        shell: kubectl -n {{namespace}} exec {{titan_backup_pod}} -- python /db_tool.py --env_config /tmp/old_config/envconfig.json --test_mysql_connection
+        register: mysql_conn_result
+
+      - fail:
+          msg: "test mysql connection failed"
+        when: '"connect mysql success" not in mysql_conn_result["stdout"]'
+
+      - block:
+        - name: tar gz agent-update file on php
+          delegate_to: php
+          live_command:
+            argv:
+              - "sh"
+              - "-c"
+              - cd /data/app/www/ && rm -f agent-update-to-k8s.tar.gz && tar czvf agent-update-to-k8s.tar.gz agent-update
+          vars:
+            ansible_connection: ssh_live
+  
+        - name: get agent-update to local
+          delegate_to: php
+          ansible.builtin.fetch:
+            src: /data/app/www/agent-update-to-k8s.tar.gz
+            dest: old_data/agent-update-to-k8s.tar.gz
+            flat: yes
+        
+        - include_role:
+            name: common
+            tasks_from: k8s_one_pod.yml
+          vars:
+            label_selector: "app=titan-web"
+            result_key: "titan_web_pod"
+
+        # 复制 agent-update 到 titan-web
+        - name: 复制老环境agent-update到k8s下titan-web内
+          shell: kubectl -n {{namespace}} cp old_data/agent-update-to-k8s.tar.gz {{titan_web_pod}}:/data/app/www/
+  
+        - name: 新环境titan-web 内解压老的agent安装包
+          shell: kubectl -n {{namespace}} exec -ti {{titan_web_pod}} -- sh -c 'cd /data/app/www/ && tar zxvf agent-update-to-k8s.tar.gz' 2>&1 > /tmp/update_agent_config.log
+          vars:
+            live_output: "/tmp/update_agent_config.log"
+  
+        - name: 新环境titan-web 执行 update_agent_config
+          shell: kubectl -n {{namespace}} exec -ti {{titan_web_pod}} -- /docker-run.sh update_agent_config 2>&1 > /tmp/update_agent_config.log
+          vars:
+            live_output: "/tmp/update_agent_config.log"
+
+        tags: [ 'copy_agent']
+
+      # 执行数据导出前，是否需要停止老环境？--- 暂不考虑
+
+
+      # 执行数据导出，直接导到 titan-dbbackup 容器内，需要测试大数据量导出时是否会oom
+
+      # 导出mongo, 实时输出进度
+      - name: 从老环境mongo数据库导出数据
+        shell: kubectl -n {{namespace}} exec -ti {{titan_backup_pod}} -- python /db_tool.py --env_config /tmp/old_config/envconfig.json --mongo_backup --auto 2>&1 > /tmp/mongo_backup.log
+        vars:
+          live_output: "/tmp/mongo_backup.log"
+      - name: delete old done_colls
+        shell: kubectl -n {{namespace}} exec -ti {{titan_backup_pod}} -- rm -f /data/titan-backup/old_mongo/done_colls
+      
+      # 导出mysql, 实时输出进度
+      - name: 从老环境mysql数据库导出数据
+        shell: kubectl -n {{namespace}} exec -ti {{titan_backup_pod}} -- python /db_tool.py --env_config /tmp/old_config/envconfig.json --mysql_backup --auto 2>&1 > /tmp/mysql_backup.log
+        vars:
+          live_output: "/tmp/mysql_backup.log"
+
+      # 数据导入， titan-dbbackup 容器内执行，恢复数据
+      - name: create envconfig.json for restore
+        copy:
+          content: |
+            {
+              "BACKUP_CONFIG": "/export_config.json",
+              "MONGOS_HOST": "mongos-0.mongos-hs",
+              "MYSQL_HOST": "mysql-0.mysql-hs",
+              "MYSQL_PORT": "3306",
+              "mongo_outdir": "/data/titan-backup/old_mongo",
+              "mysql_outdir": "/data/titan-backup/old_mysql",
+              "pbe_path": "/var/secrets/pbeconfig",
+              "mongos_password_file": "/var/secrets/mongo_passwd",
+              "mysql_password_file": "/var/secrets/mysql_passwd"
+            }
+          dest: /tmp/restore_config.json
+        tags: [ 'restore_mongo','restore_mysql' ]
+
+      - name: copy restore_config file 
+        shell: kubectl -n {{namespace}} cp /tmp/restore_config.json {{titan_backup_pod}}:/tmp/restore_config.json
+        tags: [ 'restore_mongo']
+
+      - name: 导入mongo
+        shell: kubectl -n {{namespace}} exec -ti {{titan_backup_pod}} -- python /db_tool.py --env_config /tmp/restore_config.json --mongo_restore --auto 2>&1 > /tmp/mongo_restore.log
+        vars:
+          live_output: "/tmp/mongo_restore.log"
+        tags: [ 'restore_mongo']
+      
+      - name: 导入mysql数据
+        shell: kubectl -n {{namespace}} exec -ti {{titan_backup_pod}} -- python /db_tool.py --env_config /tmp/restore_config.json --mysql_restore --auto 2>&1 > /tmp/mysql_restore.log
+        vars:
+          live_output: "/tmp/mysql_restore.log"
+        tags: [ 'restore_mysql' ]
+
+      # 获取upgradeTool, 执行 pbe 迁移脚本
+      - include_role:
+          name: common
+          tasks_from: k8s_one_pod.yml
+        vars:
+          label_selector: "app=titan-wisteria"
+          result_key: "wisteria_pod"
+
+      - name: 新环境upgradetool里更新pbe迁移脚本里的老pbe
+        shell: kubectl -n {{namespace}} exec -ti {{wisteria_pod}} -c upgradetool -- sh -c 'cd /data/app/upgradeTool/ && sed -i "s/oldpbe = \".*/oldpbe = \"{{oldpbe}}\"/g" scripts/userSecretApi_mig.py && python upgrade.py --type standalone byFile --path scripts/userSecretApi_mig.py'
+
+      - name: 显示pbe迁移执行日志
+        shell: kubectl -n {{namespace}} exec -ti {{wisteria_pod}} -c upgradetool -- sh -c 'ls -rt /data/app/upgradeTool/info_*.log | tail -n 1 | xargs cat' > /tmp/pbe.log
+        vars:
+          live_output: "/tmp/pbe.log"
+

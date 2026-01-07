@@ -1,0 +1,16 @@
+
+# 首先拉取 titan-env.yml
+- name: get titan-env.yml from ConfigMap
+  shell: kubectl -n {{namespace}} get cm titan-env  -o jsonpath='{.data.titan-env\.yml}' > titan-env.yml
+
+- name: check if is mini_mode
+  shell: cat titan-env.yml |grep ^mini_mode | grep true || echo 'ha_mode'
+  register: mode_result
+
+- name: include_var var_mini.yml
+  include_vars: var_mini.yml
+  when: '"stdout" in mode_result and "mini_mode" in mode_result["stdout"]'
+
+# 不先 include_vars titan-env.yml 是为了 titan-env 覆盖 var
+- name: include_var titan-env.yml
+  include_vars: titan-env.yml

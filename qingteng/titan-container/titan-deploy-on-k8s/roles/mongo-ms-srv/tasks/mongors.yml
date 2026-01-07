@@ -1,0 +1,75 @@
+---
+# 用于配置一个 replica set
+
+- name: create msmongoshard headless service
+  kubernetes.core.k8s:
+    definition: "{{ lookup('template', 'mongoshard_hs.yml') | from_yaml }}"
+
+- name: create msmongoshard StatefulSet
+  kubernetes.core.k8s:
+    definition: "{{ lookup('template', 'mongoshard_statefulset.yml') | from_yaml | titan_combine(common_patch) }}"
+    apply: yes
+
+# 等待所有已Ready，否则执行rs.initiate会失败
+- name: get msmongoshard statefulset 
+  kubernetes.core.k8s_info:
+    kind: StatefulSet
+    name: "msmongoshard{{shardseq}}"
+    namespace: "{{ namespace }}"
+    wait: yes
+    wait_sleep: 15
+    wait_timeout: 300
+  register: shard_setobj
+
+# 获取 mongoshard pod 信息，测试 pod 已 running
+- name: get msmongoshard pods 
+  kubernetes.core.k8s_info:
+    kind: Pod
+    label_selectors:
+      - "app = msmongoshard{{shardseq}}"
+    namespace: "{{ namespace }}"
+    wait: yes
+    wait_sleep: 10
+    wait_timeout: 300
+  register: shard_podobj
+
+- set_fact:
+    msshard_initiate_cmd: "rs.initiate({ _id : 'shard{{shardseq}}',members:[{% for i in range(mongoshard_replicas) %} {_id: {{i}}, host: 'msmongoshard{{shardseq}}-{{i}}.msmongoshard{{shardseq}}-hs.{{namespace}}.svc.cluster.local:27019'{% if loop.first %},priority:100{% endif %}{% if loop.last and use_arbiter %},arbiterOnly:true{% endif %} } {% if not loop.last %},{% endif %} {% endfor %} ] })" 
+
+- name: shard rs.initiate
+  kubernetes.core.k8s_exec:
+    validate_certs: no
+    namespace: "{{ namespace }}"
+    pod: "msmongoshard{{shardseq}}-0"
+    command: mongo --port 27019 --eval "{{msshard_initiate_cmd}}"
+
+# 等待 rs 初始化完毕
+- name: get rs nodes
+  kubernetes.core.k8s_exec:
+    validate_certs: no
+    namespace: "{{ namespace }}"
+    pod: "msmongoshard{{shardseq}}-0"
+    command: mongo --port 27019 --quiet --eval "rs.status().members.map(function(member){return {'name':member.name,'stateStr':member.stateStr} })"
+  register: rsinfo_str
+  until: ('PRIMARY' in rsinfo_str['stdout']  ) and ('SECONDARY' in rsinfo_str['stdout']  ) 
+  retries: 6
+  delay: 10
+
+# 获取 primary节点, 输出例子: msmongoshard0-0.msmongoshard0-hs.qtsa.svc.cluster.local:27019
+- name: get rs nodes and wait primary ok
+  kubernetes.core.k8s_exec:
+    validate_certs: no
+    namespace: "{{ namespace }}"
+    pod: "msmongoshard{{shardseq}}-0"
+    command: mongo --quiet --port 27019 --eval 'db.isMaster().primary'
+  register: msmongoshard_pri
+  until: ( 'stdout' in msmongoshard_pri and msmongoshard_pri['stdout']|trim != '' )
+  retries: 6
+  delay: 10
+
+- name: set msmongo rs username and password
+  kubernetes.core.k8s_exec:
+    validate_certs: no
+    namespace: "{{ namespace }}"
+    pod: "{{ msmongoshard_pri['stdout'].strip().split('.')[0] }}"
+    command: mongo --port 27019 admin --eval 'db.system.users.remove({user:"qingteng"}), db.createUser({user:"qingteng", pwd:"{{msmongo_passwd}}", roles:["root"]})'

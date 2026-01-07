@@ -1,0 +1,104 @@
+---
+#重置密码
+- name: Remove existing mongocs
+  kubernetes.core.k8s:
+    state: absent
+    api_version: apps/v1
+    kind: StatefulSet
+    namespace: "{{ namespace }}"
+    name: mongocs
+
+# 等待statefulset已删除
+- name: get mongocs statefulset 
+  kubernetes.core.k8s_info:
+    kind: StatefulSet
+    name: "mongocs"
+    namespace: "{{ namespace }}"
+  register: mongocs_setobj
+  until: ( mongocs_setobj['resources'] | length) == 0
+  retries: 30
+  delay: 5
+
+- name: create mongocs StatefulSet with no auth
+  kubernetes.core.k8s:
+    definition: "{{ lookup('template', 'mongocs_noauth_statefulset.yml') | from_yaml | titan_combine(common_patch) }}"
+    apply: yes
+
+# 等待所有已Ready
+- name: get mongocs statefulset 
+  kubernetes.core.k8s_info:
+    kind: StatefulSet
+    name: "mongocs"
+    namespace: "{{ namespace }}"
+    wait: yes
+    wait_sleep: 10
+    wait_timeout: 300
+  register: mongocs_setobj
+
+# 获取 primary节点
+- name: get mongocs nodes and wait primary ok
+  kubernetes.core.k8s_exec:
+    validate_certs: no
+    namespace: "{{ namespace }}"
+    pod: "mongocs-0"
+    command: mongo --quiet --port 27018 --eval 'db.isMaster().primary'
+  register: mongocs_pri
+  until: ( mongocs_pri['stdout']|trim != '' )
+  retries: 5
+  delay: 6
+
+- name: set mongo configsvr username and password
+  kubernetes.core.k8s_exec:
+    validate_certs: no
+    namespace: "{{ namespace }}"
+    pod: "{{ mongocs_pri['stdout'] | trim | regex_search('^mongocs-\\d') }}"
+    command: mongo --port 27018 admin --eval 'db.system.users.remove({user:"qingteng"}), db.createUser({user:"qingteng", pwd:"{{mongo_passwd}}", roles:["root"]})'
+
+- name: Remove existing mongocs
+  kubernetes.core.k8s:
+    state: absent
+    api_version: apps/v1
+    kind: StatefulSet
+    namespace: "{{ namespace }}"
+    name: mongocs
+
+# 等待statefulset已删除
+- name: get mongocs statefulset 
+  kubernetes.core.k8s_info:
+    kind: StatefulSet
+    name: "mongocs"
+    namespace: "{{ namespace }}"
+  register: mongocs_setobj
+  until: ( mongocs_setobj['resources'] | length) == 0
+  retries: 30
+  delay: 5
+
+- name: create mongocs StatefulSet with auth
+  kubernetes.core.k8s:
+    definition: "{{ lookup('template', 'mongocs_statefulset.yml') | from_yaml | titan_combine(common_patch) }}"
+    apply: yes
+
+# 等待所有已Ready
+- name: get mongocs statefulset 
+  kubernetes.core.k8s_info:
+    kind: StatefulSet
+    name: "mongocs"
+    namespace: "{{ namespace }}"
+    wait: yes
+    wait_sleep: 5
+    wait_timeout: 300
+  register: mongocs_setobj
+
+# 开始重置分片副本集的密码
+- name: get mongoshard statefulset 
+  shell: kubectl get statefulset | grep mongoshard | awk '{print $1}'
+  register: shard_statefulset_result
+
+- set_fact:
+    shard_statefulsets: "{{ shard_statefulset_result['stdout_lines'] }}"
+
+- include_tasks: reset_mongoshard_passwd.yml
+  when: shardstateful.startswith("mongoshard")
+  loop: "{{shard_statefulsets}}"
+  loop_control:
+    loop_var: shardstateful 

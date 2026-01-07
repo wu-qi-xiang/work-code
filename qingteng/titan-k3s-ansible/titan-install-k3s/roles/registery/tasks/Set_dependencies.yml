@@ -1,0 +1,17 @@
+- name: 同步python相关依赖包并安装
+  copy:
+    src: "{{ item }}"
+    dest: "/data/source/"
+    force: true
+  with_items:
+    - ../../pip_packages
+    - ../../rpm_packages
+
+
+- name: 安装Pip
+  shell: yum -y install /data/source/rpm_packages/*.rpm
+  ignore_errors: yes
+
+- name: 安装python依赖
+  shell: pip install /data/source/pip_packages/python-packages/*
+  ignore_errors: yes

@@ -1,0 +1,30 @@
+---
+# tasks file for detect-srv
+- set_fact:
+    work_nodes: "{{ label_nodes[detectsrv_nodelabel] }}"
+
+- name: Print result
+  debug:
+    msg: "{{ work_nodes }}"
+
+- fail:
+    msg: "have no available node for detect-srv"
+  when: work_nodes|length <= 0
+
+- name: Remove detect-srv Deployment
+  kubernetes.core.k8s:
+    state: absent
+    api_version: apps/v1
+    kind: Deployment
+    namespace: "{{ namespace }}"
+    name: "titan-detect-srv"
+
+- name: create detect-srv Deployment
+  kubernetes.core.k8s:
+    definition: "{{ lookup('template', 'detectsrv_deployment.yml' ) | from_yaml | titan_combine(common_patch,titanlogs_patch) }}"
+    apply: yes
+
+- name: create detect-srv Service
+  kubernetes.core.k8s:
+    definition: "{{ lookup('template', 'detectsrv_service.yml' ) | from_yaml }}"
+    apply: yes

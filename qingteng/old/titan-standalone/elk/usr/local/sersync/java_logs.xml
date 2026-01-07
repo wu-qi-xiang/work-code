@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<head version="2.5">
+    <host hostip="localhost" port="8008"></host>
+    <debug start="false"/>
+    <fileSystem xfs="false"/>
+    <filter start="true">
+        <exclude expression=".*debug.*.log"></exclude>
+        <exclude expression=".*debug.log"></exclude>
+        <exclude expression=".*error.log"></exclude>
+        <exclude expression=".*info.log"></exclude>
+        <exclude expression=".*lib.log"></exclude>
+        <exclude expression=".*request.log"></exclude>
+        <exclude expression=".*warn.log"></exclude>
+    </filter>
+    <inotify>
+        <delete start="true"/>
+        <createFolder start="true"/>
+        <createFile start="true"/>
+        <closeWrite start="true"/>
+        <moveFrom start="true"/>
+        <moveTo start="true"/>
+        <attrib start="true"/>
+        <modify start="true"/>
+    </inotify>
+
+    <sersync>
+        <localpath watch="/data/app/titan-wisteria/log">
+            <remote ip="10.10.110.184" name="10.10.218.57_java_logs"/>
+        </localpath>
+        <rsync>
+            <commonParams params="-artuz"/>
+            <auth start="true" users="root" passwordfile="/etc/rsync.pass"/>
+            <userDefinedPort start="false" port="874"/><!-- port=874 -->
+            <timeout start="false" time="100"/><!-- timeout=100 -->
+            <ssh start="false"/>
+        </rsync>
+        <failLog path="/tmp/rsync_fail_java_logs.sh" timeToExecute="60"/><!--default every 60mins execute once-->
+        <crontab start="true" schedule="60"><!--600mins-->
+            <crontabfilter start="true">
+                <exclude expression="debug.log"></exclude>
+                <exclude expression="error.log"></exclude>
+                <exclude expression="info.log"></exclude>
+                <exclude expression="lib.log"></exclude>
+                <exclude expression="request.log"></exclude>
+                <exclude expression="warn.log"></exclude>
+            </crontabfilter>
+        </crontab>
+        <plugin start="false" name="command"/>
+    </sersync>
+</head>

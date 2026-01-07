@@ -1,0 +1,81 @@
+---
+# tasks file for kafka
+- set_fact:
+    work_nodes: "{{ label_nodes[kafka_nodelabel] }}"
+
+- name: Print result
+  debug:
+    msg: "{{ work_nodes }}"
+
+- fail:
+    msg: "have no available node for kafka"
+  when: work_nodes|length < 1
+ 
+
+- name: create kafka headless service
+  kubernetes.core.k8s:
+    definition: "{{ lookup('template', 'kafka_hs.yml') | from_yaml }}"
+
+- name: create kafka service
+  kubernetes.core.k8s:
+    definition: "{{ lookup('template', 'kafka_svc.yml') | from_yaml }}"
+
+# 等待zk已Ready
+- name: get zookeeper statefulset 
+  kubernetes.core.k8s_info:
+    kind: StatefulSet
+    name: "zk"
+    namespace: "{{ namespace }}"
+    wait: yes
+    wait_sleep: 10
+    wait_timeout: 150
+  register: zk_setobj
+
+- name: "set zk_connect"
+  set_fact:
+    zk_connect: "zk-0.zk-hs:2181"
+
+- name: create kafka StatefulSet
+  kubernetes.core.k8s:
+    definition: "{{ lookup('template', 'kafka_statefulset_single.yml') | from_yaml | titan_combine(common_patch) }}"
+    apply: yes
+
+# 等待kafka已Ready
+- name: get kafka statefulset 
+  kubernetes.core.k8s_info:
+    kind: StatefulSet
+    name: "kafka"
+    namespace: "{{ namespace }}"
+    wait: yes
+    wait_sleep: 10
+    wait_timeout: 300
+  register: kafka_setobj
+
+# 获取kafka topic list,存在则不需要创建
+- name: get kafka topic list
+  kubernetes.core.k8s_exec:
+    validate_certs: no
+    namespace: "{{ namespace }}"
+    pod: "kafka-0"
+    command: /usr/local/qingteng/kafka/bin/kafka-topics.sh --list --zookeeper zk-0.zk-hs:2181
+  register: kafka_topic_lists
+
+
+- name: create kafka topic 
+  kubernetes.core.k8s_exec:
+    validate_certs: no
+    namespace: "{{ namespace }}"
+    pod: "kafka-0"
+    command: /usr/local/qingteng/kafka/bin/kafka-topics.sh --create --zookeeper zk-0.zk-hs:2181 --replication-factor {{ kafka_replicas }} --topic {{item['name']}} --partitions {{item['partition_num']}} --config retention.ms={{item['retention']}}
+  when: item['name'] not in kafka_topic_lists.stdout.split() and (event_srv_enable == "true" or event_srv_enable == true or ms_srv_enable == "true" or ms_srv_enable == true)
+  with_items: "{{ kafka_topic_event_srv }}"
+
+
+- name: create kafka topic 
+  kubernetes.core.k8s_exec:
+    validate_certs: no
+    namespace: "{{ namespace }}"
+    pod: "kafka-0"
+    command: /usr/local/qingteng/kafka/bin/kafka-topics.sh --create --zookeeper zk-0.zk-hs:2181 --replication-factor {{ kafka_replicas }} --topic {{item['name']}} --partitions {{item['partition_num']}} --config retention.ms={{item['retention']}}
+  when: item['name'] not in kafka_topic_lists.stdout.split() and (ms_srv_enable == "true" or ms_srv_enable == true)
+  with_items: "{{ kafka_topic_ms_srv }}"

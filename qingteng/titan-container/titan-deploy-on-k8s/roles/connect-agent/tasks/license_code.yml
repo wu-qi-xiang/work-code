@@ -1,0 +1,57 @@
+---
+# tasks file for get license code
+- name: create daemonset on nodes for get license authcode
+  kubernetes.core.k8s:
+    state: present
+    definition: "{{ lookup('template', 'license_code_daemonset.yml') | from_yaml | titan_combine(common_patch) }}"
+
+- name: get license_code pods
+  kubernetes.core.k8s_info:
+    kind: Pod
+    label_selectors:
+      - "app = license-code"
+    namespace: "{{ namespace }}"
+    wait: yes
+    wait_sleep: 10
+    wait_timeout: 150
+  register: temp_podobj
+
+#返回值为 license_pods
+- name: set license_pods
+  set_fact:
+    license_pods: "{{ temp_podobj | json_query('resources[*].{name:metadata.name,hostname:spec.nodeName}') }}"
+
+- name: Print license_code hostname and ip
+  debug:
+    msg: "license_pods: {{ license_pods }} "
+
+- name: execute sysinfo and get code
+  kubernetes.core.k8s_exec:
+    validate_certs: no
+    namespace: "{{ namespace }}"
+    pod: "{{ pod['name'] }}"
+    command: su -s /bin/sh -c "/sysinfo {{split_flag}}" titan
+  register: authcodes
+  loop: "{{ license_pods }}"
+  loop_control:
+    loop_var: pod
+
+# - name: print code item
+#   debug:
+#     msg: "{{ item }}"
+#   loop: "{{authcodes['results'] | map(attribute='stdout') | list }}"
+
+- name: print qrcode
+  debug: 
+    msg: "请依次扫描二维码,结果依次拼接"
+  loop: "{{ authcodes['results'] | map(attribute='stdout') | map('regex_replace','^.*]]]]','') | list }}"
+    
+- name: print authcode string
+  debug: 
+    msg: "{{ authcodes['results'] | map(attribute='stdout') | map('regex_search','^.*]]]]') | list | join(',') | replace('[','') | replace(']','') }}"
+
+- name: delete daemonset on nodes for execute command
+  kubernetes.core.k8s:
+    state: absent
+    definition: "{{ lookup('template', 'license_code_daemonset.yml') | from_yaml }}"
+

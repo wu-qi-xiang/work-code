@@ -1,0 +1,14 @@
+# 创建zookeeper headless服务
+apiVersion: v1
+kind: Service
+metadata:
+  name: rediserl
+  namespace: {{ namespace }}
+  labels:
+    app: rediserl
+spec:
+  ports:
+  - port: 6379
+    name: server
+  selector:
+    app: rediserl

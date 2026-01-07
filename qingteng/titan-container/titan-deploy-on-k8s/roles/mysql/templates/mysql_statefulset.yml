@@ -1,0 +1,154 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: mysql
+  namespace: "{{ namespace }}"
+spec:
+  serviceName: mysql-hs
+  #podManagementPolicy: Parallel
+  replicas: {{ mysql_replicas }}
+  selector:
+    matchLabels:
+      app: mysql
+  template:
+    metadata:
+      labels:
+        app: mysql
+    spec:
+      terminationGracePeriodSeconds: 10
+      affinity:
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            - labelSelector:
+                matchExpressions:
+                  - key: "app"
+                    operator: In
+                    values: 
+                    - mysql
+              topologyKey: "kubernetes.io/hostname"
+      nodeSelector:
+        "{{mysql_nodelabel}}": "true"
+      serviceAccountName: "{{service_account}}"
+      containers:
+        - name: k8s-mysql
+          imagePullPolicy: "{{ mysql_pullPolicy }}"
+          image: "{{ mysql_image }}"
+          resources:
+            limits:
+              memory: "{{ mysql_limit_memory }}"
+            requests:
+              cpu: "{{cpu_req}}"
+              memory: "1024Mi"
+          ports:
+            - name: mysql
+              protocol: TCP
+              containerPort: 3306
+            - name: communication
+              protocol: TCP
+              containerPort: 4567
+            - name: transfer
+              protocol: TCP
+              containerPort: 4444
+            - name: incremental
+              protocol: TCP
+              containerPort: 4568
+          env:
+            - name: POD_NAME
+              valueFrom:
+                fieldRef:
+                  apiVersion: v1
+                  fieldPath: metadata.name
+            - name: MYSQL_ROOT_PASSWORD
+              value: /tmp/mysql/mysql_passwd_plain
+            - name: LANG
+              value: en_US.UTF-8
+          command: ["bash", "-c", "if [[ $POD_NAME == 'mysql-0' ]] && [[ ! -f /var/lib/mysql/grastate.dat ]]; then docker-entrypoint.sh --wsrep-new-cluster; else docker-entrypoint.sh mysqld; fi"]
+          readinessProbe:
+            exec:
+              command: ['sh','-c', 'mysql -uroot -p$(cat $MYSQL_ROOT_PASSWORD) -e "SELECT 1"']
+            initialDelaySeconds: 15
+            periodSeconds: 15
+            timeoutSeconds: 15
+            failureThreshold: 9
+          startupProbe:
+            exec:
+              command: ['sh','-c', 'mysql -uroot -p$(cat $MYSQL_ROOT_PASSWORD) -e "SELECT 1"']
+            initialDelaySeconds: 15
+            periodSeconds: 15
+            timeoutSeconds: 15
+            failureThreshold: 60
+          livenessProbe:
+            exec:
+              command: ['sh','-c', 'mysql -uroot -p$(cat $MYSQL_ROOT_PASSWORD) -e "SELECT 1"']
+            initialDelaySeconds: 15
+            periodSeconds: 30
+            timeoutSeconds: 15
+            failureThreshold: 6
+          volumeMounts:
+            - name: mysqldir
+              subPath: data
+              mountPath: /var/lib/mysql
+            # 用于mysqldump等数据导入导出的场景，可以将数据文件放在这里
+            - name: mysqldir
+              subPath: temp
+              mountPath: /data/temp
+            - name: tmp-config
+              mountPath: /tmp/mysql/
+            - name: tmp-config
+              subPath: my.cnf
+              mountPath: /etc/my.cnf
+          securityContext:
+            runAsUser: {{mysql_uid}}
+            fsGroup: {{mysql_gid}}
+            allowPrivilegeEscalation: false
+      initContainers:
+        - name: titan-init
+          image: "{{ init_image }}"
+          imagePullPolicy: IfNotPresent
+          env:
+            - name: POD_NAME
+              valueFrom:
+                fieldRef:
+                  apiVersion: v1
+                  fieldPath: metadata.name
+          command: ["sh", "-c", "dockerize -secretdir /var/secrets/ -encSecret /var/secrets/mysql_passwd:/etc/mysql/mysql_passwd_plain -template /etc/my.cnf:/etc/mysql/my.cnf -template /etc/init.sql:/etc/mysql/init.sql; chown -R {{mysql_uid}}:{{mysql_gid}} /var/lib/mysql; id"]
+          volumeMounts:
+            - name: var-secrets
+              mountPath: /var/secrets/
+            - name: config-volume
+              subPath: my.cnf
+              mountPath: /etc/my.cnf
+            - name: config-volume
+              subPath: init.sql
+              mountPath: /etc/init.sql
+            - name: tmp-config
+              mountPath: /etc/mysql
+            - name: mysqldir
+              subPath: data
+              mountPath: /var/lib/mysql
+      securityContext:
+        #runAsUser: {{mysql_uid}}
+        fsGroup: {{mysql_gid}}
+      volumes:
+        - name: var-secrets
+          secret:
+            secretName: titan-all-secrets
+        - name: config-volume
+          configMap:
+            name: mysql-config
+        # 用于在 titan-init 和 mysql容器之间共享配置，titan-init初始化好配置文件后给mysql用
+        - name: tmp-config
+          emptyDir: {}
+  volumeClaimTemplates:
+    - metadata:
+        name: mysqldir
+        labels:
+          qtsa_perm: "{{mysql_uid}}-{{mysql_gid}}"
+          qtsa_path: "mysql"
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        storageClassName: "{{storageName}}"
+        resources:
+          requests:
+            storage: "{{ mysql_storage_capacity }}"
+

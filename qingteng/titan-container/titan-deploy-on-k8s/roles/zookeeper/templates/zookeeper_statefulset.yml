@@ -1,0 +1,124 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: zk
+  namespace: "{{ namespace }}"
+spec:
+  serviceName: zk-hs
+  podManagementPolicy: Parallel
+  replicas: {{ zk_replicas }}
+  selector:
+    matchLabels:
+      app: zk
+  template:
+    metadata:
+      labels:
+        app: zk
+    spec:
+      affinity:
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            - labelSelector:
+                matchExpressions:
+                  - key: "app"
+                    operator: In
+                    values: 
+                    - zk
+              topologyKey: "kubernetes.io/hostname"
+      nodeSelector:
+        "{{zk_nodelabel}}": "true"
+      serviceAccountName: "{{service_account}}"
+      containers:
+        - name: k8s-zk
+          imagePullPolicy: "{{ zk_pullPolicy }}"
+          image: "{{ zookeeper_image }}"
+          resources:
+            limits:
+              cpu: "{{ zk_limit_cpu }}"
+              memory: "{{ zk_limit_memory }}"
+            requests:
+              cpu: "{{cpu_req}}"
+              memory: "512Mi"
+          ports:
+            - containerPort: 2181
+              name: client
+            - containerPort: 2888
+              name: server
+            - containerPort: 3888
+              name: leader-election
+          env:
+            - name: ZK_PASSWORD_FILE
+              value: /var/secrets/zk_passwd
+            - name: ZK_REPLICAS
+              value: "{{ zk_replicas }}"
+            - name: ZK_JVM_OPTS
+              value: -Xmx512M -Xms256M
+            - name: ZK_CLIENT_PORT
+              value: "2181"
+            - name: ZK_SERVER_PORT
+              value: "2888"
+            - name: ZK_ELECTION_PORT
+              value: "3888"
+          # 不能延迟删除 因为 挂了之后重启并不会完全重建pod，而是会直接重启原来的容器
+          # lifecycle:
+          #   postStart:
+          #     exec:
+          #       command: ["/bin/sh", "-c", "sleep 15; rm -f /var/secrets/zk_passwd /usr/local/qingteng/zookeeper/conf/jaas_zk.conf"]
+          command: ["/usr/local/qingteng/zookeeper/bin/start-zk.sh"]
+          readinessProbe:
+            exec:
+              command:
+                # 不使用zkOk.sh的原因： nc不加-q等待会偶尔获取不到 imok
+                - "/bin/bash"
+                - "-c"
+                - "echo ruok | nc -q 1 127.0.0.1 2181 | grep imok"
+            initialDelaySeconds: 10
+            timeoutSeconds: 5
+          livenessProbe:
+            exec:
+              command:
+                - "/bin/bash"
+                - "-c"
+                - "echo ruok | nc -q 1 127.0.0.1 2181 | grep imok"
+            initialDelaySeconds: 10
+            timeoutSeconds: 5
+          volumeMounts:
+            - name: tmp-secrets
+              mountPath: /var/secrets
+            - name: datadir
+              mountPath: /data/zk-data
+          securityContext:
+            allowPrivilegeEscalation: false
+      initContainers:
+        - name: titan-init
+          image: "{{ init_image }}"
+          imagePullPolicy: IfNotPresent
+          command: ['/bin/sh', '-c', 'dockerize -secretdir /var/secrets/ -encSecret /var/secrets/zk_passwd:/tmp/secrets/zk_passwd']
+          volumeMounts:
+            - name: var-secrets
+              mountPath: /var/secrets
+            - name: tmp-secrets
+              mountPath: /tmp/secrets
+      securityContext:
+        runAsUser: {{zk_uid}}
+        fsGroup: {{zk_gid}}
+      volumes:
+        - name: var-secrets
+          secret:
+            secretName: titan-all-secrets
+        - name: tmp-secrets
+          emptyDir: {}
+  volumeClaimTemplates:
+    - metadata:
+        name: datadir
+        labels:
+          qtsa_perm: "{{zk_uid}}-{{zk_gid}}"
+          qtsa_path: "zookeeper"
+          qtsa_delete_data: "Y"
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        storageClassName: "{{storageName}}"
+        resources:
+          requests:
+            storage: "{{ zk_storage_capacity }}"
+

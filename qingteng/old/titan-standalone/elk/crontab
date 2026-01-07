@@ -1,0 +1,2 @@
+0 */2 * * * /data/titan-logs/sync_agent_log.py -s /data/agent_logs -d /data/titan-logs/agent/ -t 1 > /data/titan-logs/sync_agent_log.log
+* * * * * /data/titan-logs/sync_agent_log.py -s /data/collect_agent_log/ -d /data/titan-logs/collect_agent_log/ -t 1 > /data/titan-logs/sync_collect_log.log

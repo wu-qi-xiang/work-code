@@ -1,0 +1,24 @@
+---
+- name: update titan-web image
+  shell: "kubectl -n {{ namespace }} set image  ds/titan-web titan-web={{php_image}}"
+
+- name: update titan-agent image
+  shell: "kubectl -n {{ namespace }} set image  ds/titan-web titan-agent={{agent_image}}"
+# - name: get titan-web DaemonSet 
+#   kubernetes.core.k8s_info:
+#     kind: DaemonSet
+#     name: "titan-web"
+#   register: titan_web_obj
+
+# - set_fact:
+#     titan_web_info: "{{ titan_web_obj['resources'] | get_deploy_info }}"
+
+# # 获取老的nodelabel，避免升级后调度到了其他节点上
+# - set_fact:
+#     php_nodelabel: "{{ titan_web_info['nodelabel'] }}"
+    
+# - name: create php DaemonSet
+#   kubernetes.core.k8s:
+#     definition: "{{ lookup('template', 'php_daemonset.yml' ) | from_yaml | titan_combine(common_patch,titanlogs_patch) }}"
+#     apply: yes
+

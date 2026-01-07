@@ -1,0 +1,12 @@
+- name: get titanbackup deployment 
+  kubernetes.core.k8s_info:
+    kind: Deployment
+    name: "titan-backup"
+    namespace: "{{ namespace }}"
+  register: titanbackup_setobj
+- set_fact:
+    titanbackup_ok: "{{titanbackup_setobj | deployment_check}}"
+
+- set_fact:
+    ok_base_roles: "{{ok_base_roles | union(['titan-backup']) }}"
+  when: titanbackup_ok    

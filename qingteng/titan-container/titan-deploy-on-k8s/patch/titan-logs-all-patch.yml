@@ -1,0 +1,9 @@
+# 所有日志搜集存放的卷，用于fluentbit-server
+spec:
+  template:
+    spec:
+      volumes:
+        - name: titan-logs-all
+          hostPath:
+            path: "{{titan_logsall_path}}"
+            type: DirectoryOrCreate

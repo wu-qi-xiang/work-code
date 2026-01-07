@@ -1,0 +1,70 @@
+---
+# tasks file for mongocs
+- set_fact:
+    mongocs_nodes: "{{ label_nodes[mongocs_nodelabel] }}"
+
+- fail:
+    msg: "have no available node for mongocs"
+  when: mongocs_nodes|length < mongocs_replicas
+
+
+- name: create mongocs headless service
+  kubernetes.core.k8s:
+    definition: "{{ lookup('template', 'mongocs_hs.yml') | from_yaml }}"
+
+- name: create mongocs StatefulSet
+  kubernetes.core.k8s:
+    definition: "{{ lookup('template', 'mongocs_statefulset.yml') | from_yaml | titan_combine(common_patch) }}"
+    apply: yes
+
+# 获取 mongocs pod 信息，测试 pod 已 running
+- name: get mongocs pods 
+  kubernetes.core.k8s_info:
+    kind: Pod
+    label_selectors:
+      - "app = mongocs"
+    namespace: "{{ namespace }}"
+    wait: yes
+    wait_sleep: 15
+    wait_timeout: 300
+  register: mongocs_podobj
+
+# 等待所有已Ready，否则执行rs.initiate会失败
+- name: get mongocs statefulset 
+  kubernetes.core.k8s_info:
+    kind: StatefulSet
+    name: "mongocs"
+    namespace: "{{ namespace }}"
+    wait: yes
+    wait_sleep: 15
+    wait_timeout: 300
+  register: mongocs_setobj
+
+- set_fact:
+    cs_initiate_cmd: "rs.initiate({ _id : 'cs',configsvr: true,members:[{% for i in range(mongocs_replicas) %} {_id: {{i}}, host: 'mongocs-{{i}}.mongocs-hs.{{namespace}}.svc.cluster.local:27018'}{% if not loop.last %},{% endif %} {% endfor %} ] })" 
+
+- name: configsvr rs.initiate
+  kubernetes.core.k8s_exec:
+    validate_certs: no
+    namespace: "{{ namespace }}"
+    pod: "mongocs-0"
+    command: mongo --port 27018 --eval "{{cs_initiate_cmd}}"
+
+# 获取 primary节点
+- name: get mongocs nodes and wait primary ok
+  kubernetes.core.k8s_exec:
+    validate_certs: no
+    namespace: "{{ namespace }}"
+    pod: "mongocs-0"
+    command: mongo --quiet --port 27018 --eval 'db.isMaster().primary'
+  register: mongocs_pri
+  until: ( 'stdout' in mongocs_pri and mongocs_pri['stdout']|trim != '' )
+  retries: 6
+  delay: 10
+
+- name: set mongo configsvr username and password
+  kubernetes.core.k8s_exec:
+    validate_certs: no
+    namespace: "{{ namespace }}"
+    pod: "{{ mongocs_pri['stdout'] | trim | regex_search('^mongocs-\\d') }}"
+    command: mongo --port 27018 admin --eval 'db.system.users.remove({user:"qingteng"}), db.createUser({user:"qingteng", pwd:"{{mongo_passwd}}", roles:["root"]})'

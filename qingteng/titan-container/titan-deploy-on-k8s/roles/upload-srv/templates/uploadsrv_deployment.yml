@@ -1,0 +1,131 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: titan-upload-srv
+  namespace: "{{namespace}}"
+  labels:
+    app: titan-upload-srv
+spec:
+  replicas: {{uploadsrv_replicas}}
+  selector:
+    matchLabels:
+      app: titan-upload-srv
+  strategy:
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 1
+    type: RollingUpdate
+  progressDeadlineSeconds: 120
+  minReadySeconds: 30
+  revisionHistoryLimit: 3
+  template:
+    metadata:
+      name: titan-upload-srv
+      labels:
+        app: titan-upload-srv
+    spec:
+      nodeSelector:
+        "{{uploadsrv_nodelabel}}": "true"
+      serviceAccountName: "{{service_account}}"
+      containers:
+        - image: "{{uploadsrv_image}}"
+          imagePullPolicy: "{{ uploadsrv_pullPolicy }}"
+          name: titan-upload-srv
+          lifecycle:
+            postStart:
+              exec:
+                # 最大等待10秒，等待glusterfs挂载 检查是否arm64,是则复制文件到avira_rootfs
+                command: ["/bin/bash", "-c", "test -d /data/avira_rootfs && (cp -rf {{ave_dfs_dir}}/dist/savapi_bin/* /data/avira_rootfs/ && cp /data/app/titan-upload-srv/titan_ave/savapi_file_scan /data/avira_rootfs/ ) || echo x86_64"]
+          resources:
+            limits:
+              cpu: "{{ uploadsrv_limit_cpu }}"
+              memory: "{{ uploadsrv_limit_memory }}"
+            requests:
+              cpu: "{{cpu_req}}"
+              memory: "{{uploadsrv_req_memory}}"
+          readinessProbe:
+            httpGet:
+              path: /internal/ping
+              port: {{uploadsrv_port}}
+            initialDelaySeconds: 120
+            periodSeconds: 10
+            timeoutSeconds: 3
+            failureThreshold: 12
+          livenessProbe:
+            exec:
+              command:
+                - "/bin/bash"
+                - "-c"
+                - result=`curl -k -sS http://127.0.0.1:{{uploadsrv_port}}/internal/ping/checkall 2>&1`; if [[ $result =~ 'abnormal_service":[]' ]]; then echo ok; else echo $result && exit 1; fi;
+            initialDelaySeconds: 120
+            periodSeconds: 15
+            timeoutSeconds: 15
+            failureThreshold: 6
+          command: ['/bin/sh', '-c', 'dockerize -secretdir /var/secrets/ -yaml-env /titan-env/titan-env.yml -template /titan-java-config/jaas_zk_client.conf:/data/app/titan-config/jaas_zk_client.conf -mergeToJson /titan-java-config/java.properties:/data/app/titan-config/java.json; chmod +x /data/titan-dfs; chown -R titan:titan /data/app/titan-config; /data/app/titan-upload-srv/init.d/upload-srv start']
+          ports:
+            - containerPort: {{uploadsrv_port}}
+              protocol: TCP
+          env:
+            # 这个环境变量的目录将会被启动脚本修改权限，避免权限问题
+            - name: TITAN_DIRS
+              value: "/data/titan-upload /data/app/titan-upload-srv/yara"
+          volumeMounts:
+            - name: var-secrets
+              mountPath: /var/secrets/
+            - name: titan-env
+              mountPath: /titan-env
+            - name: titan-java-config
+              mountPath: /titan-java-config
+            - mountPath: /data/titan-logs/java/upload-srv
+              subPath: upload-srv
+              name: titan-logs
+            - mountPath: /data/app/titan-upload-srv/tav_file
+              name: titan-tav-volume
+            - mountPath: /usr/local/qingteng/qingteng-openjdk
+              subPath: qingteng-openjdk
+              name: openjdk-cdc
+            - mountPath: /data/app/titan-upload-srv/cdc
+              subPath: cdc
+              name: openjdk-cdc
+            - mountPath: /data/titan-dfs
+              name: dfs-volume
+          securityContext:
+            # arm64 下 chroot qemu模拟小红伞需要sudo提权
+            allowPrivilegeEscalation: {{arm64}}
+      initContainers:
+        - name: cdc
+          image: "{{ uploadsrv_cdc_image }}"
+          imagePullPolicy: IfNotPresent
+          command: ['/bin/sh', '-c', '-x', 'cp -r /usr/local/qingteng/qingteng-openjdk /openjdk-cdc/ && cp -r /titan-upload-srv/cdc/ /openjdk-cdc/ && chown -R 2020:2020 /openjdk-cdc/']
+          volumeMounts:
+            - name: openjdk-cdc
+              mountPath: /openjdk-cdc/
+        - name: ave
+          image: "{{ uploadsrv_ave_image }}"
+          imagePullPolicy: IfNotPresent
+          command: ['/bin/sh', '-c', 'cp -rf /titan-upload-srv/tav_file/* /data/app/titan-upload-srv/tav_file/ && chown -R 2020:2020 /data/app/titan-upload-srv/tav_file; mkdir -p /data/titan-dfs/upload-srv/root && chown 2020:2020 /data/titan-dfs/upload-srv/root; mkdir -p {{ave_dfs_dir}} && chown 2020:2020 {{ave_dfs_dir}}; test -d {{ave_dfs_dir}}/dist || (cp -rf /titan-upload-srv/titan_ave/* {{ave_dfs_dir}}/ && chown -R 2020:2020 {{ave_dfs_dir}});']
+          volumeMounts:
+            - mountPath: /data/titan-dfs
+              name: dfs-volume
+            - mountPath: /data/app/titan-upload-srv/tav_file
+              name: titan-tav-volume
+      securityContext:
+        fsGroup: {{uploadsrv_gid}}
+      volumes:
+        - name: var-secrets
+          secret:
+            secretName: titan-all-secrets
+        - name: titan-env
+          configMap:
+            name: titan-env
+        - name: titan-java-config
+          configMap:
+            name: titan-java-config
+        - name: openjdk-cdc
+          emptyDir: {}
+        - name: titan-tav-volume
+          emptyDir: {}
+        - name: dfs-volume
+          persistentVolumeClaim:
+            claimName: titan-dfs
+

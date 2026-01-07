@@ -1,0 +1,31 @@
+---
+# tasks file for anti-virus-srv
+- set_fact:
+    work_nodes: "{{ label_nodes[antivirussrv_nodelabel] }}"
+
+- name: Print result
+  debug:
+    msg: "{{ work_nodes }}"
+
+- fail:
+    msg: "have no available node for anti-virus-srv"
+  when: work_nodes|length <= 0
+
+- name: Remove anti-virus-srv Deployment
+  kubernetes.core.k8s:
+    state: absent
+    api_version: apps/v1
+    kind: Deployment
+    namespace: "{{ namespace }}"
+    name: "titan-anti-virus-srv"
+
+- name: create anti-virus-srv Deployment
+  kubernetes.core.k8s:
+    definition: "{{ lookup('template', 'antivirussrv_deployment.yml' ) | from_yaml | titan_combine(common_patch,titanlogs_patch) }}"
+    apply: yes
+
+- name: create anti-virus-srv Service
+  kubernetes.core.k8s:
+    definition: "{{ lookup('template', 'antivirussrv_service.yml' ) | from_yaml }}"
+    apply: yes
+

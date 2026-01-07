@@ -1,0 +1,47 @@
+---
+- name: create fluentbit server client configmap
+  kubernetes.core.k8s:
+    definition: "{{ lookup('template', 'fluentbit_server_configmap.yml') | from_yaml }}"
+
+- name: create fluentbit server service
+  kubernetes.core.k8s:
+    definition: "{{ lookup('template', 'fluentbit_server_service.yml') | from_yaml }}"
+
+- name: create fluentbit server deployment
+  kubernetes.core.k8s:
+    definition: "{{ lookup('template', 'fluentbit_server_deployment.yml') | from_yaml | titan_combine(common_patch, logsall_patch) }}"
+    apply: yes
+
+- block:
+  - name: create fluentbit client configmap
+    kubernetes.core.k8s:
+      definition: "{{ lookup('template', 'fluentbit_client_configmap.yml') | from_yaml }}"
+  
+  - name: create fluentbit client daemonset
+    kubernetes.core.k8s:
+      definition: "{{ lookup('template', 'fluentbit_client_daemonset.yml') | from_yaml | titan_combine(common_patch) }}"
+      apply: yes
+  
+  # 等待fluentbit ready
+  - name: get fluentbit daemonset 
+    kubernetes.core.k8s_info:
+      kind: DaemonSet
+      name: "titan-fluentbit-client"
+      namespace: "{{ namespace }}"
+      wait: yes
+      wait_sleep: 10
+      wait_timeout: 150
+    register: fluentbit_client_setobj
+
+  when: fluentbit_client_notinstall is not defined
+
+# 等待fluentbit-server ready
+- name: get fluentbit-server deployment 
+  kubernetes.core.k8s_info:
+    kind: Deployment
+    name: "titan-fluentbit-server"
+    namespace: "{{ namespace }}"
+    wait: yes
+    wait_sleep: 10
+    wait_timeout: 150
+  register: fluentbit_server_setobj

@@ -1,0 +1,100 @@
+---
+- hosts: localhost
+  name: titan-k8s tools
+  gather_facts: false
+  vars_files:
+    - var_file.yml
+  module_defaults:
+    kubernetes.core.k8s_info:
+      validate_certs: no
+      namespace: "{{ namespace }}"
+    kubernetes.core.k8s:
+      validate_certs: no
+      namespace: "{{ namespace }}"
+    kubernetes.core.k8s_exec:
+      validate_certs: no
+      namespace: "{{ namespace }}"
+
+  pre_tasks:
+    - name: include pre_titan_env
+      include_tasks: 
+        file: pre_titan_env.yml
+        apply:
+          tags: always
+      tags: ['always']
+
+  tasks:
+    - name: get password config
+      import_role:
+        name: common
+        tasks_from: get_pass_config.yml
+      tags: [ 'never', 'get_plain']
+
+    - import_role:
+        name: php
+        tasks_from: wait_web_and_get.yml
+      tags: [ 'never', 'license_update', 'updatedb', 'sync_rules', 'update_agent_config', 'init_data']
+
+    # updatedb操作需要在license_update之前
+    - import_role:
+        name: php
+        tasks_from: updatedb.yml
+      tags: [ 'never', 'license_update', 'updatedb', 'init_data']
+
+    # init_data 时，也执行 license_update 操作
+    - import_role:
+        name: common
+        tasks_from: license_update.yml
+      tags: [ 'never', 'license_update', 'init_data']
+    
+    - import_role:
+        name: common
+        tasks_from: license_status.yml
+      tags: [ 'never', 'license_status']
+    
+    - block:
+      - name: create ServiceAccount
+        include_role:
+          name: common
+          tasks_from: service_account.yml
+          
+      - include_role:
+          name: connect-agent
+          tasks_from: license_code.yml
+      
+      tags: [ 'never', 'license_code']
+
+    - import_role:
+        name: php
+        tasks_from: sync_rules.yml
+      tags: [ 'never', 'sync_rules', 'init_data']
+
+    - import_role:
+        name: php
+        tasks_from: update_agent_config.yml
+      tags: [ 'never', 'update_agent_config', 'init_data']
+
+    # 预拉取java镜像到所有java节点
+    - name: prepull java images
+      import_role:
+        name: common
+        tasks_from: prepull_images.yml
+      tags: [ 'never', 'pre_pull', 'init_data']
+
+    - name: check base service
+      import_role:
+        name: common
+        tasks_from: check_base.yml
+      tags: [ 'never', 'check_base']
+
+    - name: recover mysql cluster
+      import_role:
+        name: mysql
+        tasks_from: recover_mysql_galera.yml
+      tags: [ 'never', 'recover_mysql']
+
+    - name: set thp topic
+      import_role:
+        name: kafka
+        tasks_from: config_thp.yml
+      tags: [ 'never', 'config_thp']

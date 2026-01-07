@@ -1,0 +1,124 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: mysql
+  namespace: "{{ namespace }}"
+spec:
+  serviceName: mysql-hs
+  replicas: {{ mysql_replicas }}
+  selector:
+    matchLabels:
+      app: mysql
+  template:
+    metadata:
+      labels:
+        app: mysql
+    spec:
+      terminationGracePeriodSeconds: 10
+      affinity:
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            - topologyKey: "kubernetes.io/hostname"
+      serviceAccountName: "{{service_account}}"
+      containers:
+        - name: k8s-mysql
+          imagePullPolicy: "{{ mysql_pullPolicy }}"
+          image: "{{ mysql_image }}"
+          resources:
+            limits:
+              memory: "{{ mysql_limit_memory }}"
+            requests:
+              cpu: "{{cpu_req}}"
+              memory: "1024Mi"
+          ports:
+            - name: mysql
+              protocol: TCP
+              containerPort: 3306
+            - name: communication
+              protocol: TCP
+              containerPort: 4567
+            - name: transfer
+              protocol: TCP
+              containerPort: 4444
+            - name: incremental
+              protocol: TCP
+              containerPort: 4568
+          env:
+            - name: MY_POD_NAME
+              valueFrom:
+                fieldRef:
+                  apiVersion: v1
+                  fieldPath: metadata.name
+            - name: MYSQL_ROOT_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: titan-secrets
+                  key: MYSQL_PASSWORD
+            - name: CLUSTER_NAME
+              value: "qingteng-pxc"
+            - name: PXC_SERVICE
+              value: mysql-hs
+            - name: XTRABACKUP_PASSWORD
+              value: "{{xtrabackup_passwd}}"
+          command: ["tail", "-f", "/dev/null"]
+          volumeMounts:
+            - name: mysqldir
+              subPath: data
+              mountPath: /data/mysql
+            # 用于mysqldump等数据导入导出的场景，可以将数据文件放在这里
+            - name: mysqldir
+              subPath: temp
+              mountPath: /data/temp
+            - name: config
+              mountPath: /etc/mysql
+      initContainers:
+        - name: configmap-copy
+          image: "{{ alpine_image }}"
+          imagePullPolicy: IfNotPresent
+          env:
+            - name: MY_POD_NAME
+              valueFrom:
+                fieldRef:
+                  apiVersion: v1
+                  fieldPath: metadata.name
+            - name: MYSQL_ROOT_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: titan-secrets
+                  key: MYSQL_PASSWORD
+            - name: XTRABACKUP_PASSWORD
+              value: "{{xtrabackup_passwd}}"
+          command: ['/bin/sh', '-c', 'cp /etc/my.conf /etc/mysql/node.cnf && mkdir -p /etc/mysql/conf.d  && sed -r -i "s/^server-id=.*$/server-id=$((${MY_POD_NAME:6:1}+1))/" /etc/mysql/node.cnf && echo "" > /etc/mysql/init.sql']
+          volumeMounts:
+          - name: config-volume
+            subPath: my.cnf
+            mountPath: /etc/my.conf
+          - name: config-volume
+            subPath: init.sql.tpl
+            mountPath: /etc/init.sql.tpl
+          - name: config
+            mountPath: /etc/mysql
+          securityContext:
+            runAsUser: {{mysql_uid}}
+            fsGroup: {{mysql_gid}}
+      securityContext:
+        runAsUser: {{mysql_uid}}
+        fsGroup: {{mysql_gid}}
+      volumes:
+        - name: config-volume
+          configMap:
+            name: mysql-config
+        - name: config
+          emptyDir: {}
+  volumeClaimTemplates:
+    - metadata:
+        name: mysqldir
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        storageClassName: local-storage
+        resources:
+          requests:
+            storage: "{{ mysql_storage_capacity }}"
+        selector:
+          matchLabels:
+            usage: "{{ namespace }}-mysql"

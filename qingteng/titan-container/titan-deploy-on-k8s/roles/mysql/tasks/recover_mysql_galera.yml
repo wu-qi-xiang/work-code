@@ -1,0 +1,167 @@
+# 恢复 mysql-galera 集群
+# 参考 https://www.percona.com/doc/kubernetes-operator-for-pxc/recovery.html 但是未完全按照这个来
+# 注意：不能删除statefulSet然后重新挂载，因为pvc不会重复使用，新创建的statefulset尝试绑定之前的pv和pvc将一直处于Pending状态
+# 其实主要就是要能获取 grastate.dat，因此依次删除pod让他自动重建
+# 启动statefulSet,使用命令 tail -f /dev/null，用于保持启动状态来读取 /data/mysql/grastate.dat
+
+# 1、检查/data/mysql/grastate.dat， 如果有seqno为-1的，先执行一下mysqld --wsrep_recover 然后再次获取/data/mysql/grastate.dat
+# 2、如果safe_to_bootstrap 都为零，比较三台服务器上seqno的对应值。
+# 1.1、如果seqno对应相同，则在三台中任意一台执行以下内容：
+# 修改/data/mysql/grastate.dat 中 safe_to_bootstrap:0 更改为 safe_to_bootstrap:1 
+# 1.2、如果seqno对应值不相同，则选择seqno对应值最大的那台上更改safe_to_bootstrap:1
+# 2、如果safe_to_bootstrap有等于1的情况下,则应当先启动这个
+
+- name: Remove mysql StatefulSet
+  kubernetes.core.k8s:
+    state: absent
+    api_version: apps/v1
+    kind: StatefulSet
+    namespace: "{{ namespace }}"
+    name: "mysql"
+    wait: yes
+    wait_sleep: 10
+    wait_timeout: 150
+
+- name: create mysql StatefulSet for recover
+  kubernetes.core.k8s:
+    definition: "{{ lookup('template', 'mysql_statefulset_for_recover.yml' ) | from_yaml | titan_combine(common_patch) }}"
+    apply: yes
+
+- name: wait mysql OK 
+  kubernetes.core.k8s_info:
+    kind: StatefulSet
+    name: "mysql"
+    namespace: "{{ namespace }}"
+    wait: yes
+    wait_sleep: 15
+    wait_timeout: 150
+  register: mysql_setobj
+  until: mysql_setobj | statefulset_check(mysql_replicas)
+  retries: 2
+  delay: 10
+
+# 获取 recover pod 信息，测试 pod 已 running
+- name: get recover mysql pods 
+  kubernetes.core.k8s_info:
+    kind: Pod
+    label_selectors:
+      - "app = mysql"
+    namespace: "{{ namespace }}"
+  register: recover_podobj
+  until: ( recover_podobj | json_query('resources[*].status.{hostIP:hostIP, phase:phase}') | selectattr("phase", "equalto", "Running") | list | length ) == mysql_replicas
+  retries: 6
+  delay: 10
+
+- name: set recover pods
+  set_fact:
+    "mysql_pods": "{{ recover_podobj | json_query('resources[*].{name:metadata.name, ip:status.podIP,hostname:spec.nodeName}') }}"
+
+# 2、获取grastate.dat中 seqno 和 safe_to_bootstrap的值
+- name: get grastate.dat
+  kubernetes.core.k8s_exec:
+    validate_certs: no
+    namespace: "{{ namespace }}"
+    pod: "{{ item.name }}"
+    command: sh -c "cat /var/lib/mysql/grastate.dat | grep -E 'seqno|safe_to_bootstrap' | tr -d ' ' | xargs echo '{{item.name}}' "
+  register: grastates
+  loop: "{{ mysql_pods }}"
+
+# - set_fact:
+#     grastate_list: "{{grastates | json_query('results[*].stdout') | map('trim') | list }}"   
+
+# - set_fact:
+#     recovery_pods: "{{ grastate_list | get_need_recovery }}"
+
+# - name: wsrep_recover
+#   kubernetes.core.k8s_exec:
+#     validate_certs: no
+#     namespace: "{{ namespace }}"
+#     pod: "{{ item }}"
+#     command: sh -c "mysqld --wsrep_recover"
+#   register: grastates
+#   loop: "{{ recovery_pods }}"
+
+# # 重新获取grastate.dat
+# - name: get grastate.dat
+#   kubernetes.core.k8s_exec:
+#     validate_certs: no
+#     namespace: "{{ namespace }}"
+#     pod: "{{ item.name }}"
+#     command: sh -c "cat /var/lib/mysql/grastate.dat | grep -E 'seqno|safe_to_bootstrap' | tr -d ' ' | xargs echo '{{item.name}}' "
+#   register: grastates
+#   loop: "{{ mysql_pods }}"
+
+- set_fact:
+    grastate_list: "{{grastates | json_query('results[*].stdout') | map('trim') | list }}" 
+
+- set_fact:
+    bootstrap_pod: "{{grastate_list | grastates_filter }}" 
+
+- name: change grastate.dat safe_to_bootstrap to 1
+  kubernetes.core.k8s_exec:
+    validate_certs: no
+    namespace: "{{ namespace }}"
+    pod: "{{ bootstrap_pod }}"
+    command: sh -c "sed -i '/safe_to_bootstrap/s/0/1/' /var/lib/mysql/grastate.dat"
+
+- name: start boot strap server
+  shell: kubectl -n {{ namespace }} exec {{ bootstrap_pod }} -- sh -c 'docker-entrypoint.sh --wsrep-new-cluster --innodb-force-recovery=1' &
+  async: 320
+  poll: 0
+
+- name: wait first bootstrap ok
+  kubernetes.core.k8s_exec:
+    validate_certs: no
+    namespace: "{{ namespace }}"
+    pod: "{{ bootstrap_pod }}"
+    command: sh -c '(ss -tnlp | grep 3306) && mysql -uroot -p$(cat $MYSQL_ROOT_PASSWORD) -e "SELECT 123456"'
+  vars:
+    log_retry: true
+  register: bootstrap_status
+  until: '":3306" in bootstrap_status["stdout"] and "123456" in bootstrap_status["stdout"]'
+  retries: 30
+  delay: 10
+
+- name: please wait 30 seconds 
+  shell: sleep 30
+
+# restart other pod's mysql
+- include_tasks: recover_mysql_galera_member.yml
+  vars:
+    mysql_pod: "{{item.name}}"
+  when: item.name != bootstrap_pod
+  loop: "{{ mysql_pods }}"
+
+- name: wait cluster ok
+  kubernetes.core.k8s_exec:
+    validate_certs: no
+    namespace: "{{ namespace }}"
+    pod: "{{ bootstrap_pod }}"
+    command: sh -c 'mysql -uroot -p$(cat $MYSQL_ROOT_PASSWORD) -e "show status" | grep "wsrep_cluster_size.*3"'
+  vars:
+    log_retry: true
+  register: cluster_status
+  until: '"wsrep_cluster_size" in cluster_status["stdout"] and "3" in cluster_status["stdout"]'
+  retries: 30
+  delay: 10
+
+- name: create mysql normal running StatefulSet
+  kubernetes.core.k8s:
+    definition: "{{ lookup('template', 'mysql_statefulset.yml' ) | from_yaml | titan_combine(common_patch) }}"
+    apply: yes
+
+- name: please wait 10 seconds 
+  shell: sleep 10
+
+- name: wait mysql OK 
+  kubernetes.core.k8s_info:
+    kind: StatefulSet
+    name: "mysql"
+    namespace: "{{ namespace }}"
+    wait: yes
+    wait_sleep: 30
+    wait_timeout: 150
+  register: mysql_setobj
+  until: mysql_setobj | statefulset_check(mysql_replicas)
+  retries: 3
+  delay: 10

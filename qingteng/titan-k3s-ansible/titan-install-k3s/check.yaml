@@ -1,0 +1,20 @@
+---
+- hosts: k3s_cluster
+  gather_facts: no
+  become: yes
+  roles:
+    - role: check_connect
+
+- hosts: k3s_cluster
+  gather_facts: yes
+  become: yes
+  roles:
+    - role: check_hostname
+
+- hosts: master[0]
+  gather_facts: no
+  become: yes
+  tasks:
+    - import_role:
+        name: check_hostname
+        tasks_from: check_hostname.yml

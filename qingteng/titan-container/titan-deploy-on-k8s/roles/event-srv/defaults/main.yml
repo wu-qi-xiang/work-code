@@ -1,0 +1,9 @@
+---
+# defaults file for event-srv
+eventsrv_pullPolicy: IfNotPresent
+eventsrv_uid: 2020
+eventsrv_gid: 2020
+eventsrv_port: 6700
+
+eventsrv_limit_memory: 3072Mi
+eventsrv_limit_cpu: 8

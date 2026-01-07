@@ -1,0 +1,20 @@
+- set_fact:
+    keepalived_ok: true
+  when: vip is not defined or vip.strip() == ''
+
+- block:
+  - name: get keepalived deployment 
+    kubernetes.core.k8s_info:
+      kind: DaemonSet
+      name: "titan-keepalived"
+      namespace: "{{ namespace }}"
+    register: keepalived_setobj
+
+  - set_fact:
+      keepalived_ok: "{{keepalived_setobj | daemonset_check}}"
+
+  when: vip is defined and vip and vip.strip() != ''
+
+- set_fact:
+    ok_base_roles: "{{ok_base_roles | union(['keepalived']) }}"
+  when: keepalived_ok

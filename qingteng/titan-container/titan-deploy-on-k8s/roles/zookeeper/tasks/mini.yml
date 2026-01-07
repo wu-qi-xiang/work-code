@@ -1,0 +1,37 @@
+---
+# tasks file for zookeeper
+- set_fact:
+    work_nodes: "{{ label_nodes[zk_nodelabel] }}"
+
+- name: Print result
+  debug:
+    msg: "{{ work_nodes }}"
+
+- fail:
+    msg: "have no available node for zookeeper"
+  when: work_nodes|length < 1
+
+
+- name: create zookeeper headless service
+  kubernetes.core.k8s:
+    definition: "{{ lookup('template', 'zookeeper_hs.yml') | from_yaml }}"
+
+- name: create zookeeper service
+  kubernetes.core.k8s:
+    definition: "{{ lookup('template', 'zookeeper_svc.yml') | from_yaml }}"
+
+- name: create zookeeper StatefulSet
+  kubernetes.core.k8s:
+    definition: "{{ lookup('template', 'zookeeper_statefulset_single.yml') | from_yaml | titan_combine(common_patch) }}"
+    apply: yes
+
+# 等待zk已Ready
+- name: get zookeeper statefulset 
+  kubernetes.core.k8s_info:
+    kind: StatefulSet
+    name: "zk"
+    namespace: "{{ namespace }}"
+    wait: yes
+    wait_sleep: 15
+    wait_timeout: 240
+  register: zk_setobj

@@ -1,0 +1,35 @@
+---
+
+- name: Copy K3s service file
+  template:
+    src: "k3s.service.j2"
+    dest: "{{ systemd_dir }}/k3s-node.service"
+    owner: root
+    group: root
+    mode: 0755
+
+- name: Enable and check K3s service
+  systemd:
+    name: k3s-node
+    daemon_reload: yes
+    state: restarted
+    enabled: yes
+
+- name: Set worker lables
+  shell: |
+          /usr/local/bin/kubectl label node "node{{groups['k3s_cluster'].index(inventory_hostname)}}" 'node-role.kubernetes.io/worker=worker' --overwrite
+  delegate_to: "{{ groups['master'][0] }}"
+
+- name: Add crictl config to env
+  lineinfile:
+    dest: ~/.bashrc
+    line: "export CRI_CONFIG_FILE=/data/k3s/agent/etc/crictl.yaml"
+  ignore_errors: True
+
+- set_fact:
+      file_contents_lines: "{{ lookup('file', '../../../registery/files/k3s-images.txt').splitlines() }}"
+
+- name: pull images in container
+  shell: >-
+          export CRI_CONFIG_FILE=/data/k3s/agent/etc/crictl.yaml && k3s crictl  pull {{ item }}
+  with_items: "{{ file_contents_lines }}"

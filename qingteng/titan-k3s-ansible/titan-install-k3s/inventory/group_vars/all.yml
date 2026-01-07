@@ -1,0 +1,25 @@
+---
+k3s_version: v1.22.5+k3s1
+ansible_user: root
+systemd_dir: /etc/systemd/system
+ansible_tmp: /tmp/qt_ansible
+apiserver_endpoint: "{{ hostvars[groups['master'][0]]['ansible_host'] | default(groups['master'][0]) }}"
+master_ip: "{{ hostvars[groups['master'][0]]['ansible_host'] | default(groups['master'][0]) }}"
+registry_domain: "registry.qingteng.cn"
+extra_server_args: " --node-name node{{groups['k3s_cluster'].index(inventory_hostname)}} --secrets-encryption --disable-cloud-controller --kube-proxy-arg proxy-mode=iptables --disable traefik --default-local-storage-path /data/k3s-storage --data-dir /data/k3s "
+
+##自定义registry内容,默认密码会自建生成，如果是对接客户registry，需要自己修改下列信息。
+REGISTRY_USER: admin
+REGISTRY_PORT: 5000
+REGISTRY_URL: "{{ groups['master'][0] }}"
+REGISTRY_PAASWD: ""
+
+##自定义CA地址。不存在请保持默认.存在需要填写绝对路径
+CA_PATH: "/data/registry/certs"
+
+# If you define multiple masters you should be providing a loadbalanced
+# # apiserver endpoint to all masters here. This default value is only suitable
+# # for a non-HA setup, if used in a HA setup, it will not protect you if the
+# # first node fails.
+# # Also you should define k3s_token so that masters can talk together securely
+k3s_token: "mysupersecuretoken"

@@ -1,0 +1,47 @@
+- name: Remove mysql StatefulSet
+  kubernetes.core.k8s:
+    state: absent
+    api_version: apps/v1
+    kind: StatefulSet
+    namespace: "{{ namespace }}"
+    name: "mysql"
+
+- name: Remove mysql Service
+  kubernetes.core.k8s:
+    state: absent
+    api_version: v1
+    kind: Service
+    namespace: "{{ namespace }}"
+    name: "mysql-hs"
+
+- name: Remove mysql Service
+  kubernetes.core.k8s:
+    state: absent
+    api_version: v1
+    kind: Service
+    namespace: "{{ namespace }}"
+    name: "mysql-svc"
+
+- name: Remove mysql pvc
+  kubernetes.core.k8s:
+    state: absent
+    api_version: v1
+    kind: PersistentVolumeClaim
+    namespace: "{{ namespace }}"
+    name: "mysqldir-mysql-{{index}}"
+  loop: "{{ range(mysql_replicas) | list }}"
+  loop_control:
+    loop_var: index
+
+- name: remove local pv
+  include_role:
+    name: common
+    tasks_from: remove_localpv.yml
+  vars:
+    pv_name: "mysql-{{index}}"
+    pv_for: "mysql"
+  loop: "{{ range(mysql_replicas) | list }}"
+  loop_control:
+    loop_var: index
+  #默认不删除 LocalPV
+  when: (remove_localpv is defined and remove_localpv == 'Y')

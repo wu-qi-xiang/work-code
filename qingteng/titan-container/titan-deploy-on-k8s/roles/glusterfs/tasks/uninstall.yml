@@ -1,0 +1,26 @@
+- name: Remove glusterfs StatefulSet
+  kubernetes.core.k8s:
+    state: absent
+    api_version: apps/v1
+    kind: StatefulSet
+    namespace: "{{ namespace }}"
+    name: "titan-glusterfs"
+
+- name: Remove glusterfs headless service
+  kubernetes.core.k8s:
+    state: absent
+    api_version: v1
+    kind: Service
+    namespace: "{{ namespace }}"
+    name: "glusterfs-hs"
+
+- name: Remove titan-gluster pvc
+  kubernetes.core.k8s:
+    state: absent
+    api_version: v1
+    kind: PersistentVolumeClaim
+    namespace: "{{ namespace }}"
+    name: "titan-gluster-titan-glusterfs-{{index}}"
+  loop: "{{ range(glusterfs_replicas) | list }}"
+  loop_control:
+    loop_var: index

@@ -1,0 +1,54 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: patrol-config
+  namespace: [% namespace %]
+data:
+  settings.yml: |
+      application:
+        #模式 debug test release， release模式不开启swagger
+        mode: release
+        # 服务器ip，默认使用 0.0.0.0
+        # host: 0.0.0.0
+        # 服务名称
+        name: go-patrol
+        # 端口号
+        port: "[% patrol_port %]" # 服务端口号
+        tlsEnable: false
+        referCheck: true
+        referers: "{{ $referhosts := ((list "localhost" "127.0.0.1" .Env.web_publicip .Env.web_domain .Env.web_ipv6) | compact ) }}{{range $i, $v := $referhosts}}{{if ne $i 0}},{{end}}{{ if not (empty .) }}http://{{.}}:6110,https://{{.}}:6110{{ end }}{{end}}{{ if not (empty .Env.patrol_referers) }},{{.Env.patrol_referers}}{{ end }}"
+        readtimeout: 1
+        writertimeout: 2
+        mysqlConfig:
+          username: root
+          addr: mysql-svc:3306
+        kafkaConfig:
+          brokers: kafka-svc:9092
+          username: qingteng
+          notif_topic: notification_event_business
+        mongoConfig:
+          addrs: {% if mini_mode %}mongod-svc:27017{% else %}mongos-0.mongos-hs:27017,mongos-1.mongos-hs:27017,mongos-2.mongos-hs:27017{% endif %} 
+          username: qingteng
+        configDir: /data/app/titan-go-patrol/config
+        signPublicKey: MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQDYuURg9ZWeTKpdQMbR0MIB4yLk+7yz+OVlrwOzDApRmxxXIxfRNouvjElugmwbofACNIEvkP3y2P8IAIyrW4LJsp1ltbliEVhmmusOklR9vPOGsn4BeC8S2RFgtGbnmgxV3hgW+7NWehsYnO3ryTgTrvM0yAqlA2EhAhd5z+E81QIDAQAB
+        extParams:
+          pbe_path: /var/secrets/pbeconfig
+          rediserl_password_file: /var/secrets/rediserl_passwd
+          {% if mini_mode %}rediserl_hosts: rediserl-0.rediserl-hs:6379{% endif %} 
+          redisphp_password_file: /var/secrets/redisphp_passwd
+          redisjava_password_file: /var/secrets/redisjava_passwd
+          mysql_password_file: /var/secrets/mysql_passwd
+          kafka_password_file: /var/secrets/kafka_passwd
+          mongo_password_file: /var/secrets/mongo_passwd
+          login_rsa_private_key_file: /var/secrets/login_rsa_private_key
+          login_rsa_public_key_file: /var/secrets/login_rsa_public_key
+          log_node_config: log-node-list-k8s.json
+          docker_enable: "{{default "false" .Env.docker_enable}}"
+          bigdata_enable: "{{default "false" .Env.bigdata_enable}}"
+          thp_enable: "{{default "false" .Env.thp_enable}}"
+          mini_mode: "[% mini_mode | string | lower  %]"
+      logger:
+        # 日志存放路径
+        path: /data/titan-logs/go/patrol/
+        # 日志等级
+        level: info

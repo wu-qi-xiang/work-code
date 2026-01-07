@@ -1,0 +1,33 @@
+#!/bin/bash
+
+source $(dirname $0)/utils.sh
+if [ ! -n "$1" ] ;then
+    echo "please input pod name "
+    exit 1
+fi
+IFS=$'\n'
+pods=(`kubectl -n $NS get po -o wide | grep -v Completed | grep $1`)
+[[ ${#pods[@]} == 0 ]] && echo "pod not found" && exit 1
+selected=0
+for index in ${!pods[@]}; do
+    if [ "$index" == "0" ] ; then 
+        echo "* $index  "$"${pods[index]}"
+    else
+        echo "  $index  "$"${pods[index]}"
+    fi
+done
+read -n 2 selected
+selected_pod=${pods[selected]}
+
+unset IFS
+#echo $selected_pod
+podname=`echo $selected_pod | cut -d ' ' -f1`
+info_log "will go to pod: $podname"
+
+result=`echo $podname | grep -E '(patrol|redis|keepalived|fluent|alpine)'`
+if [[ $result != "" ]]; then
+    kubectl -n $NS exec -ti $podname -- sh
+else
+    kubectl -n $NS exec -ti $podname -- bash
+fi
+info_log "exit $podname, now at $HOSTNAME"

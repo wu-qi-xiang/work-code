@@ -1,0 +1,4 @@
+---
+- name: update connectdh image
+  shell: "kubectl -n {{ namespace }} set image deployment titan-connect-dh titan-connect-dh={{connectdh_image}}"
+ 

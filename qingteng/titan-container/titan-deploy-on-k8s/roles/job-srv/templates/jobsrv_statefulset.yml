@@ -1,0 +1,104 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: titan-job-srv
+  namespace: "{{namespace}}"
+  labels:
+    app: titan-job-srv
+spec:
+  replicas: {{jobsrv_replicas}}
+  selector:
+    matchLabels:
+      app: titan-job-srv
+  strategy:
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 1
+    type: RollingUpdate
+  progressDeadlineSeconds: 300
+  minReadySeconds: 30
+  revisionHistoryLimit: 3
+  template:
+    metadata:
+      name: titan-job-srv
+      labels:
+        app: titan-job-srv
+    spec:
+      nodeSelector:
+        "{{jobsrv_nodelabel}}": "true"
+      serviceAccountName: "{{service_account}}"
+      containers:
+        - image: "{{jobsrv_image}}"
+          imagePullPolicy: "{{ jobsrv_pullPolicy }}"
+          name: titan-job-srv
+          resources:
+            limits:
+              cpu: "{{ jobsrv_limit_cpu }}"
+              memory: "{{ jobsrv_limit_memory }}"
+            requests:
+              cpu: "{{cpu_req}}"
+              memory: "{{jobsrv_req_memory}}"
+          readinessProbe:
+            httpGet:
+              path: /api/ping
+              port: {{jobsrv_port}}
+            initialDelaySeconds: 30
+            periodSeconds: 30
+            timeoutSeconds: 3
+            failureThreshold: 6
+          livenessProbe:
+            exec:
+              command:
+                - "/bin/bash"
+                - "-c"
+                - result=`curl -k -sS http://127.0.0.1:{{jobsrv_port}}/api/checkall 2>&1`; if [[ $result =~ 'abnormal_service":[]' ]]; then echo ok; else echo $result && exit 1; fi
+            initialDelaySeconds: 30
+            periodSeconds: 30
+            timeoutSeconds: 15
+            failureThreshold: 4
+          ports:
+            - containerPort: {{jobsrv_port}}
+              protocol: TCP
+          env:
+            # 这个环境变量的目录将会被启动脚本修改权限，避免权限问题
+            - name: TITAN_DIRS
+              value: "/data/titan-logs/java/job-data"
+            - name: CONTAINER_ID
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+          command: ['/bin/sh', '-c', 'dockerize -secretdir /var/secrets/ -yaml-env /titan-env/titan-env.yml -template /titan-java-config/jaas_zk_client.conf:/data/app/titan-config/jaas_zk_client.conf -mergeToJson /titan-java-config/java.properties:/data/app/titan-config/java.json -mergeToJson /titan-java-config/job.properties:/data/app/titan-config/job.json; chown -R titan:titan /data/app/titan-config; sleep 15; /data/app/titan-job-srv/init.d/job-srv start']
+          volumeMounts:
+            - name: var-secrets
+              mountPath: /var/secrets/
+            - name: titan-env
+              mountPath: /titan-env
+            - name: titan-java-config
+              mountPath: /titan-java-config
+            - mountPath: /data/titan-logs/java/job-srv
+              subPath: job-srv
+              name: titan-logs
+            - mountPath: /data/app/titan-job-srv/tomcat
+              subPath: tomcat
+              name: tmp
+            - mountPath: /tmp
+              name: tmp
+            - mountPath: /data/titan-logs/java/job-data
+              subPath: job-data
+              name: tmp
+          securityContext:
+            allowPrivilegeEscalation: false
+      securityContext:
+        fsGroup: {{jobsrv_gid}}
+      volumes:
+        - name: var-secrets
+          secret:
+            secretName: titan-all-secrets
+        - name: titan-env
+          configMap:
+            name: titan-env
+        - name: titan-java-config
+          configMap:
+            name: titan-java-config
+        - emptyDir: {}
+          name: tmp

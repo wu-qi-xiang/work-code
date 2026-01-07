@@ -1,0 +1,11 @@
+---
+- set_fact:
+      p: "{{ lookup('file', '/tmp/ansible_hostname_list.txt').splitlines() }}"
+#  - debug: msg={{ p }}
+#  - debug: msg={{ p | unique }}
+#  - debug: msg={{ p | difference(p | unique)}}
+
+- name: checking hostname
+  fail:
+    msg: "[Error],Some hosts have duplicate hostnames, and the duplicate Hostname is {{ p | difference(p | unique) }} "
+  when: p|difference(p|unique)|length != 0

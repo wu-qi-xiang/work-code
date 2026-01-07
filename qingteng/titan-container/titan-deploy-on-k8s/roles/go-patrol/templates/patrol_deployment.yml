@@ -1,0 +1,96 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: titan-patrol
+  namespace: "{{namespace}}"
+  labels:
+    app: titan-patrol
+spec:
+  replicas: {{patrol_replicas}}
+  selector:
+    matchLabels:
+      app: titan-patrol
+  progressDeadlineSeconds: 15
+  minReadySeconds: 10
+  revisionHistoryLimit: 3
+  template:
+    metadata:
+      name: titan-patrol
+      labels:
+        app: titan-patrol
+    spec:
+      nodeSelector:
+        "{{patrol_nodelabel}}": "true"
+      serviceAccountName: "titan-patrol"
+      containers:
+        - image: "{{patrol_image}}"
+          imagePullPolicy: "{{ patrol_pullPolicy }}"
+          name: titan-patrol
+          resources:
+            limits:
+              cpu: "{{ patrol_limit_cpu }}"
+              memory: "{{ patrol_limit_memory }}"
+            requests:
+              cpu: "{{cpu_req}}"
+              memory: 50Mi
+          readinessProbe:
+            tcpSocket:
+              port: {{patrol_port}}
+            initialDelaySeconds: 5
+            timeoutSeconds: 5
+            periodSeconds: 20
+            failureThreshold: 5
+          livenessProbe:
+            tcpSocket:
+              port: {{patrol_port}}
+            initialDelaySeconds: 5
+            timeoutSeconds: 5
+            periodSeconds: 20
+            failureThreshold: 5
+          ports:
+            - containerPort: {{patrol_port}}
+              protocol: TCP
+          env:
+            - name: TITAN_ENV
+              value: "k8s"
+          command: ['/bin/sh', '-c', 'chown -R patrol:patrol /data/titan-logs/go/patrol; chown -R patrol:patrol /data/app/titan-go-patrol/; cd /data/app/titan-go-patrol && exec su-exec patrol /data/app/titan-go-patrol/go-patrol server -c /data/app/titan-go-patrol/config/settings.yml']
+          volumeMounts:
+            - name: var-secrets
+              mountPath: /var/secrets/
+            - name: titan-env
+              mountPath: /titan-env
+            - name: tmp
+              subPath: settings.yml
+              mountPath: /data/app/titan-go-patrol/config/settings.yml
+            - mountPath: /data/titan-logs/go/patrol
+              subPath: patrol
+              name: titan-logs
+            - name: tmp
+              mountPath: /tmp
+          securityContext:
+            allowPrivilegeEscalation: false
+      initContainers:
+        - name: titan-init
+          image: "{{ init_image }}"
+          imagePullPolicy: IfNotPresent
+          command: ["sh", "-c", "dockerize -yaml-env /titan-env/titan-env.yml -template /settings.yml:/tmp/settings.yml"]
+          volumeMounts:
+            - name: titan-env
+              mountPath: /titan-env
+            - name: tmp
+              mountPath: /tmp/
+            - name: patrol-config
+              subPath: settings.yml
+              mountPath: /settings.yml
+      volumes:
+        - name: var-secrets
+          secret:
+            secretName: titan-all-secrets
+        - name: titan-env
+          configMap:
+            name: titan-env
+        - name: patrol-config
+          configMap:
+            name: patrol-config
+        - emptyDir: {}
+          name: tmp

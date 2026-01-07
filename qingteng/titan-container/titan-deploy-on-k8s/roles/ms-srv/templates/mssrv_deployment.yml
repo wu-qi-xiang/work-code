@@ -1,0 +1,107 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: titan-ms-srv
+  namespace: "{{namespace}}"
+  labels:
+    app: titan-ms-srv
+spec:
+  replicas: {{mssrv_replicas}}
+  selector:
+    matchLabels:
+      app: titan-ms-srv
+  strategy:
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 1
+    type: RollingUpdate
+  progressDeadlineSeconds: 120
+  minReadySeconds: 30
+  revisionHistoryLimit: 3
+  template:
+    metadata:
+      name: titan-ms-srv
+      labels:
+        app: titan-ms-srv
+    spec:
+      nodeSelector:
+        "{{mssrv_nodelabel}}": "true"
+      serviceAccountName: "{{service_account}}"
+      containers:
+        - image: "{{mssrv_image}}"
+          imagePullPolicy: "{{ mssrv_pullPolicy }}"
+          name: titan-ms-srv
+          resources:
+            limits:
+              cpu: "{{ mssrv_limit_cpu }}"
+              memory: "{{ mssrv_limit_memory }}"
+            requests:
+              cpu: "{{cpu_req}}"
+              memory: 512Mi
+          readinessProbe:
+            httpGet:
+              path: /api/ping
+              port: {{mssrv_port}}
+            initialDelaySeconds: 20
+            periodSeconds: 10
+            timeoutSeconds: 3
+            failureThreshold: 6
+          livenessProbe:
+            exec:
+              command:
+                - "/bin/bash"
+                - "-c"
+                - result=`curl -k -sS http://127.0.0.1:{{mssrv_port}}/api/checkall 2>&1`; if [[ $result =~ 'abnormal_service":[]' ]]; then echo ok; else echo $result && exit 1; fi
+            initialDelaySeconds: 60
+            periodSeconds: 30
+            timeoutSeconds: 15
+            failureThreshold: 3
+          ports:
+            - containerPort: {{mssrv_port}}
+              protocol: TCP
+          lifecycle:
+            postStart:
+              exec:
+                command: ["/bin/sh", "-c", "mkdir -p /data/titan-dfs/ms-srv/files/ && chown 2020:2020 /data/titan-dfs/ms-srv/files/"]
+          command: ['/bin/sh', '-c', 'dockerize -secretdir /var/secrets/ -yaml-env /titan-env/titan-env.yml -template /titan-java-config/jaas_zk_client.conf:/data/app/titan-config/jaas_zk_client.conf -mergeToJson /titan-java-config/java.properties:/data/app/titan-config/java.json -mergeToJson /titan-java-config/mssrv.properties:/data/app/titan-config/java.json; chown -R titan:titan /data/app/titan-config; /data/app/titan-ms-srv/init.d/ms-srv start']
+          volumeMounts:
+            - name: var-secrets
+              mountPath: /var/secrets/
+            - name: titan-env
+              mountPath: /titan-env
+            - name: titan-java-config
+              mountPath: /titan-java-config
+            - mountPath: /data/titan-logs/java/ms-srv
+              subPath: ms-srv
+              name: titan-logs
+            - name: titan-ms-srv-config
+              mountPath: /data/app/titan-ms-srv/custom.yml
+              subPath: custom.yml 
+            - name: tmp
+              mountPath: /data/app/titan-ms-srv/tomcat
+              subPath: tomcat
+            - name: tmp
+              mountPath: /tmp
+            - mountPath: /data/titan-dfs
+              name: dfs-volume
+          securityContext:
+            readOnlyRootFilesystem: false
+            allowPrivilegeEscalation: false
+      volumes:
+        - name: var-secrets
+          secret:
+            secretName: titan-all-secrets
+        - name: titan-env
+          configMap:
+            name: titan-env
+        - name: titan-java-config
+          configMap:
+            name: titan-java-config        
+        - name: titan-ms-srv-config
+          configMap:
+            name: titan-ms-srv-config
+        - emptyDir: {}
+          name: tmp
+        - name: dfs-volume
+          persistentVolumeClaim:
+            claimName: titan-dfs

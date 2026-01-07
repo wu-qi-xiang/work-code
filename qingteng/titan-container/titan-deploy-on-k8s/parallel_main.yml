@@ -1,0 +1,194 @@
+---
+  - hosts: localhost
+    name: deploy titan-standalone
+    gather_facts: false
+    strategy: parallel
+    vars_files: 
+      - var_file.yml
+    module_defaults:
+      kubernetes.core.k8s_info:
+        validate_certs: no
+        namespace: "{{ namespace }}"
+      kubernetes.core.k8s:
+        validate_certs: no
+        namespace: "{{ namespace }}"
+      kubernetes.core.k8s_exec:
+        validate_certs: no
+        namespace: "{{ namespace }}"
+
+    pre_tasks:
+      - name: include pre_titan_env
+        include_tasks: pre_titan_env.yml
+      - name: include common pre_tasks
+        include_tasks: pre_tasks.yml
+
+    # 并发数量由ansible.cfg中 strategy.parallel 部分下的 semaphore_num 配置决定
+    # 默认2个，不建议超过3个。超过3个对etcd的压力太大，可能会出现莫名其妙退出的问题
+    tasks:
+      # localpv 必须最先安装
+      - name: install localpv
+        include_role:
+          name: "localpv"
+          tasks_from: mini.yml
+        when: '"localpv" in install_roles'
+        
+      - name: install mysql
+        include_role:
+          name: "mysql"
+        vars:
+          ansible_parallel: "mysql"
+        when: '"mysql" in install_roles'
+
+      - name: install mongo
+        include_role:
+          name: "mongo"
+        vars:
+          ansible_parallel: "mongo"
+        when: '"mongo" in install_roles'
+
+      - name: install glusterfs 
+        include_role:
+          name: "glusterfs"
+        vars:
+          ansible_parallel: "glusterfs"
+        when: '"glusterfs" in install_roles'
+
+      - name: install zookeeper_kafka
+        include_role:
+          name: "{{item}}"
+        vars:
+          ansible_parallel: "zk_kafka"
+        loop: '{{ ["zookeeper","kafka"] | intersect(install_roles) }}'
+        when: '["zookeeper","kafka"] | intersect(install_roles) | length > 0 '
+
+      - name: install rabbitmq
+        include_role:
+          name: "rabbitmq"
+        vars:
+          ansible_parallel: "rabbitmq"
+        when: '"rabbitmq" in install_roles'
+
+      - name: install keepalived
+        include_role:
+          name: "keepalived"
+        vars:
+          ansible_parallel: "keepalived"
+        when: '"keepalived" in install_roles'
+
+      - name: install redisjava
+        include_role:
+          name: "redisjava"
+        vars:
+          ansible_parallel: "redisjava"
+        when: '"redisjava" in install_roles'
+
+      - name: install redisphp
+        include_role:
+          name: "redisphp"
+        vars:
+          ansible_parallel: "redisphp"
+        when: '"redisphp" in install_roles'
+
+      - name: install rediserl
+        include_role:
+          name: "rediserl"
+        vars:
+          ansible_parallel: "rediserl"
+        when: '"rediserl" in install_roles'
+
+      - name: install fluentbit
+        include_role:
+          name: "fluentbit"
+        vars:
+          ansible_parallel: "fluentbit"
+        when: '"fluentbit" in install_roles'
+
+      - name: install titan-backup
+        include_role:
+          name: "titan-backup"
+        vars:
+          ansible_parallel: "titan-backup"
+        when: '"titan-backup" in install_roles'
+
+      - name: wait child job, perhaps need about five minutes
+        wait_parallel:
+          parallel_names: ["mysql","mongo","rediserl","fluentbit","titan-backup"]
+        when: base_roles | intersect(install_roles) | length > 0
+
+      - name: check base service
+        import_role:
+          name: common
+          tasks_from: check_base.yml
+        ignore_errors: yes
+
+      - block:
+        - name: Pause for 30 seconds to wait k8s cluster to retry
+          pause:
+            seconds: 30
+
+        - name: install {{item}}
+          include_role:
+            name: "{{item}}"
+          loop: "{{abnormal_base_roles | intersect(base_roles) }}"
+        when: "abnormal_base_roles | length > 0"
+
+      # 基础服务检查通过后开始安装APP
+      - name: install {{item}}
+        include_role:
+          name: "{{item}}"
+        loop: "{{ app_roles | union(extra_roles)  | union(app_hive_roles) | intersect(install_roles) }}"
+
+      # 当传入了 install_role 时 到这里结束
+      - meta: end_play
+        when: install_role is defined
+
+      # 当存在 license 文件时，更新 license
+      - name: get license file
+        shell: sh -c "ls -t *-license-*.zip | head -1"
+        register: license_file_result
+
+      - set_fact:
+          license_file: "{{license_file_result['stdout_lines'][0]}}"
+      
+      - name: get rules file
+        shell: sh -c "ls -t *-rule-*.zip | head -1"
+        register: rules_file_result
+
+      - set_fact:
+          rules_file: "{{rules_file_result['stdout_lines'][0]}}"
+
+      # wait and update db
+      - import_role:
+          name: php
+          tasks_from: wait_web_and_get.yml
+
+      - import_role:
+          name: php
+          tasks_from: updatedb.yml
+
+      # update license
+      - name: execute license_update tasks
+        include_role:
+          name: common
+          tasks_from: license_update.yml
+        when: license_file != ""
+
+      # 当存在license文件和规则文件时，进行 sync_rules ， 仅存在规则文件，不执行，sync_rules 依赖于license授权成功
+      - include_role:
+          name: php
+          tasks_from: sync_rules.yml
+        when: license_file != "" and rules_file != ""
+
+      # 当存在license文件时, 进行 update_agent_config 操作， 依赖于license授权成功
+      - name: execute update_agent_config tasks
+        include_role:
+          name: php
+          tasks_from: update_agent_config.yml
+        when: license_file != ""
+
+    post_tasks:
+          
+      - name: prepull java images
+        import_role:
+          name: common
+          tasks_from: prepull_images.yml

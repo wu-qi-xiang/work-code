@@ -1,0 +1,48 @@
+---
+registry: registry.qingteng.cn/titan-container
+
+# only need if use docker registry key
+#use_registry_key: true
+
+
+#填写宿主机绑定Ip网卡名称。例如：eth0
+KEEPALIVED_INTERFACE: ""
+
+# if open event-srv/ms-srv,please setting qtsa-app lable
+label_nodes:
+  qtsa-base: ["node0","node1","node2"]
+  qtsa-glusterfs: ["node0","node1","node2"]
+  qtsa-java: ["node0","node1","node2"]
+  qtsa-php: ["node0","node1","node2"]
+
+# vip: if have no vip, just keep empty
+vip: ""
+# web_publicip: if have vip, input vip. if have no vip, input one ip of qtsa-php node
+web_publicip: ""
+
+# just keep empty if have no ipv6
+web_ipv6: ""
+# web_domain: if have no domain, just keep empty
+web_domain: ""
+
+sh_nodes:
+  - nodename: node0
+    ipv4: 127.0.0.1
+  - nodename: node1
+    ipv4: 127.0.0.1
+
+# just keep default value. only change if you need
+console_port: 80
+console_ssl: false
+backend_port: 81
+backend_ssl: false
+api_port: 8001
+api_ssl: false
+agent_port: 8002
+agent_ssl: false
+
+# keep default value. do not change them. 
+docker_enable: "false"
+ms_srv_enable: "false"
+event_srv_enable: "false"
+anti_virus_srv_enable: "false"

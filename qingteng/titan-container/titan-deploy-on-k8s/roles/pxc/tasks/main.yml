@@ -1,0 +1,89 @@
+---
+# tasks file for mysql
+- set_fact:
+    work_nodes: "{{ label_nodes[mysql_nodelabel] }}"
+
+- name: Print result
+  debug:
+    msg: "{{ work_nodes }}"
+
+- fail:
+    msg: "have no available node for mysql"
+  when: work_nodes|length < mysql_replicas
+
+- name: create localpv for mysql
+  include_role:
+    name: common
+    tasks_from: local_pv.yml
+  vars:
+    hostname: "{{ item.Hostname }}"
+    inner_cmd: "mkdir -p {{ mysql_hostpath }} && chown -R {{mysql_uid}}:{{mysql_gid}} {{ mysql_hostpath }}"
+    pvname: "mysql-{{ index }}"
+    pv_for: "mysql"
+    pv_storage_capacity: "{{ mysql_storage_capacity }}"
+    pvcname: "mysqldir-mysql-{{ index }}"
+    pv_path: "{{ mysql_hostpath }}"
+
+  when: index < mysql_replicas
+
+  loop: "{{ work_nodes | sort(reverse=False,attribute='Hostname') }}"
+  loop_control:
+    index_var: index 
+
+- name: create mysql headless service
+  kubernetes.core.k8s:
+    definition: "{{ lookup('template', 'mysql_hs.yml') | from_yaml }}"
+
+- name: create mysql headless service
+  kubernetes.core.k8s:
+    definition: "{{ lookup('template', 'mysql_svc.yml') | from_yaml }}"
+
+- name: create mysql configmap
+  kubernetes.core.k8s:
+    definition: "{{ lookup('template', 'mysql_configmap.yml') | from_yaml }}"
+
+- set_fact:
+    mysql_statefulset_file: "{% if presetrule == 'Y' %}mysql_statefulset_withrules.yml{% else %}mysql_statefulset.yml{% endif %}"
+
+- name: create mysql StatefulSet
+  kubernetes.core.k8s:
+    definition: "{{ lookup('template', mysql_statefulset_file ) | from_yaml }}"
+    apply: yes
+
+#如果不是预置规则包，则启动一个临时的php，复制db下的sql文件并执行
+- block:
+    - name: cp db sql file
+      command: bash -c 'kubectl -n {{namespace}} delete po dbsql-file; kubectl -n {{namespace}} run dbsql-file --image={{php_image}} -- tail -f /dev/null'
+    
+    - name: wait dbsql-file OK 
+      command: kubectl -n {{namespace}} get po dbsql-file
+      register: dbsqlpod_status
+      until: '"Running" in dbsqlpod_status.stdout'
+      retries: 10
+      delay: 6
+
+    - name: cp db sql file and delete dbsql-file
+      command: bash -c 'rm -rf db && kubectl -n {{namespace}} cp dbsql-file:/data/app/www/titan-web/db db && kubectl -n {{namespace}} delete po dbsql-file'
+    
+    - name: wait mysql OK 
+      kubernetes.core.k8s_info:
+        kind: StatefulSet
+        name: "mysql"
+        namespace: "{{ namespace }}"
+      register: mysql_setobj
+      until: mysql_setobj | statefulset_check(mysql_replicas)
+      retries: 30
+      delay: 10
+    
+    - name: cp db sql file and delete dbsql-file
+      command: bash -c 'kubectl -n {{namespace}} cp db mysql-0:/tmp && rm -rf db'
+    
+    - name: cp db sql file and delete dbsql-file
+      command: kubectl -n {{namespace}} exec -i mysql-0 -- bash -c 'mysql -uroot -p$MYSQL_ROOT_PASSWORD < /tmp/db/{{sqlfile}}'
+      loop: ["titan-user.sql","titan.sql","titan-monitor.sql","titan-connect.sql","titan-back.sql","agent-monitor-db.sql"]
+      loop_control:
+        loop_var: sqlfile
+
+  when: presetrule != 'Y'
+    
+    

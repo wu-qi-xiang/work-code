@@ -1,0 +1,46 @@
+{
+    "msg_type": "interactive",
+    "card": {
+        "config": {
+            "wide_screen_mode": true
+          },
+          "header": {
+            "template": "red",
+            "title": {
+              "content": "💪万相独立部署打包构建失败！",
+              "tag": "plain_text"
+            }
+          },
+          "elements": [
+            {
+              "tag": "hr"
+            },
+            {
+              "tag": "div",
+              "text": {
+                "content": "**构建信息**\n项目名称: ${JOB_NAME}\n构建编号: ${BUILD_NUMBER}\n构建详情: [${BUILD_URL}](${BUILD_URL})\n构建日志: [${BUILD_URL}/console](${BUILD_URL}/console)",
+                "tag": "lark_md"
+              }
+            },
+            {
+                "tag": "div",
+                "fields": [
+                  {
+                    "is_short": true,
+                    "text": {
+                      "tag": "lark_md",
+                      "content": "**构建分支**\n${titanParams}"
+                    }
+                  },
+                  {
+                    "is_short": true,
+                    "text": {
+                      "tag": "lark_md",
+                      "content": "**构建参数**\n${titanFormatParams}"
+                    }
+                  }
+                ]
+            }
+        ]
+    } 
+}

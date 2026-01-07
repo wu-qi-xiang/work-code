@@ -1,0 +1,184 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+
+import sys
+version = sys.version_info
+if version < (3, 0):
+    import commands as cmd_module
+else:
+    import subprocess as cmd_module
+import datetime
+import math
+import os
+import re
+import time
+
+NAMESPACE="qtsa"
+RABBITMQ_DEFAULT_THRESHOLD = 5000
+KAFKA_DEFAULT_THRESHOLD = 5000
+RABBITMQ_THRESHOLD_DICT = {}
+KAFKA_THRESHOLD_DICT = {}
+UNHANDLE_MSG_OVERSTOCK="未处理消息数量超过阈值"
+HAVE_NO_CONSUMERS="没有消费者"
+
+def log_error(msg):
+    print('\033[31m' + "ERROR:" + str(msg) + '\033[0m')
+
+def log_warn(msg):
+    print('\033[35m' + "WARN:" + str(msg) + '\033[0m')
+
+def log_info(msg):
+    print('\033[32m' + "INFO:" +str(msg) + "\033[0m")
+
+def exec_cmd(cmd,print_result=True):
+    #print("exec_cmd:" + cmd)
+    status, output = cmd_module.getstatusoutput(cmd)
+    if status != 0 :
+        print("\033[31m[ERROR] Failed to execute command: " + cmd + '\033[0m')  #should avoid print password
+        print("(%d) %s" % (status, output if output else "-"))
+    else:
+        if print_result:
+            print(output)
+        return output.strip()
+
+def check_queues():
+    rabbit_queues_cmd = '''kubectl -n {ns} exec -ti rabbitmq-0 -- rabbitmqctl list_queues name messages consumers | grep -v 'Listing queues' | grep -v 'Timeout:' | column -t '''.format(ns=NAMESPACE)
+    log_info("RabbitMQ queues:")
+    rabbit_queues_result = exec_cmd(rabbit_queues_cmd)
+
+    abnormal_rabbitmq_queues = []
+    if rabbit_queues_result is None:
+        log_error("can't list rabbitmq queues")
+    else:
+        for queue_info in rabbit_queues_result.splitlines():
+            if not queue_info:
+                continue
+
+            tmp_strs = queue_info.split()
+            if len(tmp_strs) < 3:
+                continue
+
+            name,msgNum,consumers = tmp_strs[0],tmp_strs[1],tmp_strs[2]
+            if not msgNum.isdigit():
+                continue
+
+            if int(msgNum) >= RABBITMQ_THRESHOLD_DICT.get(name,RABBITMQ_DEFAULT_THRESHOLD):
+                abnormal_rabbitmq_queues.append({"name":name,"msgNum":msgNum,"reason": UNHANDLE_MSG_OVERSTOCK})
+            if int(consumers) <= 0:
+                abnormal_rabbitmq_queues.append({"name":name,"msgNum":msgNum,"reason": HAVE_NO_CONSUMERS})
+
+    kafka_queues_cmd = '''kubectl -n {ns} exec -ti kafka-0 -- /usr/local/qingteng/kafka/bin/kafka-consumer-groups.sh --bootstrap-server 127.0.0.1:9092 --command-config /usr/local/qingteng/kafka/config/consumer.properties --describe --all-groups 2>&1| grep -v org.apache.kafka |grep -v "has no active members" | awk '{print $2" "$3" "$4" "$5" "$6" "$8}' | column -t | tr -d '/' '''.replace("{ns}",NAMESPACE)
+    log_info("Kafka queues:")
+    kafka_queues_result = exec_cmd(kafka_queues_cmd)
+
+    abnormal_kafka_queues = []
+    all_kafka_queues = {}
+
+    if kafka_queues_result is None:
+        log_error("can't list kafka queues")
+    else:
+        for queue_info in kafka_queues_result.splitlines():
+            if not queue_info or 'LOG-END-OFFSET' in queue_info:
+                continue
+
+            tmp_strs = queue_info.split()
+            if len(tmp_strs) < 5:
+                continue
+
+            name,msgNum,consumer = tmp_strs[0],(int(tmp_strs[4]) if tmp_strs[4].isdigit() else -9999999999), (  1 if (len(tmp_strs) > 5 and tmp_strs[5] != '' and tmp_strs[5] != '-') else  0)
+
+            old_info = all_kafka_queues.get(name,[0,0])
+            all_kafka_queues[name] = [old_info[0] + msgNum, old_info[1] + consumer]
+        
+        for name, queue_info in all_kafka_queues.items():
+            msgNum,consumers = queue_info[0],queue_info[1] 
+            if int(msgNum) >= KAFKA_THRESHOLD_DICT.get(name,KAFKA_DEFAULT_THRESHOLD):
+                abnormal_kafka_queues.append({"name":name,"msgNum":msgNum,"reason": UNHANDLE_MSG_OVERSTOCK})
+            if int(consumers) <= 0:
+                abnormal_kafka_queues.append({"name":name,"msgNum":msgNum,"reason": HAVE_NO_CONSUMERS})
+    
+    if len(abnormal_rabbitmq_queues) ==0 and len(abnormal_kafka_queues) == 0:
+        log_info("all queues are normal")
+        return
+    
+    log_error("abnormal queues are:")
+    log_error("queue name\t msgNum \t reason")
+    for abnormal_queue in abnormal_rabbitmq_queues:
+        print(abnormal_queue['name'] + "\t" + str(abnormal_queue['msgNum']) + "\t" + abnormal_queue['reason'])
+    for abnormal_queue in abnormal_kafka_queues:
+        print(abnormal_queue['name'] + "\t" + str(abnormal_queue['msgNum']) + "\t" + abnormal_queue['reason'])
+
+def check_pods():
+    # 列出非Running状态的Pod
+    abnormal_pods = {}
+    restart_pods = {}
+    pod_header = ""
+    all_pods = exec_cmd("kubectl -n {ns} get po | grep -v -E '(nginx-admission|Running[ ]+0)' ".format(ns=NAMESPACE), print_result=False)
+    for pod in all_pods.splitlines():
+        if 'RESTARTS' in pod:
+            pod_header = pod
+            continue
+
+        tmp_strs = pod.split()
+        #print(tmp_strs)
+        if len(tmp_strs) < 5:
+            continue
+        
+        name,ready,status,restarts,age =  tmp_strs[0],tmp_strs[1],tmp_strs[2],tmp_strs[3],tmp_strs[4]
+        if 'Completed' == status and ('db-backup' in name  or 'nginx-admission' in name):
+            continue
+
+        if 'Running' != status:
+            events = exec_cmd('''kubectl -n {ns} describe po {podname} | grep -A8 'Events:' '''.format(podname=name,ns=NAMESPACE), print_result=False)
+            abnormal_pods[pod] = events
+        elif int(restarts) > 0 and 'Running' == status:
+            last_state = exec_cmd('''kubectl -n {ns} get po {podname} -o yaml | grep -A6 'lastState:' '''.format(podname=name,ns=NAMESPACE), print_result=False)
+            if 'OOMKilled' in last_state:
+                restart_pods[pod] = last_state
+                continue
+
+            finishedObj = re.search('finishedAt:[ ]+"(.*)"', last_state)
+            if not finishedObj:
+                continue
+            finishedTimeStr = finishedObj.group(1)
+            finishtime = time.strptime(finishedTimeStr,'%Y-%m-%dT%H:%M:%SZ')
+
+            duration = int(time.time() - time.mktime(finishtime))
+            if duration < 20 * 60 :
+                restart_pods[pod] = last_state
+                continue
+
+
+    if len(abnormal_pods) == 0 and len(restart_pods) == 0:
+        log_info("All pods are OK")
+
+    if len(abnormal_pods) > 0:
+        log_error("Abnormal pods are:")
+        for pod, events in abnormal_pods.items():
+            print(pod_header)
+            print(pod)
+            print(events)
+            
+    
+    if len(restart_pods) > 0:
+        log_error("Some pod restart in last few minutes or because oom:")
+        for pod, last_state in restart_pods.items():
+            print(pod_header)
+            print(pod)
+            print(last_state)
+
+def check_redis_cluster():
+    redis_clusterinfo_cmd = '''kubectl -n {ns} exec -ti $podname -- sh -c 'pass=$(cat /tmp/redis.conf |grep pass | cut -d " " -f2); redis-cli -a $pass -c cluster info ' '''.format(ns=NAMESPACE)
+
+    for redisname in ['redisjava','redisphp','rediserl']:
+        cluster_info = exec_cmd(redis_clusterinfo_cmd.replace('$podname', redisname+"-0"), print_result=False)
+        if 'cluster_state:ok' not in cluster_info:
+            log_error(redisname + " is not ok, please check.")
+            log_error(cluster_info)
+        else:
+            log_info(redisname + " is ok.")
+
+check_queues()
+check_pods()
+check_redis_cluster()
+

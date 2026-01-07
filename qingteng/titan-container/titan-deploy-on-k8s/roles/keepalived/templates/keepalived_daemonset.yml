@@ -1,0 +1,55 @@
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: "titan-keepalived"
+  namespace: "{{namespace}}"
+  labels:
+    app: titan-keepalived
+spec:
+  selector:
+    matchLabels:
+      app: titan-keepalived
+  minReadySeconds: 5
+  template:
+    metadata:
+      name: titan-keepalived
+      labels:
+        app: titan-keepalived
+    spec:
+      nodeSelector:
+        "{{keepalived_nodelabel}}": "true"
+      hostNetwork: true
+      dnsPolicy: ClusterFirstWithHostNet
+      serviceAccountName: "{{service_account}}"
+      containers:
+        - image: "{{keepalived_image}}"
+          name: titan-keepalived
+          resources:
+            limits:
+              memory: "{{ keepalived_limit_memory }}"
+            requests:
+              cpu: "{{cpu_req}}"
+              memory: "128Mi"
+          env:
+            - name: POD_IP
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.podIP
+          command: ["sh","-c","priority=${POD_IP##*.};sed \"s/KEEPALIVED_PRIORITY/$priority/\" /etc/keepalived/keepalived.conf_tmpl > /etc/keepalived/keepalived.conf; /usr/sbin/keepalived -P -d -D -f /etc/keepalived/keepalived.conf --dont-fork --log-console"]
+          volumeMounts:
+            - mountPath: /etc/keepalived/keepalived.conf_tmpl
+              subPath: keepalived.conf
+              name: keepalived-config
+          securityContext:
+            capabilities:
+              drop:
+                - ALL
+              add: 
+                - NET_ADMIN
+                - NET_BROADCAST
+                - CAP_NET_RAW
+            privileged: true
+      volumes:
+        - name: keepalived-config
+          configMap:
+            name: keepalived-config

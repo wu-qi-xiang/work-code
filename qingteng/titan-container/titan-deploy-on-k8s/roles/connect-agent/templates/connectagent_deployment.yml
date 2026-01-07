@@ -1,0 +1,96 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: titan-connect-agent
+  namespace: "{{namespace}}"
+  labels:
+    app: titan-connect-agent
+spec:
+  replicas: {{connectagent_replicas}}
+  selector:
+    matchLabels:
+      app: titan-connect-agent
+  strategy:
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 1
+    type: RollingUpdate
+  progressDeadlineSeconds: 60
+  minReadySeconds: 30
+  revisionHistoryLimit: 3
+  template:
+    metadata:
+      name: titan-connect-agent
+      labels:
+        app: titan-connect-agent
+    spec:
+      nodeSelector:
+        "{{connectagent_nodelabel}}": "true"
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 1
+              podAffinityTerm:
+                labelSelector:
+                  matchExpressions:
+                    - key: "app"
+                      operator: In
+                      values: 
+                        - titan-connect-agent
+                topologyKey: "kubernetes.io/hostname"
+      hostNetwork: true
+      dnsPolicy: ClusterFirstWithHostNet
+      serviceAccountName: "{{service_account}}"
+      containers:
+        - image: "{{connectagent_image}}"
+          imagePullPolicy: "{{ connectagent_pullPolicy }}"
+          name: titan-connect-agent
+          resources:
+            limits:
+              cpu: "{{ connectagent_limit_cpu }}"
+              memory: "{{ connectagent_limit_memory }}"
+            requests:
+              cpu: "{{cpu_req}}"
+              memory: "{{connectagent_req_memory}}"
+          readinessProbe:
+            httpGet:
+              path: /api/ping
+              port: {{connectagent_port}}
+            initialDelaySeconds: 20
+            periodSeconds: 10
+            timeoutSeconds: 3
+            failureThreshold: 6
+          livenessProbe:
+            exec:
+              command:
+                - "/bin/bash"
+                - "-c"
+                - result=`curl -k -sS http://127.0.0.1:{{connectagent_port}}/api/checkall 2>&1`; if [[ $result =~ 'abnormal_service":[]' ]]; then echo ok; else echo $result && exit 1; fi
+            initialDelaySeconds: 45
+            periodSeconds: 30
+            timeoutSeconds: 15
+            failureThreshold: 5
+          command: ['/bin/sh', '-c', 'dockerize -secretdir /var/secrets/ -yaml-env /titan-env/titan-env.yml -template /titan-java-config/jaas_zk_client.conf:/data/app/titan-config/jaas_zk_client.conf -mergeToJson /titan-java-config/java.properties:/data/app/titan-config/java.json; chown -R titan:titan /data/app/titan-config; /data/app/titan-connect-agent/init.d/connect-agent start;']
+          ports:
+            - containerPort: {{connectagent_port}}
+              protocol: TCP
+          volumeMounts:
+            - name: var-secrets
+              mountPath: /var/secrets/
+            - name: titan-env
+              mountPath: /titan-env
+            - name: titan-java-config
+              mountPath: /titan-java-config
+            - mountPath: /data/titan-logs/java/connect-agent
+              subPath: connect-agent
+              name: titan-logs
+      volumes:
+        - name: var-secrets
+          secret:
+            secretName: titan-all-secrets
+        - name: titan-env
+          configMap:
+            name: titan-env
+        - name: titan-java-config
+          configMap:
+            name: titan-java-config

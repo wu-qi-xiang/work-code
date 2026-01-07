@@ -1,0 +1,130 @@
+# 定义stage
+stages:
+  - build
+  - notify
+
+# 定义k3s version
+variables:
+  k3s_version: "v1.22.5+k3s1"
+
+default:
+  image: registry.qingteng.cn/k8s/x86/gitlab/ssh-ubuntu:0.2.2
+  tags:
+    - k8s-runner
+# 自动取消冗余job
+  interruptible: true
+# 失败重试次数据
+  retry: 2
+# 添加时间戳变量,注入包名
+  before_script:
+    - export BUILD_TIME=$(date -d "$CI_PIPELINE_CREATED_AT" +%Y%m%d%H%M%S)
+
+.ssh-copy-path: &ssh-copy-path
+  - echo "Start scp  the $Arch directory to $CI_PROJECT_DIR/../ "
+  - |
+    echo $CI_PROJECT_DIR $CI_PROJECT_DIR $Arch  
+    cd $CI_PROJECT_DIR/../
+    scp -r -P 22 -oStrictHostKeyChecking=no -o ConnectionAttempts=5 -o ConnectTimeout=3 root@172.16.17.197:/data/k3s-build/$Arch $CI_PROJECT_DIR/../
+  - echo "Start scp  the k3s_files directory to $CI_PROJECT_DIR/../"
+  - |
+    cd $CI_PROJECT_DIR/../
+    scp -r -P 22 -oStrictHostKeyChecking=no -o ConnectionAttempts=5 -o ConnectTimeout=3 root@172.16.17.197:/data/k3s-build/k3s_files $CI_PROJECT_DIR/../
+    
+.rsyc-files: &rsyc-files
+  - echo "Execute this script second"
+  - |
+    echo "cp docker-20.10.7-$Arch.tar.gz "
+    cp $CI_PROJECT_DIR/../$Arch/docker*.tar.gz $CI_PROJECT_DIR/titan-install-docker/docker-package/
+    cp $CI_PROJECT_DIR/../$Arch/docker*.tar.gz $CI_PROJECT_DIR/titan-install-k3s/roles/docker/files  
+    
+    echo "cp titan-ansible-$Arch.tar"
+    cp $CI_PROJECT_DIR/../$Arch/titan-ansible-*.tar $CI_PROJECT_DIR/titan-install-docker/docker-package/
+    
+    echo "cp titan-ansible-$Arch.tar"
+    cp $CI_PROJECT_DIR/../$Arch/titan-ansible-*.tar $CI_PROJECT_DIR/titan-install-docker/docker-package/
+    
+    echo "cp k3s-airgap-images-$Arch.tar"
+    cp $CI_PROJECT_DIR/../$Arch/k3s-airgap-images-*.tar $CI_PROJECT_DIR/titan-install-docker/docker-package/
+    
+    echo "cp k3s-airgap-images-$Arch.tar"
+    cp $CI_PROJECT_DIR/../$Arch/k3s-airgap-images-*.tar $CI_PROJECT_DIR/titan-install-k3s/roles/registery/files/
+    
+    echo "cp mkcert-v1.4.3-linux-Arch"
+    cp $CI_PROJECT_DIR/../$Arch/mkcert-* $CI_PROJECT_DIR/titan-install-k3s/roles/registery/files/
+    
+    echo "cp registry-all-Arch.tar"
+    cp $CI_PROJECT_DIR/../$Arch/registry-all*.tar $CI_PROJECT_DIR/titan-install-k3s/roles/registery/files/
+    
+    echo "cp k3s files"
+    cp $CI_PROJECT_DIR/../k3s_files/k3s* $CI_PROJECT_DIR/titan-install-k3s/roles/k3s_files/files/
+    
+    echo "cp k3s-images.txt"
+    cp $CI_PROJECT_DIR/../k3s_files/k3s-images.txt $CI_PROJECT_DIR/titan-install-k3s/roles/registery/files/    
+  - echo "End"
+
+.build-package: &build-package
+  - echo "Start build package"
+  - cd $CI_PROJECT_DIR/../ && chmod 755  $CI_PROJECT_NAME -R && tar -zcvf $CI_PROJECT_NAME-$k3s_version-$Arch-$CI_BUILD_REF_NAME-$BUILD_TIME.tar.gz $CI_PROJECT_NAME/*
+  
+.push-package: &push-package
+  - echo "push-package"
+  - ssh -t -p 22 -oStrictHostKeyChecking=no -o ConnectionAttempts=5 -o ConnectTimeout=3 root@172.16.17.164 [ -f /data/packages/k3s-ansible/$CI_PROJECT_NAME-$k3s_version-$Arch-$CI_BUILD_REF_NAME-$BUILD_TIME.tar.gz ] && rm -rf /data/packages/k3s-ansible/$CI_PROJECT_NAME-$k3s_version-$Arch-$CI_BUILD_REF_NAME-$BUILD_TIME.tar.gz || echo ok
+  - scp -P 22 -oStrictHostKeyChecking=no -o ConnectionAttempts=5 -o ConnectTimeout=3 $CI_PROJECT_DIR/../$CI_PROJECT_NAME-$k3s_version-$Arch-$CI_BUILD_REF_NAME-$BUILD_TIME.tar.gz root@172.16.17.164:/data/packages/k3s-ansible/
+
+.cleanup: &cleanup
+  - echo "Execute this script last"
+
+.post-email: &post-email
+  - |
+    apt-get install curl -y
+    apt-get install jq -y
+    cd $CI_PROJECT_DIR/.gitlab-ci/
+    echo "start lark-cli.sh for email"
+    chmod +x lark-cli.sh
+    bash lark-cli.sh send-msg --app-id=$LARK_APP_ID --app-secret=$LARK_APP_SECRET --msg="message_template.json" --emails=$sed_email
+
+build_amd:
+  stage: build
+  variables:
+    Arch: "amd64"
+  only:
+    refs:
+      - release
+      - test
+  script:
+    - echo $BUILD_TIME
+    - *ssh-copy-path
+    - *rsyc-files
+    - *build-package
+    - *push-package
+
+build_arm:
+  stage: build
+  variables:
+    Arch: "arm64"
+  only:
+    refs:
+      - test
+      - release
+  script:
+    - echo $BUILD_TIME
+    - *ssh-copy-path
+    - *rsyc-files
+    - *build-package
+    - *push-package
+
+send_emails:
+  stage: notify
+  variables:
+    LARK_APP_ID: $LARK_APP_ID
+    LARK_APP_SECRET: $LARK_APP_SECRET
+    sed_email: $sed_email
+  only:
+    refs:
+      - release
+      - test
+  when: on_success
+  script:
+    - echo $BUILD_TIME
+    - *post-email
+

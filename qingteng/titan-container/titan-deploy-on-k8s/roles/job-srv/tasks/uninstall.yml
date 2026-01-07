@@ -1,0 +1,24 @@
+- name: Remove job-srv StatefulSet
+  kubernetes.core.k8s:
+    state: absent
+    api_version: apps/v1
+    kind: StatefulSet
+    namespace: "{{ namespace }}"
+    name: "titan-job-srv"
+
+- name: Remove job-srv configmap
+  kubernetes.core.k8s:
+    state: absent
+    api_version: v1
+    kind: ConfigMap
+    namespace: "{{ namespace }}"
+    name: "job-config"
+
+- name: Remove job-srv Service
+  kubernetes.core.k8s:
+    state: absent
+    api_version: v1
+    kind: Service
+    namespace: "{{ namespace }}"
+    name: "titan-job-srv"
+    

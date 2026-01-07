@@ -1,0 +1,92 @@
+---
+- name: get license status from redis
+  command: kubectl -n {{namespace}} exec -ti rediserl-0 -- sh -c 'pass=$(cat /tmp/redis.conf |grep pass | cut -d " " -f2); redis-cli -a $pass -c --raw hvals license:status '
+  register: redis_output
+
+- fail:
+    msg: can not get license status !
+  when: redis_output is not defined or 'status' not in redis_output['stdout']
+    
+- block:
+  - set_fact:
+      license_status: "{{ redis_output['stdout_lines'] | map('from_json') | list | json_query(status_query) | first  }}"
+    vars:
+      status_query: "[?status=='valid']"
+    when: "'valid' in redis_output['stdout']" 
+      
+- set_fact:
+    license_status: "{{ redis_output['stdout_lines'] | first  }}"
+  when: "'valid' not in redis_output['stdout']" 
+
+- debug:
+    msg: "{{ license_status }}"
+      
+- set_fact:
+    agentLimit: "{{ license_status['agentLimit'] | string }}"
+    dockerAgentLimit: "{{ license_status['dockerAgentLimit'] | default(0) | string }}"
+    licenseMode: "{{ license_status['mode'] | default('1') }}"
+
+- name: Get titan-secrets
+  kubernetes.core.k8s_info:
+    kind: Secret
+    name: titan-all-secrets
+    namespace: "{{ namespace }}"
+  register: titan_secrets_result
+  no_log: True
+
+- set_fact:
+    pbeconfig: "{{ titan_secrets_result['resources'][0]['data']['pbeconfig'] | b64decode }}"
+
+- set_fact:
+    api_auth: "{{ pbeconfig | signApiAuth('/agent/user-stats') }}"
+
+- set_fact:
+    curl_command: 'curl -s -H "API-AUTH: {{api_auth}}" http://127.0.0.1:6220/agent/user-stats'
+
+- include_role:
+    name: common
+    tasks_from: k8s_one_pod.yml
+  vars:
+    label_selector: "app=titan-connect-agent"
+    result_key: "connectagent_pod"
+
+- name: get user stats from connect-agent
+  shell: kubectl -n {{namespace}} exec {{connectagent_pod}} -- {{curl_command}}
+  register: userstats_result
+  when: "'valid' == license_status['status']"
+
+- set_fact:
+    user_stats: "{{ userstats_result['stdout'] }}"
+  when: "'valid' == license_status['status']"
+
+- set_fact:
+    onlineAgentNumber: "{{ user_stats | sum(attribute='onlineTotal') | string }}"
+    registeredAgentNumber: "{{ user_stats | sum(attribute='total') | string }}"
+  when: "'valid' == license_status['status']"
+
+- set_fact:
+    licenseReason: "{{ license_status['reason'] }}"
+  when: "'valid' != license_status['status']"
+
+- block:
+  - set_fact:
+      license_msg: |
+        +-------------------------------+-----------------------
+        | Description                   | {{'Value'.ljust(20)}}  
+        +-------------------------------+-----------------------
+        | Client Name                   | {{license_status['clientName'].ljust(20) }}  
+        | license status                | {{license_status['status'].ljust(20) }}  
+        {% if licenseMode in ["1","3"] %}| licensed expire date          | {{license_status['expiredDate'].ljust(20) }}{% else %}{% endif %}  
+        {% if licenseMode in ["1","3"] %}| licensed agent number         | {{agentLimit.ljust(20) }}{% else %}{% endif %}  
+        {% if licenseMode in ["2","3"] %}| hive licensed expire date     | {{license_status['dockerExpiredDate'].ljust(20) }}{% else %}{% endif %}  
+        {% if licenseMode in ["2","3"] %}| hive licensed agent number    | {{dockerAgentLimit.ljust(20) }}{% else %}{% endif %}  
+        | Registered Agent number       | {{ registeredAgentNumber.ljust(20)  }}  
+        | Online Agent number           | {{ onlineAgentNumber.ljust(20)  }}  
+        {% if licenseReason is defined%}| Reason                        | {{ licenseReason.ljust(20)  }}  {% else %}{% endif %}  
+        +-------------------------------+-----------------------
+    no_log: yes
+    
+  - debug:
+      msg: "{{ license_msg.splitlines() | select('ne','  ') | list }}"
+
+  when: redis_output and 'status' in redis_output['stdout'] 

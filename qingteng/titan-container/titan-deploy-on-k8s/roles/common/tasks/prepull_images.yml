@@ -1,0 +1,68 @@
+---
+# 用于拉取镜像，自带的仓库是单点的，主动在java服务的节点拉取java镜像
+# base服务和php服务没有必要
+- name: Get titan-prepull-images
+  kubernetes.core.k8s_info:
+    kind: ConfigMap
+    name: titan-pre-pull
+    namespace: "{{ namespace }}"
+  register: titan_pre_pull_result
+
+- set_fact:
+    pulled_tag: "{{ titan_pre_pull_result['resources'][0].get('data',{}).get('tag','') }}"
+  when: titan_pre_pull_result is defined and (titan_pre_pull_result['resources']|length > 0)
+
+- block:
+  - set_fact:
+      java_images: "{{ java_images | difference([eventsrv_image]) }}"
+    when: ( event_srv_enable == "false" or event_srv_enable == false ) and ( ms_srv_enable == "false" or ms_srv_enable == false )
+  - set_fact:
+      java_images: "{{ java_images | difference([mssrv_image]) }}"
+    when: ms_srv_enable == "false" or ms_srv_enable == false
+  - set_fact:
+      java_images: "{{ java_images | difference([antivirussrv_image]) }}"
+    when: anti_virus_srv_enable == "false" or anti_virus_srv_enable == false
+
+  - set_fact:
+      java_images: "{{ java_images | difference([scansrv_image,clusterlinksrv_image]) }}"
+    when: docker_enable == "false" or docker_enable == false
+
+  - name: create daemonset on nodes for pull images
+    kubernetes.core.k8s:
+      state: present
+      definition: "{{ lookup('template', 'prepull_daemonset.yml') | from_yaml | titan_combine(common_patch) }}"
+    vars:
+      prepull_nodelabels: "{{java_nodelabels}}"
+      prepull_images: "{{java_images}}"
+  
+  - name: get pre-pull-images DaemonSet
+    kubernetes.core.k8s_info:
+      kind: DaemonSet
+      name: pre-pull-images
+      namespace: "{{ namespace }}"
+      wait: yes
+      wait_sleep: 15
+      wait_timeout: 300
+    register: daemonsetObj
+  
+  - name: delete pre-pull-images daemonset
+    kubernetes.core.k8s:
+      state: absent
+      api_version: v1
+      kind: DaemonSet
+      namespace: "{{ namespace }}"
+      name: "pre-pull-images"
+  
+  - name: Create titan-pre-pull 
+    kubernetes.core.k8s:
+      state: present
+      definition:
+        apiVersion: v1
+        kind: ConfigMap
+        metadata:
+          name: titan-pre-pull
+          namespace: "{{ namespace }}"
+        data: 
+          tag: "{{common_tag}}"
+
+  when: force_pull is defined or pulled_tag is not defined or pulled_tag != common_tag

@@ -1,0 +1,10 @@
+---
+# defaults file for connectdh
+connectdh_pullPolicy: IfNotPresent
+connectdh_uid: 2020
+connectdh_gid: 2020
+connectdh_port: 6210
+
+connectdh_limit_memory: 4596Mi
+connectdh_limit_cpu: 8
+connectdh_req_memory: 2048Mi
